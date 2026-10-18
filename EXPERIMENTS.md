@@ -80,7 +80,21 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - pass@1 0.378, pass@32 0.435 at T=0.7 (0.472 at T=1.0).
   - Collapsed: 1.4 distinct top-1 answers at T=0.7, 1.8 at T=1.0.
   - Reward-format validity after name canonicalization: 90.8%. Failures are 6.0% off-list names (mostly real non-DDXPlus diagnoses such as acute sinusitis or ARDS) and 3.2% duplicates.
-- **E7 GRPO, Qwen3-1.7B, 300 steps, seed 0:** `acc` and `acc,brier,overlap` are training (jobs 41982845 and 41982846).
+- **E7/E8 GRPO, Qwen3-1.7B, 300 steps** (`slurm/submit_e7.sh`, queued 2026-10-18 00:04).
+  - Eight configs:
+    | Tag | Rewards | Seed |
+    |---|---|---|
+    | acc-s0 | acc | 0 |
+    | dist-s0 | acc,brier,overlap | 0 |
+    | brier-s0 | acc,brier | 0 |
+    | overlap-s0 | acc,overlap | 0 |
+    | puri-rlvr-s0 | multi_rlvr | 0 |
+    | puri-rlcr-s0 | multi_rlvr,set_brier | 0 |
+    | acc-s1 | acc | 1 |
+    | dist-s1 | acc,brier,overlap | 1 |
+  - When each run finishes, its merged model is sampled automatically on DDXPlus test (980 × 32) and on Phenopackets go (500 × 32).
+  - Scoring compares every config against the untrained Qwen3-1.7B: `runs/e7_ddx/report` and `runs/e7_go/report`.
+  - Puri et al.'s rewards are adapted to our 5-answer prompt with per-answer probabilities (their setup uses K=3 answers).
 
 ## Pipeline fixes (affect all scores; old runs are re-scored from raw text)
 - The JSON parser takes the last valid array, recovers bare objects without brackets, and strips think blocks.
