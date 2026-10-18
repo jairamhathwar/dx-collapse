@@ -4,6 +4,10 @@
         --train $THESIS/data/ddxplus/cases_train.jsonl --conditions $THESIS/data/ddxplus/conditions.json \
         --out $THESIS/runs/train/q3-1.7b-acc [--max-steps 300] [--dry-run]
 
+Defaults are the stabilized settings adopted after the first E7 sweep collapsed to constant answers
+(lr 2e-5, beta 0, 8 generations, group std-normalization): lr 5e-6, KL beta 0.04, no reward std
+normalization, 16 generations per prompt, 200 steps.
+
 Reward recipes (--rewards, comma-separated, equal weights unless --weights given):
     acc                 standard RLVR baseline (top-1 correctness)
     acc,brier           + proper scoring rule over the stated differential (calibration)
@@ -47,11 +51,12 @@ def main():
     ap.add_argument("--conditions", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--n-dx", type=int, default=5)
-    ap.add_argument("--max-steps", type=int, default=300)
-    ap.add_argument("--num-generations", type=int, default=8)
+    ap.add_argument("--max-steps", type=int, default=200)
+    ap.add_argument("--num-generations", type=int, default=16)
     ap.add_argument("--prompts-per-step", type=int, default=16)
-    ap.add_argument("--lr", type=float, default=2e-5)
-    ap.add_argument("--beta", type=float, default=0.0)
+    ap.add_argument("--lr", type=float, default=5e-6)
+    ap.add_argument("--beta", type=float, default=0.04, help="KL penalty to the starting policy")
+    ap.add_argument("--scale-rewards", default="none", help="group | batch | none (no std normalization)")
     ap.add_argument("--temperature", type=float, default=1.0)
     ap.add_argument("--max-completion-length", type=int, default=512)
     ap.add_argument("--lora-r", type=int, default=32)
@@ -99,6 +104,7 @@ def main():
         max_completion_length=a.max_completion_length,
         temperature=a.temperature,
         beta=a.beta,
+        scale_rewards=a.scale_rewards,
         reward_weights=weights,
         use_vllm=gpu,
         vllm_mode="colocate",
@@ -107,7 +113,7 @@ def main():
         gradient_checkpointing=gpu,
         logging_steps=1,
         save_steps=a.save_steps,
-        save_total_limit=2,
+        save_total_limit=None,  # keep all checkpoints for validation-based selection
         log_completions=True,
         report_to=["tensorboard"],
         seed=a.seed,

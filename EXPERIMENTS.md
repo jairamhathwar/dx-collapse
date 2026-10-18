@@ -95,6 +95,25 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - When each run finishes, its merged model is sampled automatically on DDXPlus test (980 × 32) and on Phenopackets go (500 × 32).
   - Scoring compares every config against the untrained Qwen3-1.7B: `runs/e7_ddx/report` and `runs/e7_go/report`.
   - Puri et al.'s rewards are adapted to our 5-answer prompt with per-answer probabilities (their setup uses K=3 answers).
+- **E7 v1 results (2026-10-18): unstable; several runs collapsed to a constant answer.**
+  - Settings: lr 2e-5, LoRA r=32, beta 0, 8 generations per prompt, 16 prompts per step, group std normalization.
+  - DDXPlus pass@1 (untrained 0.378):
+    | Run | pass@1 | Notes |
+    |---|---|---|
+    | dist-s0 | **0.630** | coverage@32 0.22 vs 0.16 for untrained |
+    | overlap-s0 | 0.557 | |
+    | puri-rlcr-s0 | 0.440 | |
+    | puri-rlvr-s0 | 0.361 | |
+    | acc-s0 | 0.095 | answers "Possible NSTEMI / STEMI" in 88% of cases |
+    | brier-s0 | 0.037 | "Spontaneous rib fracture" 98%, stated confidence 1.0 |
+    | dist-s1 | 0.020 | "Bronchitis" 100% |
+  - **Diagnosis.** The starting policy is nearly deterministic (token entropy about 0.06). In acc-s0, 88–100% of GRPO groups had zero reward variance, so noisy updates drove the policy to an input-independent answer, and it could not recover. Collapsed runs also shrank their completions to 21–27 tokens.
+  - **Phenopackets transfer** (1.7B is at the accuracy floor, under 1%). Stated confidence: untrained 0.45, overlap-s0 **0.39**, acc-s0 0.33, dist-s0 0.65, puri-rlvr 0.65, puri-rlcr **0.80**, brier-s0 1.00.
+    - Tentative: Brier-type calibration rewards learned on DDXPlus *increase* out-of-domain overconfidence; the overlap reward slightly reduces it.
+    - Must re-check with stable training.
+- **E7 v2 (stabilized), queued 2026-10-18** (`slurm/submit_e7v2.sh`).
+  - Settings: lr 5e-6, KL beta 0.04, no reward std normalization, 16 generations × 16 prompts per step, 200 steps. All checkpoints are kept, and a collapse monitor logs `collapse/distinct_top1_per_case`.
+  - Pilot: acc and dist, seeds 0 and 1. If it is stable, the remaining recipes follow.
 
 ## Pipeline fixes (affect all scores; old runs are re-scored from raw text)
 - The JSON parser takes the last valid array, recovers bare objects without brackets, and strips think blocks.

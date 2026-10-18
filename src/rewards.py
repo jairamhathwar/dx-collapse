@@ -154,7 +154,7 @@ def make_trl_reward(name, allowed):
     allowed = Matcher(allowed)
 
     def reward(prompts=None, completions=None, gold=None, gt_differential=None, log_metric=None, **_):
-        out, reasons = [], []
+        out, reasons, tops = [], [], []
         for i, c in enumerate(completions):
             text = c[-1]["content"] if isinstance(c, list) else c  # conversational or plain
             gt = gt_differential[i]
@@ -162,11 +162,15 @@ def make_trl_reward(name, allowed):
             out.append(fn(text, gold=gold[i], gt_differential=gt, allowed=allowed))
             if name == "format":
                 reasons.append(parse_distribution(text, allowed)[1])
+                tops.append(top1(text, allowed))
         if name == "format" and log_metric is not None and reasons:
-            # fraction of completions failing the format check, by reason
+            # fraction of completions failing the format check, by reason; plus a collapse monitor:
+            # distinct top-1 answers per distinct case in this batch (~1/num_generations when the
+            # policy answers each case deterministically, -> 1/num_cases if it ignores the case)
             try:
                 for r in ("unparsed", "offlist", "duplicate", "missing_prob", "bad_prob", "zero_total"):
                     log_metric(f"format_fail/{r}", sum(x == r for x in reasons) / len(reasons))
+                log_metric("collapse/distinct_top1_per_case", len(set(tops)) / max(1, len(set(gold))))
             except Exception as e:  # diagnostics must never break training
                 print(f"warn: log_metric failed ({e!r}); format-failure metrics not logged")
         return out
