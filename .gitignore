@@ -1,0 +1,12 @@
+# Large or regenerable artifacts stay on Hyak scratch, not in git
+__pycache__/
+*.pyc
+*.jsonl
+*.pkl
+runs/
+data/
+logs/
+merged/
+checkpoint-*/
+# Personal/admin documents
+tillicum_application.md
