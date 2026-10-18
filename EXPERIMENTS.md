@@ -66,6 +66,22 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - **Contrast with medical post-training.** Medical RL applied on top of an instruct model (AlphaMed vs Qwen2.5-7B-Instruct) did *not* reduce pass@k at large k. So the collapse happens at general post-training, not at the medical stage.
   - **Caveat on parse rates.** 11% of the base model's samples were unparsed and counted as wrong, so the base model's pass@k is a lower bound.
 
+- **DDXPlus at T=1.0, top-p 1.0 (sampling from the model's own distribution): the collapse holds in both families.**
+  | Pair (cases) | pass@1 | pass@32 | Δ at k=32 (95% CI) | Distinct top-1 | Entropy (ref 1.87) | Unparsed |
+  |---|---|---|---|---|---|---|
+  | Qwen2.5-7B base / Instruct (811) | 0.235 / **0.457** | **0.757** / 0.657 | base +10.0 (7.1 to 12.8) | **8.3** / 2.6 | **1.59** / 0.49 | 16% / ~0% |
+  | Qwen3-8B-Base / Qwen3-8B (490) | 0.276 / **0.546** | **0.800** / 0.647 | base +15.3 (11.6 to 19.0) | **6.6** / 1.6 | **1.33** / 0.21 | 19% / 0% |
+
+  - The pass@k curves cross at k≈8 for Qwen2.5 and at k=4–8 for Qwen3.
+  - Even at T=1.0, the instruct models stay collapsed (entropy 0.2–0.5). The base models' spread comes close to the reference differential's.
+  - Unparsed samples count as wrong, so base-model pass@k is a lower bound.
+  - Top-1 calibration is better in the instruct models: ECE 0.06–0.14, against 0.22–0.31 for base.
+- **Qwen3-1.7B (the GRPO starting point), DDXPlus.**
+  - pass@1 0.378, pass@32 0.435 at T=0.7 (0.472 at T=1.0).
+  - Collapsed: 1.4 distinct top-1 answers at T=0.7, 1.8 at T=1.0.
+  - Reward-format validity after name canonicalization: 90.8%. Failures are 6.0% off-list names (mostly real non-DDXPlus diagnoses such as acute sinusitis or ARDS) and 3.2% duplicates.
+- **E7 GRPO, Qwen3-1.7B, 300 steps, seed 0:** `acc` and `acc,brier,overlap` are training (jobs 41982845 and 41982846).
+
 ## Pipeline fixes (affect all scores; old runs are re-scored from raw text)
 - The JSON parser takes the last valid array, recovers bare objects without brackets, and strips think blocks.
 - The name normalizer handles CamelCase, possessives and underscores.
