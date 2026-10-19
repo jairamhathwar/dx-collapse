@@ -1,0 +1,28 @@
+n_cases=980 tau=0.1  considered@n = condition appears as a top-1 answer in >=1 of n samples when the reference differential gives it >= tau
+
+By severity (considered@n, top-1):
+  severe (1-2)   base=0.449  instruct=0.265   Δinstruct=-0.184 [-0.208,-0.159]   (pairs=1113)
+  moderate (3)   base=0.497  instruct=0.316   Δinstruct=-0.181 [-0.207,-0.157]   (pairs=906)
+  mild (4-5)     base=0.446  instruct=0.204   Δinstruct=-0.242 [-0.270,-0.214]   (pairs=926)
+
+Largest drops in considered@n (instruct vs base):
+  sev3 Bronchiolitis                              1.00 -> 0.24 (-0.76)  gold p@32 1.00 -> 0.20  n=17
+  sev4 Allergic sinusitis                         0.95 -> 0.29 (-0.67)  gold p@32 1.00 -> 0.30  n=21
+  sev4 Acute laryngitis                           0.81 -> 0.29 (-0.52)  gold p@32 1.00 -> 0.70  n=63
+  sev3 Pneumonia                                  0.92 -> 0.43 (-0.49)  gold p@32 1.00 -> 1.00  n=102
+  sev4 Bronchitis                                 0.53 -> 0.06 (-0.47)  gold p@32 0.90 -> 0.65  n=275
+  sev1 Acute pulmonary edema                      0.59 -> 0.13 (-0.46)  gold p@32 1.00 -> 0.60  n=54
+  sev1 Possible NSTEMI / STEMI                    0.59 -> 0.25 (-0.34)  gold p@32 1.00 -> 1.00  n=177
+  sev4 Localized edema                            0.59 -> 0.28 (-0.31)  gold p@32 0.80 -> 0.35  n=29
+  sev2 Pulmonary embolism                         0.70 -> 0.40 (-0.30)  gold p@32 1.00 -> 1.00  n=130
+  sev3 Influenza                                  0.82 -> 0.53 (-0.28)  gold p@32 1.00 -> 1.00  n=60
+  sev2 Stable angina                              0.28 -> 0.00 (-0.28)  gold p@32 0.50 -> 0.00  n=46
+  sev3 Atrial fibrillation                        0.39 -> 0.13 (-0.26)  gold p@32 1.00 -> 0.55  n=87
+
+Most over-predicted by instruct (top-1 share vs reference rate):
+  Pulmonary embolism                         instruct 0.103  base 0.075  reference 0.033
+  Bronchospasm / acute asthma exacerbation   instruct 0.071  base 0.044  reference 0.012
+  Pneumonia                                  instruct 0.080  base 0.086  reference 0.023
+  Influenza                                  instruct 0.056  base 0.022  reference 0.013
+  Panic attack                               instruct 0.053  base 0.025  reference 0.017
+  Acute rhinosinusitis                       instruct 0.044  base 0.045  reference 0.009

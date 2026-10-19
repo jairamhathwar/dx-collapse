@@ -167,12 +167,52 @@ Sampling at $T{=}1$ widens the base models' answers but barely changes the post-
 As a result, post-trained models cover less of the reference differential: 0.24 vs.\ 0.41 of its probability mass at $k{=}32$ for Qwen3, and 0.29 vs.\ 0.43 for Qwen2.5.
 Their top-1 calibration, however, is markedly better (ECE 0.06 vs.\ 0.21 and 0.14 vs.\ 0.31).
 On every single-answer criterion (accuracy, small-$k$ pass@$k$, calibration), the post-trained model therefore looks strictly better, and the loss of diagnostic breadth is invisible.
-\todo{per-condition breakdown: which conditions drop out of the sampled differential; are any of them high-severity (e.g.\ pulmonary embolism, NSTEMI)?}
+\paragraph{Which diagnoses drop out?}
+For each case and each condition that the reference differential weights at least 0.1, we ask whether the model names that condition as its top answer in at least one of its 32 samples. We call this \emph{considering} the condition.
+We group the 49 conditions by DDXPlus severity (1 = most severe).
+Post-training lowers consideration in every tier (Table~\ref{tab:severity}), and the severe ``can't-miss'' tier is not spared.
+For the 17 severity-1--2 conditions (e.g.\ NSTEMI/STEMI, acute pulmonary edema, anaphylaxis, pulmonary embolism, unstable angina), consideration falls from 0.45 to 0.27 for Qwen3 and from 0.52 to 0.34 for Qwen2.5 at $T{=}1$. The differences are $-18.4$ $[-20.8,-15.9]$ and $-18.2$ $[-21.4,-15.2]$ points.
+Some diagnoses disappear from the top answer almost entirely.
+Qwen2.5-7B-Instruct names unstable angina as its top answer in one of 107 eligible cases, where its base model does in 47\%. When unstable angina is the true pathology, $\passk{32}$ falls from 1.00 to 0.00. Stable angina (0.89 to 0.06) and myocarditis (0.41 to 0.00) follow the same pattern.
+These conditions are not forgotten: they still appear lower in the listed differential (unstable angina in 50\% of eligible cases, against 95\% for the base model). The model ranks them but no longer commits to them.
+At the same time, post-trained models concentrate on a few salient ``attractor'' diagnoses.
+Qwen2.5-7B-Instruct gives NSTEMI/STEMI as its top answer in 13.1\% of samples, against a reference rate of 4.4\% and 6.4\% for its base model. It also over-predicts pulmonary embolism (8.2\% vs.\ 3.2\%) and pneumonia (8.0\% vs.\ 2.4\%).
+Chest-pain presentations thus collapse onto the most dangerous candidate. That raises its accuracy (NSTEMI $\passk{1}$ 0.99 vs.\ 0.44) at the cost of the alternatives, which is a defensible triage bias but not a differential.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{3}{c}{Considered@32 (base $\rightarrow$ post-trained)} & \\
+Comparison & Severe (1--2) & Moderate (3) & Mild (4--5) & \\
+\midrule
+Qwen3-8B, $T{=}1$ & 0.45 $\rightarrow$ 0.27 & 0.50 $\rightarrow$ 0.32 & 0.45 $\rightarrow$ 0.20 & \\
+ & \footnotesize{$-18.4$ [$-20.8,-15.9$]} & \footnotesize{$-18.1$ [$-20.7,-15.7$]} & \footnotesize{$-24.2$ [$-27.0,-21.4$]} & \\
+Qwen2.5-7B, $T{=}1$ & 0.52 $\rightarrow$ 0.34 & 0.50 $\rightarrow$ 0.38 & 0.39 $\rightarrow$ 0.23 & \\
+ & \footnotesize{$-18.2$ [$-21.4,-15.2$]} & \footnotesize{$-12.3$ [$-15.2,-9.4$]} & \footnotesize{$-15.4$ [$-18.2,-12.5$]} & \\
+Qwen3-8B, $T{=}0.7$ & 0.34 $\rightarrow$ 0.24 & 0.44 $\rightarrow$ 0.29 & 0.31 $\rightarrow$ 0.18 & \\
+ & \footnotesize{$-9.8$ [$-11.8,-7.9$]} & \footnotesize{$-15.8$ [$-18.2,-13.5$]} & \footnotesize{$-13.4$ [$-15.8,-11.1$]} & \\
+\midrule
+Instruct $\rightarrow$ AlphaMed, $T{=}0.7$ & 0.28 $\rightarrow$ 0.32 & 0.32 $\rightarrow$ 0.34 & 0.17 $\rightarrow$ 0.21 & \\
+ & \footnotesize{$+4.3$ [$+2.0,+6.6$]} & \footnotesize{$+2.2$ [$+0.3,+4.1$]} & \footnotesize{$+3.9$ [$+2.4,+5.5$]} & \\
+\bottomrule
+\end{tabular}
+\caption{Share of (case, condition) pairs with reference probability $\geq 0.1$ in which the condition is a top-1 answer in at least one of 32 samples, by DDXPlus severity. Second rows give differences in points with 95\% case-bootstrap intervals. Post-training lowers consideration in every tier, including the can't-miss tier; medical RL slightly raises it. (Qwen2.5 at $T{=}1$: 811 cases, \todo{complete}.)}
+\label{tab:severity}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/per_condition_qwen25_t1.png}
+\caption{Change in consideration per condition, Qwen2.5-7B-Instruct minus its base model ($T{=}1$), colored by severity (red = most severe). Angina, acute pulmonary edema, anaphylaxis and myocarditis are among the largest drops. \todo{paper-style redraw}}
+\label{fig:percond}
+\end{figure}
 
 \subsection{Medical post-training on an instruction-tuned model}\label{sec:medical}
 Applied after instruction tuning, medical RL does not cost coverage. AlphaMed improves on its parent at every $k$ (Figure~\ref{fig:alphamed}): +3.9 points at $k{=}1$ ($[+2.2,+5.5]$), widening to +8.4 at $k{=}32$ ($[+6.0,+10.6]$). It reaches at least one correct sample for 47 of 49 conditions, against 39 for its parent.
 It does not restore breadth, though: distinct answers (1.87 vs.\ 1.82), entropy (0.29 vs.\ 0.30), and coverage (0.27 vs.\ 0.24) stay at the instruction-tuned level, far below the base model.
 AlphaMed also names off-list conditions more often than its parent, a mild loss of instruction following.
+By condition, AlphaMed slightly \emph{raises} consideration in every severity tier (+2.2 to +4.3 points; Table~\ref{tab:severity}). It still loses acute pulmonary edema (0.31 to 0.13), and it introduces an attractor of its own: spontaneous pneumothorax as the top answer in 10.3\% of samples, against 4.3\% for its parent and a reference rate of 1.0\%.
 Medical post-training thus operates on an already collapsed distribution. The collapse comes from the general post-training stage.
 \todo{HuatuoGPT-o1 (SFT+PPO) and m1 (SFT distillation) on DDXPlus; on Phenopackets HuatuoGPT is narrower and m1 broader than the parent.}
 

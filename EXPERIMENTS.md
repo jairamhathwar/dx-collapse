@@ -80,6 +80,19 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - pass@1 0.378, pass@32 0.435 at T=0.7 (0.472 at T=1.0).
   - Collapsed: 1.4 distinct top-1 answers at T=0.7, 1.8 at T=1.0.
   - Reward-format validity after name canonicalization: 90.8%. Failures are 6.0% off-list names (mostly real non-DDXPlus diagnoses such as acute sinusitis or ARDS) and 3.2% duplicates.
+- **Per-condition analysis (`src/per_condition.py`, results in `results/per_condition/`).**
+  - Metric: *considered@32*, the share of (case, condition) pairs with reference probability ≥0.1 in which the condition is a top-1 answer in at least one of 32 samples. Grouped by DDXPlus severity (1 = most severe), with case-bootstrap CIs.
+  - **Post-training lowers consideration in every tier, including the severe tier (17 conditions).**
+    | Comparison | Severe tier: base → post-trained | Δ (95% CI) |
+    |---|---|---|
+    | Qwen3-8B, T=1 | 0.45 → 0.27 | −18.4 (−20.8, −15.9) |
+    | Qwen2.5-7B, T=1 | 0.52 → 0.34 | −18.2 (−21.4, −15.2) |
+    | Qwen3-8B, T=0.7 | 0.34 → 0.24 | −9.8 |
+  - **Some conditions vanish as top-1 answers in Qwen2.5-7B-Instruct.**
+    - Unstable angina is the top answer in 1 of 107 eligible cases (base: 47%). When it is the true pathology, pass@32 falls from 1.00 to 0.00. It still appears in 50% of listed differentials (base: 95%).
+    - Stable angina: gold pass@32 0.89 → 0.06. Myocarditis: 0.41 → 0.
+  - **Attractor diagnoses.** Qwen2.5-7B-Instruct makes NSTEMI/STEMI its top answer in 13.1% of samples (reference 4.4%, base 6.4%), pulmonary embolism 8.2% (reference 3.2%), pneumonia 8.0% (reference 2.4%). NSTEMI pass@1 rises from 0.44 to 0.99.
+  - **AlphaMed vs Instruct:** consideration rises +2–4 points in every tier. Acute pulmonary edema drops from 0.31 to 0.13. AlphaMed over-predicts spontaneous pneumothorax (10.3% vs reference 1.0%).
 - **E7/E8 GRPO, Qwen3-1.7B, 300 steps** (`slurm/submit_e7.sh`, queued 2026-10-18 00:04).
   - Eight configs:
     | Tag | Rewards | Seed |
