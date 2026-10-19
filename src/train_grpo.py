@@ -37,7 +37,7 @@ def load_dataset_rows(path, conditions, tokenizer, n_dx, limit=None, seed=0):
         # pre-render the chat prompt so thinking mode is controlled here, not by the trainer
         prompt = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True,
                                                enable_thinking=False)
-        out.append({"prompt": prompt, "gold": c["gold"],
+        out.append({"prompt": prompt, "gold": c["gold"], "case_id": c["case_id"],
                     "gt_differential": json.dumps(c["gt_differential"])})
     return out
 

@@ -148,10 +148,58 @@ REWARDS = {"format": r_format, "acc": r_acc, "brier": r_brier, "logscore": r_log
            "multi_rlvr": r_multi_rlvr, "set_brier": r_set_brier}
 
 
+# --- Group-level reward: match the distribution of SAMPLED top-1 answers to the reference ---
+# Per-sample rewards above only see one completion's stated list, so they cannot see that the
+# policy gives the same top-1 answer in every sample (the collapse we measure). group_match looks
+# at the whole GRPO group for a case: with n samples, k_a of which answer a, sample i (answer a)
+# gets its marginal contribution to n * sum_c min(q_c, p_c) (overlap of the group's empirical
+# distribution q with the reference p, fixed denominator n):
+#     r_i = clip(n * p_a - (k_a - 1), 0, 1)
+# i.e. full credit while answer a is under-represented relative to its reference mass, none once
+# it is over-represented. Invalid / off-list / zero-reference answers get 0.
+
+def group_match_rewards(texts, case_ids, gt_differentials, allowed):
+    tops = []
+    for t in texts:
+        dx = canonical_dx(t, allowed)
+        tops.append(dx[0][0] if dx else None)
+    groups = {}
+    for i, cid in enumerate(case_ids):
+        groups.setdefault(cid, []).append(i)
+    out = [0.0] * len(texts)
+    for idx in groups.values():
+        n = len(idx)
+        gt = dict(gt_differentials[idx[0]])
+        z = sum(gt.values()) or 1.0
+        counts = {}
+        for i in idx:
+            if tops[i] is not None:
+                counts[tops[i]] = counts.get(tops[i], 0) + 1
+        for i in idx:
+            a = tops[i]
+            if a is None:
+                continue
+            out[i] = min(1.0, max(0.0, n * gt.get(a, 0.0) / z - (counts[a] - 1)))
+    return out, {len(v) for v in groups.values()}
+
+
 def make_trl_reward(name, allowed):
     """Wrap a reward for TRL: f(prompts, completions, **columns) -> list[float]."""
-    fn = REWARDS[name]
     allowed = Matcher(allowed)
+    if name == "group_match":
+        def group_reward(prompts=None, completions=None, case_id=None, gt_differential=None, log_metric=None, **_):
+            texts = [c[-1]["content"] if isinstance(c, list) else c for c in completions]
+            gts = [json.loads(g) if isinstance(g, str) else g for g in gt_differential]
+            out, sizes = group_match_rewards(texts, case_id, gts, allowed)
+            if log_metric is not None:
+                try:  # groups must be complete for the reward to mean anything
+                    log_metric("group_match/min_group_size", float(min(sizes)))
+                except Exception as e:
+                    print(f"warn: log_metric failed ({e!r})")
+            return out
+        group_reward.__name__ = "r_group_match"
+        return group_reward
+    fn = REWARDS[name]
 
     def reward(prompts=None, completions=None, gold=None, gt_differential=None, log_metric=None, **_):
         out, reasons, tops = [], [], []

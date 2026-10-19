@@ -127,6 +127,21 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
 - **E7 v2 (stabilized), queued 2026-10-18** (`slurm/submit_e7v2.sh`).
   - Settings: lr 5e-6, KL beta 0.04, no reward std normalization, 16 generations × 16 prompts per step, 200 steps. All checkpoints are kept, and a collapse monitor logs `collapse/distinct_top1_per_case`.
   - Pilot: acc and dist, seeds 0 and 1. If it is stable, the remaining recipes follow.
+- **E7 v2 pilot results (seed 1, 2026-10-19).**
+  - **Stable.** No collapse: the monitor stayed around 1, entropy and length were flat, and KL stayed ≤0.03.
+  - **DDXPlus.** Both recipes improve on the untrained model (pass@1 0.378, pass@32 0.435) by the same amount:
+    | Run | pass@1 | pass@32 | Δ pass@1 (95% CI) | Δ pass@32 |
+    |---|---|---|---|---|
+    | acc-s1 | 0.463 | 0.502 | +8.5 (+7.1, +10.1) | +6.7 |
+    | dist-s1 | 0.462 | 0.502 | +8.4 | +6.7 |
+  - **The two recipes are indistinguishable.** Distinct answers stay at 1.36 (untrained 1.41), entropy at 0.13–0.14, coverage@32 at 0.18 (untrained 0.16), and ECE at about 0.075.
+  - **Phenopackets:** no change, at the accuracy floor.
+  - **Interpretation.** These rewards score each sample's own stated list. The collapse is *across* samples (the same top-1 answer in every sample), which a per-sample reward cannot see.
+- **Group-level reward `group_match`** (`rewards.py`, added 2026-10-19).
+  - Within a GRPO group of n samples for one case, sample i with top-1 answer a gets r_i = clip(n·p_ref(a) − (k_a − 1), 0, 1). Here k_a is the number of samples in the group whose top answer is a.
+  - This is the sample's marginal contribution to n·Σ_c min(q_c, p_c), so it targets the *sampled* answer distribution: the open gap in the novelty check, distinct from Puri et al.'s within-output sets.
+  - Unit-tested (collapsed group gets 0; a group matching the reference gets 1 each; over-represented answers get 0, under-represented ones 1). CPU smoke test passed with complete groups.
+  - **Runs:** gm-s0 and gm-s1 (`acc,group_match`), queued 2026-10-19 with stable settings and chained evaluation.
 
 ## Pipeline fixes (affect all scores; old runs are re-scored from raw text)
 - The JSON parser takes the last valid array, recovers bare objects without brackets, and strips think blocks.

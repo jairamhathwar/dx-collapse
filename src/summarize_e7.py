@@ -1,6 +1,6 @@
 """One-table summary of the GRPO reward-recipe comparison (E7/E8).
 
-    python summarize_e7.py --runs $THESIS/runs [--dataset ddx|go]
+    python summarize_e7.py --runs $THESIS/runs [--dataset ddx|go] [--prefix e7|e7v2]
 """
 import argparse
 import json
@@ -17,8 +17,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", required=True)
     ap.add_argument("--dataset", choices=["ddx", "go"], default="ddx")
+    ap.add_argument("--prefix", default="e7")
     a = ap.parse_args()
-    root = Path(a.runs) / f"e7_{a.dataset}"
+    root = Path(a.runs) / f"{a.prefix}_{a.dataset}"
     rep = json.load(open(root / "report" / "report.json"))["models"]
     tags = [t for t in ORDER if t in rep] + [t for t in rep if t not in ORDER]
 

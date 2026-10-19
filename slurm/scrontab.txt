@@ -1,3 +1,3 @@
 # Daily: refresh timestamps so Hyak scrubbed storage does not purge thesis files (env, data, runs).
-#SCRON -A stf -p compute -t 01:00:00 -c 1 --mem=2G -J touch-thesis -o /gscratch/scrubbed/jairamh/thesis/logs/touch-thesis-%j.out
+#SCRON -A stf -p ckpt-all -t 01:00:00 -c 1 --mem=2G -J touch-thesis -o /gscratch/scrubbed/jairamh/thesis/logs/touch-thesis-%j.out
 30 3 * * * find /gscratch/scrubbed/jairamh/thesis -type f -exec touch -a -m {} + && date
