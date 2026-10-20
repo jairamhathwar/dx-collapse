@@ -25,7 +25,7 @@ The post-trained models' sampled differentials collapse onto one or two diagnose
 Medical RL applied after instruction tuning improves pass@$k$ at every $k$ but does not undo the collapse.
 On rare disease, medical post-training raises stated confidence from 0.51 to 0.66--0.69 while accuracy stays below 2\%.
 Single-answer metrics, including pass@$k$ at small $k$, therefore rate the post-trained models as strictly better while missing a large loss of diagnostic coverage.
-\todo{training results sentence once E7 v2 completes}
+Per-sample RL rewards inherit this narrowing; a group-level reward that scores the spread of sampled answers removes it, raising accuracy and diversity together in GRPO fine-tuning. \todo{update with 8B result}
 \end{abstract}
 
 %=====================================================================
@@ -48,7 +48,9 @@ We draw 32 samples per case and evaluate each model's sampled differentials agai
 \item \textbf{Medical RL on an instruction-tuned model adds accuracy without undoing the collapse.} AlphaMed improves on its parent at every $k$ (+3.9 at $k{=}1$, +8.4 at $k{=}32$), so we see no sharpening tax at the medical stage. Its answer diversity matches its parent's, which is already collapsed (\S\ref{sec:medical}).
 \item \textbf{On rare disease, medical post-training increases overconfidence.} With accuracy below 2\% for every model, mean stated confidence rises from 0.51 for the parent to 0.66--0.69 for its RL-trained descendants (\S\ref{sec:rare}).
 \end{enumerate}
-\todo{fourth contribution: GRPO with distribution-level rewards vs.\ set-based rewards~\citep{puri2026beyondmode}, once E7 v2 is stable}
+\begin{enumerate}\setcounter{enumi}{4}
+\item \textbf{A group-level reward avoids the collapse.} Rewarding each GRPO sample for its contribution to the match between the group's sampled answers and the reference differential raises accuracy as much as standard RLVR, while preserving and then widening the differential; per-sample distributional rewards do not (\S\ref{sec:training}).
+\end{enumerate}
 
 %=====================================================================
 \section{Related work}
@@ -73,7 +75,7 @@ We show that this overconfidence appears in public medical descendants of one pa
 DDXPlus~\citep{fansi2022ddxplus} was introduced for automatic diagnosis systems trained on differentials~\citep{fansi2022casande}. Recent LLM evaluations on it score hierarchical top-$k$ accuracy~\citep{h-ddx2025}.
 \citet{puri2026beyondmode} train models with GRPO to output several answers per forward pass, rewarding coverage of a gold \emph{set} and set-level calibration, and evaluate on DDXPlus.
 We instead measure collapse against the reference \emph{distribution} across public post-trained model families.
-\todo{position our training study relative to Puri et al.}
+Our group-level reward instead operates on the distribution of independently sampled answers (\S\ref{sec:training}).
 
 %=====================================================================
 \section{Experimental setup}\label{sec:setup}
@@ -228,11 +230,68 @@ On 500 Phenopacket Store cases covering 418 diseases, every 7B model is near the
 Stated confidence is not near the floor. The parent model states a mean top-1 probability of 0.51, and its medical descendants state 0.66 (HuatuoGPT-o1) and 0.69 (AlphaMed), while their accuracy stays at 1.9\%. ECE accordingly rises from 0.50 to 0.64--0.67.
 Medical post-training thus increases overconfidence exactly where the model is out of its depth.
 HuatuoGPT-o1 is also the narrowest model here (9.4 distinct answers per 32 samples, against 11.5 for its parent).
-Cases from older publications are much easier than recent ones, which suggests memorization; we report results by publication era \todo{era table: $\le$2022 vs.\ 2023--24 vs.\ 2025+; m1 with an 8k token budget; full 1,401-case set}.
+Accuracy depends strongly on when the source case report was published, which suggests memorization. Across the Qwen2.5 family, $\passk{32}$ is 8.1--9.6\% on cases published up to 2022 ($n{=}334$), 0.9--1.7\% on 2023--24 cases ($n{=}115$), and 3.9\% on 2025+ cases ($n{=}51$). Even the low absolute accuracy is therefore inflated by older, likely-memorized cases. \todo{m1 with an 8k token budget; Qwen3 pair; full 1,401-case set}.
+
+%=====================================================================
+\section{Training against the collapse}\label{sec:training}
+Can reinforcement learning raise diagnostic accuracy without narrowing the differential? We fine-tune Qwen3-1.7B with GRPO on DDXPlus training patients (9,800 cases, 200 per condition; disjoint from the test split) and evaluate exactly as in \S\ref{sec:setup}.
+
+\paragraph{Setup.}
+We train LoRA adapters ($r{=}32$) with GRPO for 200 steps. Each step uses 16 prompts and 16 sampled completions per prompt, generated with vLLM on the same GPU.
+A first sweep with a common aggressive configuration (learning rate $2{\times}10^{-5}$, no KL penalty, 8 samples per prompt, per-group reward standardization) was unstable. In three of seven runs, the policy collapsed to an input-independent answer: one condition for 88--100\% of all patients, with completions shrinking to about 25 tokens.
+The starting policy is nearly deterministic (token entropy ${\approx}0.06$), so most GRPO groups have zero reward variance, and noisy updates drive the collapse.
+We therefore use learning rate $5{\times}10^{-6}$, KL coefficient 0.04, no reward standardization (as in \citet{puri2026beyondmode}), and 16 samples per prompt. A monitor tracks the number of distinct top-1 answers per case within each batch. All runs in this configuration were stable.
+
+\paragraph{Rewards.}
+Every recipe includes a format reward: the answer must parse into a list of distinct conditions with valid probabilities.
+\texttt{acc} is standard RLVR: 1 if the top-1 answer is the true pathology.
+\texttt{dist} adds two per-sample distributional terms to \texttt{acc}: a Brier score of the stated distribution against the truth, and the overlap of the stated distribution with the reference differential.
+Both are computed from a \emph{single} completion. They cannot see that the policy gives the same answer in every sample, which is exactly the collapse of \S\ref{sec:collapse}.
+\texttt{gm} adds to \texttt{acc} a \emph{group-level} reward over the GRPO group of $n$ samples for a case. If sample $i$'s top-1 answer is $a$, and $k_a$ samples in the group give $a$,
+\begin{equation}
+r_i^{\mathrm{gm}} = \operatorname{clip}\!\big(n\,p_{\mathrm{ref}}(a) - (k_a - 1),\ 0,\ 1\big),
+\end{equation}
+where $p_{\mathrm{ref}}$ is the reference differential. This is sample $i$'s marginal contribution to $n\sum_c \min(q_c, p_{\mathrm{ref}}(c))$, the overlap between the group's empirical answer distribution $q$ and the reference. An answer earns credit while its condition is under-represented relative to its reference mass, and none once it is over-represented.
+In contrast to multi-answer rewards that score a set inside one completion~\citep{puri2026beyondmode}, \texttt{gm} acts on the distribution of \emph{sampled} answers, the quantity that collapses.
+Because the group reward fires only when a group contains dissenting samples, we also test a boosted variant, \texttt{gm}$^{+}$: \texttt{gm} weight 3 and training temperature 1.2.
+\todo{Puri et al.\ Multi-RLVR and Multi-RLCR baselines under the same settings (running).}
+
+\paragraph{Results.}
+Table~\ref{tab:training} reports means over two seeds. All recipes raise top-1 accuracy by 8--10 points.
+The per-sample recipes (\texttt{acc}, \texttt{dist}) slightly \emph{reduce} diversity relative to the starting model, the sharpening documented in \S\ref{sec:general}.
+The group reward removes this. \texttt{gm} matches the starting model's diversity, and \texttt{gm}$^{+}$ exceeds it while also being the most accurate recipe.
+Against \texttt{acc}, with paired bootstraps over cases averaged over seeds, \texttt{gm}$^{+}$ improves:
+\begin{itemize}
+\item pass@1 by $+1.6$ $[+1.0,+2.3]$ and pass@32 by $+1.7$ $[+1.0,+2.6]$ points;
+\item distinct answers by $+0.10$ $[+0.07,+0.13]$ and entropy by $+0.034$ $[+0.022,+0.047]$;
+\item coverage@32 by $+1.5$ $[+1.0,+2.1]$ points, and TV by $-0.014$ $[-0.019,-0.010]$.
+\end{itemize}
+Plain \texttt{gm} improves on \texttt{acc} in the same direction with smaller margins (e.g.\ pass@1 $+1.0$ $[+0.6,+1.6]$, entropy $+0.013$ $[+0.005,+0.021]$).
+Diversity increases monotonically with group-reward pressure, with no accuracy cost.
+The absolute effects are modest because the starting policy is already collapsed: there is little exploration for any reward to act on.
+None of the recipes changes rare-disease accuracy or confidence on Phenopacket Store, where a 1.7B model is at the floor.
+\todo{8B: GRPO from Qwen3-8B-Base, a diverse start, with \texttt{acc} vs.\ \texttt{gm}, compared with the official Qwen3-8B (running).}
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lcccccc}
+\toprule
+Recipe & pass@1 & pass@32 & Distinct & Entropy & Cov@32 & TV$\downarrow$ \\
+\midrule
+Qwen3-1.7B (untrained) & 0.378 & 0.435 & 1.41 & 0.151 & 0.162 & 0.850 \\
+\texttt{acc} & 0.458 & 0.499 & 1.36 & 0.142 & 0.181 & 0.829 \\
+\texttt{dist} & 0.458 & 0.502 & 1.34 & 0.131 & 0.181 & 0.829 \\
+\texttt{gm} & 0.469 & 0.510 & 1.40 & 0.155 & 0.186 & 0.825 \\
+\texttt{gm}$^{+}$ & \textbf{0.474} & \textbf{0.516} & \textbf{1.46} & \textbf{0.176} & \textbf{0.196} & \textbf{0.815} \\
+\bottomrule
+\end{tabular}
+\caption{GRPO on Qwen3-1.7B, evaluated on DDXPlus test (980 cases, 32 samples, $T{=}0.7$); means of two seeds. \texttt{gm}$^{+}$: group-reward weight 3, training temperature 1.2. Per-sample rewards slightly narrow the model; the group reward preserves, then widens, its differential while improving accuracy.}
+\label{tab:training}
+\end{table}
 
 %=====================================================================
 \section{Limitations}
-DDXPlus is synthetic: its reference differential is the posterior of a rule-based engine, and the true pathology is ranked first for only about 70\% of patients \todo{verify this figure in \citet{fansi2022ddxplus}}, so we treat TV and coverage as distance to a \emph{reference} posterior rather than to clinical truth.
+DDXPlus is synthetic: its reference differential is the posterior of a rule-based engine, and the simulated pathology is not always ranked first in it (it is for ``more than 70\%'' of patients~\citep[\S3.5]{fansi2022ddxplus}), so we treat TV and coverage as distance to a \emph{reference} posterior rather than to clinical truth.
 Base models fail to produce parsable answers more often. We count these as errors, which biases against base models and makes our gaps conservative.
 All models so far are Qwen-family 7--8B models evaluated with a single prompt format. \todo{Llama-3.1-8B family; prompt variants.}
 Phenopacket cases are drawn from published literature and may be in pretraining data, which we partly address with era splits.
