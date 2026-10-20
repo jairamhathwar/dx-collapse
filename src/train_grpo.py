@@ -88,6 +88,11 @@ def main():
     weights = [float(w) for w in a.weights.split(",")] if a.weights else [1.0] * len(funcs)
     assert len(weights) == len(funcs), f"need {len(funcs)} weights for {names}"
 
+    # Base models don't treat the chat end-of-turn token as EOS: stop vLLM rollouts there explicitly
+    # (no-op for instruct models, whose generation config already stops on it).
+    im_end = tok.convert_tokens_to_ids("<|im_end|>")
+    gen_kwargs = {"stop_token_ids": [im_end]} if isinstance(im_end, int) and im_end >= 0 else None
+
     per_device = a.num_generations * 2  # completions per micro-batch (2 prompts)
     accum = max(1, a.prompts_per_step * a.num_generations // per_device)
     gpu = not a.cpu_smoke
@@ -107,6 +112,7 @@ def main():
         scale_rewards=a.scale_rewards,
         reward_weights=weights,
         use_vllm=gpu,
+        generation_kwargs=gen_kwargs if gpu else None,
         vllm_mode="colocate",
         vllm_gpu_memory_utilization=a.vllm_mem,
         bf16=gpu,

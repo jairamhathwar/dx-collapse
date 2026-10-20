@@ -147,6 +147,30 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - The bottleneck is exploration rather than reward shape.
   - **Boosted variant gm3t12-s0**, queued on ckpt-all: weights format/acc/gm = 1/1/3, training sampling temperature 1.2, seed 0, other stable settings unchanged, chained evaluation.
 
+- **E7 v2 full results, DDXPlus (Qwen3-1.7B, 980 × 32, T=0.7; 2 seeds each; `src/compare_recipes.py` paired bootstrap).**
+  | Recipe | pass@1 | pass@32 | Distinct | Entropy | Cov@32 | TV |
+  |---|---|---|---|---|---|---|
+  | untrained | 0.378 | 0.435 | 1.41 | 0.151 | 0.162 | 0.850 |
+  | acc | 0.458 | 0.499 | 1.36 | 0.142 | 0.181 | 0.829 |
+  | dist | 0.458 | 0.502 | 1.34 | 0.131 | 0.181 | 0.829 |
+  | gm | 0.469 | 0.510 | 1.40 | 0.155 | 0.186 | 0.825 |
+  | **gm3t12** (gm weight 3, train T=1.2) | **0.474** | **0.516** | **1.46** | **0.176** | **0.196** | **0.815** |
+  - **gm vs acc:** pass@1 +1.0 (+0.6, +1.6), distinct +0.04, entropy +0.013, cov@32 +0.005, TV −0.004. All CIs exclude 0.
+  - **gm3t12 vs acc:** pass@1 +1.6 (+1.0, +2.3), pass@32 +1.7, distinct +0.10 (+0.07, +0.13), entropy +0.034 (+0.022, +0.047), cov@32 +0.015, TV −0.014. All CIs exclude 0.
+  - **gm3t12 vs gm:** diversity is higher (distinct +0.056, entropy +0.021, TV −0.010, all significant). pass@1 +0.6, not significant.
+  - **Reading:**
+    - Per-sample rewards (acc, dist) sharpen the model slightly.
+    - The group reward removes that sharpening; boosted, it *raises* diversity above the starting model while gaining about 9.6 pass@1.
+    - Diversity increases with group-reward pressure (dose-response), with no accuracy cost.
+    - Absolute effects are modest because the starting policy is already collapsed.
+  - **Phenopackets:** no change for any recipe. Accuracy is at the floor; confidence is 0.43–0.47 (untrained 0.45).
+- **E9: GRPO from Qwen3-8B-Base** (diverse start), launched 2026-10-20 on Tillicum: `b8-acc-s0` and `b8-gm-s0` (plain gm).
+  - Runtime about 320 s/step on an H200, so 200 steps take about 18 h (20 h limit, about $17 per run).
+  - Evaluated on full H200s.
+  - Comparison: base vs acc-RL vs gm-RL vs official Qwen3-8B.
+  - A first attempt failed: two jobs on one node clashed on MASTER_PORT 29500. Fixed with a per-job port in `slurm/tillicum/train.sbatch`.
+  - Qwen3-1.7B-Base was rejected as a starting point: its format validity was about 8%.
+
 ## Tillicum (UW H200 cluster; RCC student credit $250, expires 2027-04-19)
 - **Paths.** `/gpfs/projects/stf/jairamh/thesis` holds code, env, data and runs (persistent). `/gpfs/scrubbed/jairamh/thesis` holds caches. `~/.thesis_env` sets these.
 - **Environment** (`slurm/tillicum/build_env.sbatch`): torch 2.13 cu130, **vLLM 0.31.0 (pinned to match Klone)**, TRL 1.16. Needs `VLLM_WORKER_MULTIPROC_METHOD=spawn`, set in the Tillicum job scripts.
@@ -161,7 +185,8 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   | Date | Item | Cumulative |
   |---|---|---|
   | 2026-10-20 | env build attempts, vLLM smoke test, GRPO dry run | $0.11 |
-  | 2026-10-20 | launched gm3t12-s0 and gm3t12-s1 (est. about $1.3 each plus MIG eval) | |
+  | 2026-10-20 | gm3t12-s0/s1 training + evals; Klone-run evals on MIG/H200; 8B dry runs; first (failed/cancelled) 8B attempt | $4.54 |
+  | 2026-10-20 | launched b8-acc-s0, b8-gm-s0 (8B, 20 h limit; expected about $36–40 incl. eval) | |
 
 ## Pipeline fixes (affect all scores; old runs are re-scored from raw text)
 - The JSON parser takes the last valid array, recovers bare objects without brackets, and strips think blocks.

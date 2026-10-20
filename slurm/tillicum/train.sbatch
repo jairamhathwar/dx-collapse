@@ -16,6 +16,7 @@ conda activate "$THESIS/envs/thesis" || { echo "conda activate failed"; exit 1; 
 export CUDA_HOME=$CONDA_PREFIX/lib/python3.11/site-packages/nvidia/cu13
 export PATH=$CUDA_HOME/bin:$PATH
 export VLLM_WORKER_MULTIPROC_METHOD=spawn  # vLLM 0.3x forks after CUDA init otherwise
+export MASTER_PORT=$((20000 + SLURM_JOB_ID % 30000))  # unique per job: two jobs on one node otherwise clash on 29500
 set -euo pipefail
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 cd "$THESIS/code/src"
