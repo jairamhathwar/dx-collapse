@@ -142,6 +142,10 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - This is the sample's marginal contribution to n·Σ_c min(q_c, p_c), so it targets the *sampled* answer distribution: the open gap in the novelty check, distinct from Puri et al.'s within-output sets.
   - Unit-tested (collapsed group gets 0; a group matching the reference gets 1 each; over-represented answers get 0, under-represented ones 1). CPU smoke test passed with complete groups.
   - **Runs:** gm-s0 and gm-s1 (`acc,group_match`), queued 2026-10-19 with stable settings and chained evaluation.
+  - **Early curves for gm-s0 (step 73): the group reward is sparse.**
+    - Its mean is 0.00–0.07. The policy gives about 1 distinct top-1 answer per case across 16 samples (training entropy about 0.05), so the modal answer always exceeds its reference capacity and earns 0. Only rare dissenting samples earn credit.
+    - The bottleneck is exploration rather than reward shape.
+  - **Boosted variant gm3t12-s0**, queued on ckpt-all: weights format/acc/gm = 1/1/3, training sampling temperature 1.2, seed 0, other stable settings unchanged, chained evaluation.
 
 ## Pipeline fixes (affect all scores; old runs are re-scored from raw text)
 - The JSON parser takes the last valid array, recovers bare objects without brackets, and strips think blocks.

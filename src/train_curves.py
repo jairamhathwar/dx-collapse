@@ -10,12 +10,12 @@ import re
 from collections import Counter
 
 KEYS = [("fmt", "rewards/r_format/mean"), ("acc", "rewards/r_acc/mean"), ("brier", "rewards/r_brier/mean"),
-        ("overlap", "rewards/r_overlap/mean"), ("multi", "rewards/r_multi_rlvr/mean"),
+        ("overlap", "rewards/r_overlap/mean"), ("multi", "rewards/r_multi_rlvr/mean"), ("gm", "rewards/r_group_match/mean"),
         ("ent", "entropy"), ("len", "completions/mean_length"), ("zstd", "frac_reward_zero_std"),
-        ("gnorm", "grad_norm"), ("kl", "kl")]
+        ("gnorm", "grad_norm"), ("kl", "kl"), ("dist/case", "collapse/distinct_top1_per_case")]
 
 
-def curves(log, every=25):
+def curves(log, every=10):
     rows = [ast.literal_eval(m) for m in re.findall(r"\{'loss'[^{}]*\}", open(log).read())]
     print(f"== {log}  ({len(rows)} logged steps)")
     present = [(n, k) for n, k in KEYS if rows and k in rows[0]]
