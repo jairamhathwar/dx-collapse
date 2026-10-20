@@ -147,6 +147,22 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - The bottleneck is exploration rather than reward shape.
   - **Boosted variant gm3t12-s0**, queued on ckpt-all: weights format/acc/gm = 1/1/3, training sampling temperature 1.2, seed 0, other stable settings unchanged, chained evaluation.
 
+## Tillicum (UW H200 cluster; RCC student credit $250, expires 2027-04-19)
+- **Paths.** `/gpfs/projects/stf/jairamh/thesis` holds code, env, data and runs (persistent). `/gpfs/scrubbed/jairamh/thesis` holds caches. `~/.thesis_env` sets these.
+- **Environment** (`slurm/tillicum/build_env.sbatch`): torch 2.13 cu130, **vLLM 0.31.0 (pinned to match Klone)**, TRL 1.16. Needs `VLLM_WORKER_MULTIPROC_METHOD=spawn`, set in the Tillicum job scripts.
+- **Job scripts** (`slurm/tillicum/`):
+  - `train.sbatch`: full H200, 8 CPUs, 128 GB.
+  - `sample.sbatch`: MIG 1g.18gb slice, 2 CPUs per GPU maximum, about 1/7 the cost.
+  - `submit_train_eval.sh`: train, then DDXPlus and Phenopackets evaluation.
+  - Outputs go to `runs/eval_ddx/` and `runs/eval_go/`.
+- **QOS.** `debug` (1 h, usage factor 0) for builds and dry runs; `normal` for runs (1 day maximum).
+- **Speed.** GRPO on Qwen3-1.7B runs at about 25 s/step on an H200, against about 150 s/step on a Klone A40. A 200-step run takes about 85 min, roughly $1.30.
+- **Budget log** (from `hyakusage`):
+  | Date | Item | Cumulative |
+  |---|---|---|
+  | 2026-10-20 | env build attempts, vLLM smoke test, GRPO dry run | $0.11 |
+  | 2026-10-20 | launched gm3t12-s0 and gm3t12-s1 (est. about $1.3 each plus MIG eval) | |
+
 ## Pipeline fixes (affect all scores; old runs are re-scored from raw text)
 - The JSON parser takes the last valid array, recovers bare objects without brackets, and strips think blocks.
 - The name normalizer handles CamelCase, possessives and underscores.
