@@ -1,4 +1,18 @@
-# Session handover (written 2026-10-20 ~09:45 PDT)
+# Session handover (written 2026-10-20 ~09:45 PDT; updated ~16:30 PDT)
+
+## UPDATE 2026-10-20 ~16:30. Read this first; it supersedes sections 2 and 6 where they conflict.
+- **The group reward works on Qwen3-1.7B.** Full table in EXPERIMENTS.md, "E7 v2 full results".
+  - Plain `gm` removes the slight sharpening that `acc` and `dist` cause.
+  - Boosted `gm3t12` (gm weight 3, train T=1.2), against `acc`: pass@1 +1.6, distinct +0.10, entropy +0.034, cov@32 +1.5 points, TV −0.014. Two seeds; all CIs exclude 0.
+  - Diversity ends *above* the untrained model.
+  - All 1.7B Tillicum evaluations are copied to Klone `runs/e7v2_{ddx,go}/` and scored. Use `src/compare_recipes.py` for paired comparisons.
+- **In flight (Tillicum), E9: GRPO from Qwen3-8B-Base.**
+  - Training: `b8-acc-s0` (job 374700) and `b8-gm-s0` (job 374703), started about 15:45 with a 20 h limit, at about 320 s/step. Expected finish around 10:00 on 10-21.
+  - Evaluation runs automatically on full H200s: DDX jobs 374701 and 374704, Phenopacket jobs 374702 and 374705. Outputs go to `runs/eval_ddx/b8-*` and `runs/eval_go/b8-*`.
+  - **Next:** copy the outputs to Klone, `runs/e9_ddx/<tag>/`. Symlink the untrained `ddx_qwen3/qwen3-8b-base` and official `ddx_qwen3/qwen3-8b` samples there (T=0.7, same settings). Score with `BASE=qwen3-8b-base`, then compare with `compare_recipes.py`.
+  - If gm preserves the base model's breadth while acc collapses it, run seed 1 for both (about $34; the user approved option A).
+- **Budget:** $4.54 of $250 used as of 15:45. The E9 pair is expected to add about $36–40.
+- **Train script change:** `train.sbatch` (Tillicum) now sets a per-job `MASTER_PORT`. Two jobs on one node had clashed on port 29500.
 
 This note is for the next Claude Code session on Jairam's master's thesis. It is self-contained. Read it,
 then [PLAN.md](PLAN.md), [EXPERIMENTS.md](EXPERIMENTS.md) (full run log and findings) and [NOVELTY.md](NOVELTY.md).
