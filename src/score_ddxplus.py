@@ -97,6 +97,7 @@ def main():
         ent = -sum(v * math.log(v) for v in emp.values())
         graded.append({
             "case_id": rec["case_id"], "gold": gold, "n": len(top1),
+            "n_parsed": sum(t is not None for t in top1),
             "c_exact": sum(t == gold for t in top1),
             "c_related": sum(t in ddx for t in top1 if t),
             "list_hits": list_hits, "distinct": len(dist), "entropy": ent, "tv": tv,

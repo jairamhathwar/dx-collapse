@@ -37,6 +37,28 @@ DDX_INSTRUCTIONS = (
 )
 
 
+# Prompt-robustness variants (DDXPlus only). "default" is the prompt used for all main results.
+DDX_PLAIN_INSTRUCTIONS = (
+    "Which of the following conditions could explain this patient's presentation?\n{conditions}\n\n"
+    "Rank the {n} most likely ones, most likely first, and give the probability you assign to each. "
+    "Copy the condition names exactly.\n"
+    "Finish with a JSON array in exactly this format:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
+)
+DDX_COT_PREFIX = ("First reason step by step about the patient's findings and which conditions they support "
+                  "or argue against. Then give your answer.\n")
+
+
+def build_ddx_messages(case, n_dx, conditions, variant="default"):
+    cond = "\n".join(f"- {c}" for c in conditions)
+    if variant == "plain":
+        return [{"role": "user", "content": case["vignette"] + "\n\n" + DDX_PLAIN_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
+    body = DDX_INSTRUCTIONS.format(conditions=cond, n=n_dx)
+    if variant == "cot":
+        body = DDX_COT_PREFIX + body
+    return [{"role": "system", "content": DDX_SYSTEM}, {"role": "user", "content": case["vignette"] + "\n\n" + body}]
+
+
 def build_ddx_prompt(case, n_dx, conditions):
     return case["vignette"] + "\n\n" + DDX_INSTRUCTIONS.format(
         conditions="\n".join(f"- {c}" for c in conditions), n=n_dx)
@@ -75,6 +97,8 @@ def main():
     ap.add_argument("--enforce-eager", action="store_true", help="skip torch.compile/CUDA graphs")
     ap.add_argument("--task", choices=["phenopacket", "ddxplus"], default="phenopacket")
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot"], default="default",
+                    help="ddxplus prompt-robustness variant")
     a = ap.parse_args()
     conditions = json.load(open(a.conditions)) if a.task == "ddxplus" else None
     # Slurm job arrays: shard = array index, and --out may contain "{shard}"
@@ -111,8 +135,7 @@ def main():
     for b in range(0, len(todo), a.batch_cases):
         batch = todo[b:b + a.batch_cases]
         if a.task == "ddxplus":
-            msgs = [[{"role": "system", "content": DDX_SYSTEM},
-                     {"role": "user", "content": build_ddx_prompt(c, a.n_dx, conditions)}] for c in batch]
+            msgs = [build_ddx_messages(c, a.n_dx, conditions, a.prompt_variant) for c in batch]
         else:
             msgs = [[{"role": "system", "content": SYSTEM},
                      {"role": "user", "content": build_prompt(c, a.n_dx, random.Random(c["case_id"]))}]

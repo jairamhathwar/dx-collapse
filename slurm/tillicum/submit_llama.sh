@@ -3,6 +3,7 @@
 # Same prompts, sampling and token budgets as submit_measurement.sh. Outputs under runs/meas_*/<tag>/.
 #   bash slurm/tillicum/submit_llama.sh descendants   # ungated medical descendants (run now)
 #   bash slurm/tillicum/submit_llama.sh pair          # Llama-3.1-8B base + Instruct (needs Meta gate approval)
+#   bash slurm/tillicum/submit_llama.sh prompts       # prompt-robustness variants on the Qwen3-8B pair
 set -euo pipefail
 source ~/.thesis_env
 cd "$THESIS"
@@ -35,5 +36,13 @@ case "${1:-}" in
       run meas_ddx_t1 $tag $model $DDX $STD $T1
       run meas_go $tag $model $PHENO $STD
     done ;;
-  *) echo "usage: $0 descendants|pair"; exit 1 ;;
+  prompts)
+    for v in plain cot; do
+      for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B; do
+        tag=${spec%%:*}; model=${spec#*:}
+        run pv_${v}_t07 $tag $model $DDX $STD --prompt-variant $v
+        run pv_${v}_t1 $tag $model $DDX $STD $T1 --prompt-variant $v
+      done
+    done ;;
+  *) echo "usage: $0 descendants|pair|prompts"; exit 1 ;;
 esac

@@ -205,6 +205,21 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - gm3t12 vs Multi-RLVR: pass@1 +8.9 (+7.4, +10.5), distinct +0.07 (+0.03, +0.11), cov@32 +3.0 (+2.3, +3.8). Multi-RLCR is similar.
   - **Pitfall:** `sbatch --export=ALL,SPEC=a,b` splits on commas, so the first scoring pass only scored the first tag in each list. Tags are now joined with `+`.
   - Tillicum spend after these runs: $40.79 / $250.
+- **Prompt robustness and output format (2026-10-21).** Ran on Tillicum with `submit_llama.sh prompts` ($3.89). The flag is `--prompt-variant plain|cot` in `sample_diagnoses.py`; the default prompt is unchanged. Scored in `runs/pv_{plain,cot}_{t07,t1}`.
+  | Prompt | T | Δpass@1 | Δpass@32 | Distinct base / post |
+  |---|---|---|---|---|
+  | default | 0.7 | +17.0 | −12.2 | 3.76 / 1.27 |
+  | default | 1.0 | +27.5 | −14.6 | 6.60 / 1.53 |
+  | plain | 0.7 | +23.0 | −7.1 (−9.3, −5.0) | 3.72 / 1.28 |
+  | plain | 1.0 | +34.2 | −8.7 (−11.0, −6.4) | 5.57 / 1.54 |
+  | cot | 0.7 | +24.2 | **+4.7** (+2.9, +6.6) | 3.89 / 2.08 |
+  | cot | 1.0 | +36.7 | 0.0 (−2.1, +1.9) | 6.31 / 2.24 |
+  - **CoT finding:** with reasoning, the instruct model recovers pass@32 (0.607 to 0.835), but diversity stays low. The paper now says the collapse is largest for direct answers.
+  - **Format:** invalid rates (unparsable or off-list top-1). Qwen3-8B-Base: 11.6% (T=0.7) and 24.6% (T=1). Qwen2.5 base: 1.3% and 21.0%. Post-trained: ≤0.27%. `score_ddxplus.py` now writes `n_parsed`.
+  - `src/format_robust.py`: Δpass@1 among valid samples only is +12.0 / +18.7 (Qwen3 T=0.7 / T=1) and +12.2 / +16.8 (Qwen2.5).
+    - Cases where all samples of both models are valid: Qwen3 T=0.7, 105 cases, Δpass@32 −15.2 (−21.9, −8.6). Qwen2.5 T=0.7, 748 cases, −10.2 (−12.7, −7.6).
+    - At T=1 almost no case has 32 valid base samples.
+  - **Parser fix:** deeply nested brackets in one base sample caused a RecursionError and crashed shard 0 of `pv_plain_t1` base. `parsing.py` now catches it, and the shard was rerun.
 - **Second family and medical RL from base (Tillicum 2026-10-21, `slurm/tillicum/submit_llama.sh descendants`, $2.63; scored on Klone in `runs/{ddx,go}_{base_rl,llama}`).**
   - **AlphaMed-7B-base-rl** (AlphaMed RL applied directly to Qwen2.5-7B base), DDXPlus T=0.7:
     | Model | pass@1 | pass@32 | Distinct | Entropy | Cov@32 | ECE |

@@ -111,7 +111,7 @@ Qwen3-8B & Qwen3-8B-Base & general post-training & instruct \\
 \paragraph{Sampling.}
 We draw $n{=}32$ samples per case with vLLM, at $T{=}0.7$, top-$p$ 0.95, and at $T{=}1.0$, top-$p$ 1.0 (sampling from the model's own distribution). All models use their chat template and the same prompt.
 Completions are capped at 4,096 tokens (8,192 for m1, whose long reasoning otherwise truncates), and generation stops at the end-of-turn token.
-We take the last valid JSON list in each completion. Unparsable completions count as incorrect; this affects mainly base models (11--19\%), so base-model pass@$k$ is a lower bound.
+We take the last valid JSON list in each completion. Unparsable completions count as incorrect; this affects mainly base models, so base-model pass@$k$ is a lower bound at large $k$, while post-trained gains at small $k$ are partly format. \S\ref{sec:robust} reports format-controlled comparisons.
 
 \paragraph{Metrics.}
 \emph{pass@$k$}: the unbiased estimator of \citet{chen2021codex} on the top-1 answer of each sample.
@@ -221,6 +221,37 @@ Base $\rightarrow$ \texttt{gm} GRPO (8B), $T{=}0.7$ & 0.34 $\rightarrow$ 0.32 & 
 \caption{Change in Considered@32 per condition, Qwen2.5-7B-Instruct minus its base model ($T{=}1$, 980 cases), colored by DDXPlus severity (dark red = most severe). Conditions with fewer than five cases giving them reference probability $\geq 0.1$ are omitted. Angina, acute pulmonary edema, anaphylaxis and myocarditis are among the largest drops.}
 \label{fig:percond}
 \end{figure}
+
+\subsection{Robustness to prompt and output format}\label{sec:robust}
+\paragraph{Prompt.} We repeat the Qwen3-8B pair with two other prompts (Table~\ref{tab:prompts}). \emph{Plain} drops the system prompt and rewords the instructions. \emph{CoT} asks the model to reason step by step before answering; Qwen3's thinking mode stays off in all runs.
+The plain prompt reproduces the pattern: the post-trained model gains $+23.0$ $[+20.9,+25.1]$ points at $k{=}1$ and loses $-7.1$ $[-9.3,-5.0]$ at $k{=}32$ ($T{=}0.7$; at $T{=}1$, $+34.2$ and $-8.7$ $[-11.0,-6.4]$), with 1.3--1.5 distinct answers against 3.7--5.6.
+Asking for reasoning changes the picture. With CoT, the post-trained model's $\passk{32}$ rises from 0.607 to 0.835: it leads the base model at every $k$ at $T{=}0.7$ ($+4.7$ $[+2.9,+6.6]$ at $k{=}32$) and ties it at $T{=}1$ ($0.0$ $[-2.1,+1.9]$).
+Its samples remain far less diverse than the base model's (2.1--2.2 vs.\ 3.9--6.3 distinct answers), so reasoning recovers coverage at $k{=}32$ without restoring sampling diversity.
+The coverage loss is therefore largest when the model answers directly, as in most clinical decision-support deployments, and reasoning at inference time mitigates it. This matches the medical models: the reasoning-trained descendants widen the differential (\S\ref{sec:medical}).
+
+\paragraph{Output format.} Base models more often give invalid answers: unparsable, or with a top answer outside the 49 conditions. This affects 12\% of Qwen3-8B-Base samples at $T{=}0.7$ and 25\% at $T{=}1$ (Qwen2.5-7B: 1\% and 21\%), against at most 0.3\% for the post-trained models.
+Invalid samples count as wrong, which deflates the base model at large $k$ but inflates the post-trained model's gain at small $k$.
+Among valid samples only, the post-trained models still gain $+12.0$ $[+9.8,+14.1]$ (Qwen3, $T{=}0.7$), $+18.7$ $[+16.6,+20.7]$ (Qwen3, $T{=}1$), $+12.2$ $[+10.4,+14.0]$ and $+16.8$ $[+15.0,+18.5]$ points (Qwen2.5) at $k{=}1$, so a quarter to a third of the raw gain at $T{=}1$ is format.
+On the cases where every sample of both models is valid, the large-$k$ loss persists: $-15.2$ $[-21.9,-8.6]$ at $k{=}32$ for Qwen3 (105 cases) and $-10.2$ $[-12.7,-7.6]$ for Qwen2.5 (748 cases), both at $T{=}0.7$. (At $T{=}1$ almost no case has 32 valid base samples.) The reported large-$k$ losses are thus lower bounds.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{llcccccc}
+\toprule
+ & & \multicolumn{2}{c}{pass@1} & \multicolumn{2}{c}{pass@32} & \multicolumn{2}{c}{Distinct} \\
+Prompt & $T$ & Base & Post & Base & Post & Base & Post \\
+\midrule
+default & 0.7 & 0.388 & \textbf{0.559} & \textbf{0.730} & 0.607 & 3.76 & 1.27 \\
+default & 1.0 & 0.282 & \textbf{0.556} & \textbf{0.789} & 0.643 & 6.60 & 1.53 \\
+plain & 0.7 & 0.352 & \textbf{0.583} & \textbf{0.727} & 0.655 & 3.72 & 1.28 \\
+plain & 1.0 & 0.244 & \textbf{0.586} & \textbf{0.792} & 0.705 & 5.57 & 1.54 \\
+CoT & 0.7 & 0.409 & \textbf{0.652} & 0.788 & \textbf{0.835} & 3.89 & 2.08 \\
+CoT & 1.0 & 0.275 & \textbf{0.642} & 0.837 & 0.837 & 6.31 & 2.24 \\
+\bottomrule
+\end{tabular}
+\caption{Qwen3-8B-Base vs.\ Qwen3-8B on DDXPlus (980 cases, 32 samples) under three prompts. Bold marks the significantly better model (paired case bootstrap). Without reasoning, the base model wins at $k{=}32$; with CoT, the post-trained model matches or beats it, but its samples stay far less diverse.}
+\label{tab:prompts}
+\end{table}
 
 \subsection{Medical post-training}\label{sec:medical}
 Applied after instruction tuning, medical RL does not cost coverage. AlphaMed improves on its parent at every $k$ (Figure~\ref{fig:alphamed}): +3.9 points at $k{=}1$ ($[+2.2,+5.5]$), widening to +8.4 at $k{=}32$ ($[+6.0,+10.6]$). It reaches at least one correct sample for 47 of 49 conditions, against 39 for its parent.
@@ -366,8 +397,8 @@ Qwen3-1.7B (untrained) & 0.378 & 0.435 & 1.41 & 0.151 & 0.162 & 0.850 \\
 %=====================================================================
 \section{Limitations}
 DDXPlus is synthetic: its reference differential is the posterior of a rule-based engine, and the simulated pathology is not always ranked first in it (it is for ``more than 70\%'' of patients~\citep[\S3.5]{fansi2022ddxplus}), so we treat TV and coverage as distance to a \emph{reference} posterior rather than to clinical truth.
-Base models fail to produce parsable answers more often. We count these as errors, which biases against base models and makes our gaps conservative.
-All models so far are Qwen-family 7--8B models evaluated with a single prompt format. \todo{Llama-3.1-8B family; prompt variants.}
+Base models more often give invalid answers. We count these as errors, which makes the large-$k$ losses conservative but inflates post-trained gains at small $k$; conditioning on valid samples removes a quarter to a third of the $T{=}1$ pass@1 gain (\S\ref{sec:robust}).
+The base/instruct pairs are Qwen-family 7--8B models; prompt robustness is tested on one pair, and the collapse at large $k$ largely disappears when the model is asked to reason first (\S\ref{sec:robust}). \todo{Llama-3.1-8B base/instruct pair (pending access); Llama medical descendants are run.}
 Phenopacket cases are drawn from published literature and may be in pretraining data, which we partly address with era splits.
 We do not evaluate clinical utility with clinicians.
 

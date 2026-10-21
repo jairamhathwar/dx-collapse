@@ -25,7 +25,7 @@ def _bare_objects(text):
             continue
         try:
             obj, stop = _DECODER.raw_decode(text, m.start())
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
             continue
         if not (isinstance(obj, dict) and "diagnosis" in obj):
             continue
@@ -50,7 +50,7 @@ def parse_dx(text):
     for i in reversed([m.start() for m in re.finditer(r"\[", text)]):
         try:
             arr, _ = _DECODER.raw_decode(text, i)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
             continue
         if isinstance(arr, list) and (out := _clean(arr)):
             return out
