@@ -171,6 +171,33 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - A first attempt failed: two jobs on one node clashed on MASTER_PORT 29500. Fixed with a per-job port in `slurm/tillicum/train.sbatch`.
   - Qwen3-1.7B-Base was rejected as a starting point: its format validity was about 8%.
 
+- **E9 results: GRPO from Qwen3-8B-Base (DDXPlus, 980 × 32, T=0.7, seed 0; scored on Klone `runs/e9_ddx`).**
+  | Model | pass@1 | pass@32 | Distinct | Entropy | Cov@32 | TV |
+  |---|---|---|---|---|---|---|
+  | Qwen3-8B-Base (start) | 0.389 | 0.732 | 3.77 | 0.78 | 0.323 | 0.749 |
+  | b8-acc-s0 | 0.536 | 0.757 | 2.72 | 0.52 | 0.296 | 0.750 |
+  | b8-gm-s0 | 0.538 | 0.770 | 2.87 | 0.56 | 0.308 | 0.741 |
+  | Qwen3-8B (official) | 0.558 | 0.607 | 1.27 | 0.11 | 0.217 | 0.793 |
+  - **Both RL runs vs official Qwen3-8B:** pass@1 −2.1 / −2.3 (CIs about −4 to −0.1), pass@32 +16.3 (+14.0, +18.8) for gm and +15.0 for acc, distinct +1.5 to +1.6.
+  - **gm vs acc:** pass@1 +0.2 (not significant), pass@32 +1.3 (+0.4, +2.2), distinct +0.14 (+0.10, +0.19), entropy +0.041 (+0.033, +0.049), cov@32 +1.3 (+0.8, +1.8), TV −0.009.
+  - Both runs narrow the base model (distinct 2.7–2.9 vs 3.8); gm narrows it less.
+  - Training took about 5.5 h per run on an H200, about 100 s/step after warm-up.
+- **Measurement runs completed on Tillicum (2026-10-20), scored on Klone.**
+  - **Medical family on DDXPlus** (T=0.7, against Qwen2.5-7B-Instruct at 0.478 / 0.598, 1.82 distinct):
+    | Model | pass@1 | pass@32 | Distinct | ECE |
+    |---|---|---|---|---|
+    | AlphaMed | 0.516 | 0.682 | 1.87 | 0.12 |
+    | HuatuoGPT-o1 | 0.536 (+5.8) | 0.735 (+13.7) | 2.49 | 0.17 |
+    | m1 (8k tokens) | 0.486 (+0.9, n.s.) | 0.779 (+18.1) | 3.29 | 0.21 |
+
+    The reasoning-trained models widen the differential.
+  - **Full Qwen2.5-7B base vs Instruct pair** (980 cases):
+    - T=0.7: Instruct +12.6 at k=1, base +9.7 at k=32.
+    - T=1.0: Instruct +22.5 at k=1, base +10.3 at k=32.
+  - **AlphaMed at T=1.0:** better than its parent at every k (+5.0 to +5.7).
+  - **Phenopacket scoring** for e9_go, go (m1 at 8k), go_qwen3 and pheno25 did not finish. The Klone Slurm controller was down on the night of 2026-10-20; resubmit when it is back.
+- **Publication-era check (Phenopackets, Qwen2.5 family):** pass@32 is 8.1–9.6% for cases published ≤2022, 0.9–1.7% for 2023–24 and 3.9% for 2025+, which points to memorization (`src/era_table.py`).
+
 ## Tillicum (UW H200 cluster; RCC student credit $250, expires 2027-04-19)
 - **Paths.** `/gpfs/projects/stf/jairamh/thesis` holds code, env, data and runs (persistent). `/gpfs/scrubbed/jairamh/thesis` holds caches. `~/.thesis_env` sets these.
 - **Environment** (`slurm/tillicum/build_env.sbatch`): torch 2.13 cu130, **vLLM 0.31.0 (pinned to match Klone)**, TRL 1.16. Needs `VLLM_WORKER_MULTIPROC_METHOD=spawn`, set in the Tillicum job scripts.

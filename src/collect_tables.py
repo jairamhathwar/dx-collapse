@@ -13,8 +13,12 @@ COMPARISONS = [
     # label, dir, dataset, models (first = reference)
     ("qwen3_t07", "pair_q3", "ddx", ["qwen3-8b-base", "qwen3-8b"]),
     ("qwen3_t10", "ddx_qwen3_t1", "ddx", ["qwen3-8b-base", "qwen3-8b"]),
-    ("qwen25_t10", "peek_t1_25", "ddx", ["qwen25-7b-base", "qwen25-7b-it"]),
-    ("qwen25_med_t07", "ddx_peek", "ddx", ["qwen25-7b-it", "alphamed-7b"]),
+    ("qwen25_t07", "pair25_t07", "ddx", ["qwen25-7b-base", "qwen25-7b-it"]),
+    ("qwen25_t10", "pair25_t1", "ddx", ["qwen25-7b-base", "qwen25-7b-it"]),
+    ("qwen25_med_t07", "ddx", "ddx", ["qwen25-7b-it", "alphamed-7b", "huatuo-o1-7b", "m1-7b"]),
+    ("qwen25_med_t10", "ddx_t1", "ddx", ["qwen25-7b-it", "alphamed-7b"]),
+    ("grpo_1p7b", "e7v2_ddx", "ddx", ["qwen3-1.7b", "acc-s0", "acc-s1", "dist-s0", "dist-s1", "gm-s0", "gm-s1", "gm3t12-s0", "gm3t12-s1"]),
+    ("grpo_8b", "e9_ddx", "ddx", ["qwen3-8b-base", "b8-acc-s0", "b8-gm-s0", "qwen3-8b"]),
     ("pheno_qwen25", "go", "go", ["qwen25-7b-it", "alphamed-7b", "huatuo-o1-7b", "m1-7b"]),
 ]
 

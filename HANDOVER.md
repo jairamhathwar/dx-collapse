@@ -1,5 +1,18 @@
 # Session handover (written 2026-10-20 ~09:45 PDT; updated ~16:30 PDT)
 
+## UPDATE 2026-10-20 ~23:20. Newest; read first.
+- **E9 done (GRPO from Qwen3-8B-Base, seed 0).**
+  - Both acc and gm reach pass@1 of about 0.54, against 0.558 for the official Qwen3-8B. They keep 2.7–2.9 distinct answers (official 1.27) and beat it by 15–16 points at pass@32.
+  - gm narrows less than acc at equal accuracy: distinct +0.14, entropy +0.041, cov@32 +1.3, pass@32 +1.3; all CIs exclude 0.
+  - Details are in EXPERIMENTS.md; paper Table `tab:training8b`.
+  - Next: seed 1 for b8-acc and b8-gm (about $34, approved). Use `CONFIGS="b8-acc-s1|acc|1|||Qwen/Qwen3-8B-Base b8-gm-s1|acc,group_match|1|||Qwen/Qwen3-8B-Base" EVAL_PART=gpu-h200 TRAIN_TIME=20:00:00 bash slurm/tillicum/submit_train_eval.sh`.
+- **All measurement runs are complete and scored on DDXPlus.** Medical family (HuatuoGPT and m1 widen the differential), full Qwen2.5 pair, AlphaMed at T=1. The paper is updated (`tab:medical`, Table 1).
+- **Phenopacket scoring is still to do.** The Klone Slurm controller went down about 23:00 on 10-20. When it is back, resubmit:
+  `for spec in e9_go:qwen3-8b-base go:qwen25-7b-it go_qwen3:qwen3-8b-base pheno25:qwen25-7b-base; ... sbatch -A stf -p ckpt-all -c 4 --mem=32G --time=06:00:00 --export=ALL,RUNS=$R/$d,BASE=$b --wrap "bash $THESIS/code/slurm/score_go.sh"`
+  The sample files are already in place on Klone.
+- **Puri baseline evaluations** (Tillicum, on MIG) are still queued. The models are trained. Outputs go to `runs/eval_{ddx,go}/puri-*`; copy them to Klone `runs/e7v2_{ddx,go}/` and score.
+- **Budget: $29.89 of $250.**
+
 ## UPDATE 2026-10-20 ~16:30. Read this first; it supersedes sections 2 and 6 where they conflict.
 - **The group reward works on Qwen3-1.7B.** Full table in EXPERIMENTS.md, "E7 v2 full results".
   - Plain `gm` removes the slight sharpening that `acc` and `dist` cause.
