@@ -274,7 +274,7 @@ r_i^{\mathrm{gm}} = \operatorname{clip}\!\big(n\,p_{\mathrm{ref}}(a) - (k_a - 1)
 where $p_{\mathrm{ref}}$ is the reference differential. This is sample $i$'s marginal contribution to $n\sum_c \min(q_c, p_{\mathrm{ref}}(c))$, the overlap between the group's empirical answer distribution $q$ and the reference. An answer earns credit while its condition is under-represented relative to its reference mass, and none once it is over-represented.
 In contrast to multi-answer rewards that score a set inside one completion~\citep{puri2026beyondmode}, \texttt{gm} acts on the distribution of \emph{sampled} answers, the quantity that collapses.
 Because the group reward fires only when a group contains dissenting samples, we also test a boosted variant, \texttt{gm}$^{+}$: \texttt{gm} weight 3 and training temperature 1.2.
-\todo{Puri et al.\ Multi-RLVR and Multi-RLCR baselines under the same settings (running).}
+As baselines we adapt the multi-answer rewards of \citet{puri2026beyondmode} to our prompt. \textsc{Multi-RLVR} scores the share of listed conditions that belong to the reference differential, treated as a set of acceptable answers; \textsc{Multi-RLCR} adds their set-level Brier term on the per-answer probabilities. Both zero the reward for duplicate or invalid answers, as in the original, and use the same format reward, optimizer and settings as our recipes.
 
 \paragraph{Results.}
 Table~\ref{tab:training} reports means over two seeds. All recipes raise top-1 accuracy by 8--10 points.
@@ -288,13 +288,16 @@ Against \texttt{acc}, with paired bootstraps over cases averaged over seeds, \te
 \end{itemize}
 Plain \texttt{gm} improves on \texttt{acc} in the same direction with smaller margins (e.g.\ pass@1 $+1.0$ $[+0.6,+1.6]$, entropy $+0.013$ $[+0.005,+0.021]$).
 Diversity increases monotonically with group-reward pressure, with no accuracy cost.
+The set-membership baselines of \citet{puri2026beyondmode} train stably (their reward rises from 0.27--0.31 to 0.32--0.35) but barely change sampled behavior. pass@1 rises by under 1 point over the untrained model, and diversity is unchanged. Against them, \texttt{gm}$^{+}$ is better on every metric, by $+8.9$ $[+7.4,+10.5]$ points at pass@1, $+0.07$ $[+0.03,+0.11]$ distinct answers and $+3.0$ $[+2.3,+3.8]$ points of coverage@32 (vs.\ \textsc{Multi-RLVR}; \textsc{Multi-RLCR} is similar).
+What they do improve is the differential written \emph{inside} one completion: the reference mass covered by a single listed differential rises to 0.317 (\textsc{Multi-RLVR}), against 0.300 for \texttt{acc} and 0.309 for \texttt{gm}$^{+}$.
+The two objectives are complementary: a set reward shapes the list a model writes, while the group reward shapes which answer it commits to across samples, which is what collapses under post-training.
 The absolute effects are modest because the starting policy is already collapsed: there is little exploration for any reward to act on.
 None of the recipes changes rare-disease accuracy or confidence on Phenopacket Store, where a 1.7B model is at the floor; the same holds at 8B (\S\ref{sec:rare}).
 \paragraph{Starting from a diverse base model.}
-The 1.7B experiment starts from an already collapsed instruct model. We therefore repeat the comparison from Qwen3-8B-Base, the diverse base model of \S\ref{sec:general}, with the same recipe and \texttt{acc} vs.\ \texttt{gm}. We compare against Qwen's own post-trained Qwen3-8B (Table~\ref{tab:training8b}; one seed \todo{second seed}).
-Both RL runs reach nearly the official model's top-1 accuracy (0.536 and 0.538 vs.\ 0.558, a gap of about 2 points). They keep more than twice its diversity (2.7--2.9 vs.\ 1.27 distinct answers) and beat it by 15--16 points at pass@32 (\texttt{gm}: $+16.3$ $[+14.0,+18.8]$).
+The 1.7B experiment starts from an already collapsed instruct model. We therefore repeat the comparison from Qwen3-8B-Base, the diverse base model of \S\ref{sec:general}, with the same recipe and \texttt{acc} vs.\ \texttt{gm}. We compare against Qwen's own post-trained Qwen3-8B (Table~\ref{tab:training8b}; means of two seeds).
+Both RL recipes reach nearly the official model's top-1 accuracy (0.537 and 0.539 vs.\ 0.558; \texttt{gm}: $-1.9$ $[-3.9,+0.1]$ points). They keep more than twice its diversity (2.7--2.9 vs.\ 1.27 distinct answers) and beat it by 15--16 points at pass@32 (\texttt{gm}: $+16.3$ $[+14.0,+18.8]$).
 The collapse produced by general post-training is therefore not the price of its top-1 accuracy.
-Both runs still narrow the base model somewhat, and the group reward narrows it less. At equal pass@1 ($+0.2$, n.s.), \texttt{gm} beats \texttt{acc} on distinct answers $+0.14$ $[+0.10,+0.19]$, entropy $+0.041$ $[+0.033,+0.049]$, coverage@32 $+1.3$ $[+0.8,+1.8]$ points, and pass@32 $+1.3$ $[+0.4,+2.2]$.
+Both runs still narrow the base model somewhat, and the group reward narrows it less. At equal pass@1 ($+0.2$, n.s.), \texttt{gm} beats \texttt{acc} on distinct answers $+0.14$ $[+0.11,+0.17]$, entropy $+0.035$ $[+0.029,+0.041]$, coverage@32 $+1.1$ $[+0.8,+1.5]$ points, and pass@32 $+1.2$ $[+0.5,+1.9]$. Each seed reproduces the ordering.
 
 \begin{table}[t]
 \centering\small
@@ -303,12 +306,12 @@ Both runs still narrow the base model somewhat, and the group reward narrows it 
 Model & pass@1 & pass@32 & Distinct & Entropy & Cov@32 & TV$\downarrow$ \\
 \midrule
 Qwen3-8B-Base (start) & 0.389 & 0.732 & \textbf{3.77} & \textbf{0.78} & \textbf{0.323} & 0.749 \\
-\quad + \texttt{acc} GRPO (ours) & 0.536 & 0.757 & 2.72 & 0.52 & 0.296 & 0.750 \\
-\quad + \texttt{gm} GRPO (ours) & 0.538 & \textbf{0.770} & 2.87 & 0.56 & 0.308 & \textbf{0.741} \\
+\quad + \texttt{acc} GRPO (ours) & 0.537 & 0.759 & 2.72 & 0.52 & 0.297 & 0.750 \\
+\quad + \texttt{gm} GRPO (ours) & 0.539 & \textbf{0.770} & 2.86 & 0.56 & 0.308 & \textbf{0.742} \\
 Qwen3-8B (official post-training) & \textbf{0.558} & 0.607 & 1.27 & 0.11 & 0.217 & 0.793 \\
 \bottomrule
 \end{tabular}
-\caption{GRPO from Qwen3-8B-Base vs.\ the official post-trained Qwen3-8B on DDXPlus (980 cases, 32 samples, $T{=}0.7$). Our RL nearly matches the official model's top-1 accuracy while keeping more than twice its diversity; the group reward preserves more than \texttt{acc}.}
+\caption{GRPO from Qwen3-8B-Base vs.\ the official post-trained Qwen3-8B on DDXPlus (980 cases, 32 samples, $T{=}0.7$); GRPO rows are means of two seeds. Our RL nearly matches the official model's top-1 accuracy while keeping more than twice its diversity; the group reward preserves more than \texttt{acc}.}
 \label{tab:training8b}
 \end{table}
 
@@ -321,11 +324,13 @@ Recipe & pass@1 & pass@32 & Distinct & Entropy & Cov@32 & TV$\downarrow$ \\
 Qwen3-1.7B (untrained) & 0.378 & 0.435 & 1.41 & 0.151 & 0.162 & 0.850 \\
 \texttt{acc} & 0.458 & 0.499 & 1.36 & 0.142 & 0.181 & 0.829 \\
 \texttt{dist} & 0.458 & 0.502 & 1.34 & 0.131 & 0.181 & 0.829 \\
+\textsc{Multi-RLVR}~\citep{puri2026beyondmode} & 0.385 & 0.443 & 1.39 & 0.153 & 0.166 & 0.845 \\
+\textsc{Multi-RLCR}~\citep{puri2026beyondmode} & 0.383 & 0.441 & 1.39 & 0.150 & 0.165 & 0.847 \\
 \texttt{gm} & 0.469 & 0.510 & 1.40 & 0.155 & 0.186 & 0.825 \\
 \texttt{gm}$^{+}$ & \textbf{0.474} & \textbf{0.516} & \textbf{1.46} & \textbf{0.176} & \textbf{0.196} & \textbf{0.815} \\
 \bottomrule
 \end{tabular}
-\caption{GRPO on Qwen3-1.7B, evaluated on DDXPlus test (980 cases, 32 samples, $T{=}0.7$); means of two seeds. \texttt{gm}$^{+}$: group-reward weight 3, training temperature 1.2. Per-sample rewards slightly narrow the model; the group reward preserves, then widens, its differential while improving accuracy.}
+\caption{GRPO on Qwen3-1.7B, evaluated on DDXPlus test (980 cases, 32 samples, $T{=}0.7$); means of two seeds. \texttt{gm}$^{+}$: group-reward weight 3, training temperature 1.2. Per-sample rewards slightly narrow the model; set-membership rewards barely move it; the group reward preserves, then widens, its differential while improving accuracy.}
 \label{tab:training}
 \end{table}
 

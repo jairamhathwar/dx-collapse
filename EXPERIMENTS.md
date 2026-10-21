@@ -182,6 +182,29 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - **gm vs acc:** pass@1 +0.2 (not significant), pass@32 +1.3 (+0.4, +2.2), distinct +0.14 (+0.10, +0.19), entropy +0.041 (+0.033, +0.049), cov@32 +1.3 (+0.8, +1.8), TV −0.009.
   - Both runs narrow the base model (distinct 2.7–2.9 vs 3.8); gm narrows it less.
   - Training took about 5.5 h per run on an H200, about 100 s/step after warm-up.
+- **E9 seed 1 and Puri baselines (finished on Tillicum overnight 2026-10-20/21; scored on Klone 2026-10-21 with `slurm/score_new.sbatch`, compared with `slurm/compare_seed1.sh`).**
+  - **8B, per seed (DDXPlus):**
+    | Run | pass@1 | pass@32 | Distinct | Entropy | Cov@32 | TV |
+    |---|---|---|---|---|---|---|
+    | b8-acc-s0 | 0.536 | 0.757 | 2.72 | 0.52 | 0.296 | 0.750 |
+    | b8-acc-s1 | 0.538 | 0.760 | 2.71 | 0.52 | 0.298 | 0.749 |
+    | b8-gm-s0 | 0.538 | 0.770 | 2.87 | 0.56 | 0.308 | 0.741 |
+    | b8-gm-s1 | 0.541 | 0.770 | 2.84 | 0.55 | 0.307 | 0.742 |
+  - **gm vs acc, 2 seeds:** pass@1 +0.2 (n.s.), pass@32 +1.2 (+0.5, +1.9), distinct +0.14 (+0.11, +0.17), entropy +0.035 (+0.029, +0.041), cov@32 +1.1 (+0.8, +1.5), TV −0.008. Each seed shows the same ordering.
+  - **vs official Qwen3-8B, 2 seeds:** gm pass@1 −1.9 (−3.9, +0.1), pass@32 +16.3 (+14.0, +18.8); acc pass@1 −2.1 (−4.1, −0.1), pass@32 +15.2.
+  - **Phenopackets:** both 8B recipes stay indistinguishable from base. gm has +0.21 (+0.09, +0.32) distinct answers vs acc.
+  - **Puri baselines at 1.7B (2 seeds each, DDXPlus):**
+    | Run | pass@1 | pass@32 | Distinct | Entropy | Cov@32 | List recall |
+    |---|---|---|---|---|---|---|
+    | Multi-RLVR | 0.385 | 0.443 | 1.39 | 0.153 | 0.166 | 0.317 |
+    | Multi-RLCR | 0.383 | 0.441 | 1.39 | 0.150 | 0.165 | 0.301 |
+    | acc | 0.458 | 0.499 | 1.36 | 0.142 | 0.181 | 0.300 |
+    | gm3t12 | 0.474 | 0.516 | 1.46 | 0.176 | 0.196 | 0.309 |
+    - Training was healthy: multi_rlvr reward 0.27–0.31 → 0.32–0.35, format 0.85 → 0.98, no collapse.
+    - The reward targets reference-set membership, not the gold answer, so pass@1 barely moves (+0.5 to +0.8 vs untrained). Only Multi-RLVR improves list recall (reference mass covered by one completion's list).
+    - gm3t12 vs Multi-RLVR: pass@1 +8.9 (+7.4, +10.5), distinct +0.07 (+0.03, +0.11), cov@32 +3.0 (+2.3, +3.8). Multi-RLCR is similar.
+  - **Pitfall:** `sbatch --export=ALL,SPEC=a,b` splits on commas, so the first scoring pass only scored the first tag in each list. Tags are now joined with `+`.
+  - Tillicum spend after these runs: $40.79 / $250.
 - **Measurement runs completed on Tillicum (2026-10-20), scored on Klone.**
   - **Medical family on DDXPlus** (T=0.7, against Qwen2.5-7B-Instruct at 0.478 / 0.598, 1.82 distinct):
     | Model | pass@1 | pass@32 | Distinct | ECE |
