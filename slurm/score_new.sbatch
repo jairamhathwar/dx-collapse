@@ -20,7 +20,7 @@ for item in $SPEC; do
     d=$RUNS/$t
     cat "$d"/samples.s*.jsonl > "$d/samples.jsonl"
     echo "=== $dir/$t ($(wc -l < "$d/samples.jsonl") cases)"
-    if [[ $dir == *_ddx ]]; then
+    if [[ $dir == *ddx* ]]; then
       python score_ddxplus.py --samples "$d/samples.jsonl" --cases "$THESIS/data/ddxplus/cases_test.jsonl" \
         --conditions "$THESIS/data/ddxplus/conditions.json" --out "$d/scores.json" --graded-out "$d/graded.jsonl" &
     else
@@ -29,7 +29,7 @@ for item in $SPEC; do
     fi
   done
   wait
-  if [[ $dir == *_ddx ]]; then
+  if [[ $dir == *ddx* ]]; then
     python compare_runs.py --runs-dir "$RUNS" --base "$base" --out-dir "$RUNS/report" \
       --title "DDXPlus differential diagnosis" --related-label "Gold or in ground-truth differential"
   else

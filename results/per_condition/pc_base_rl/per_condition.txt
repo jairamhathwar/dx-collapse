@@ -1,0 +1,72 @@
+n_cases=980 tau=0.1  considered@n = condition appears as a top-1 answer in >=1 of n samples when the reference differential gives it >= tau
+
+By severity (considered@n, top-1):
+  severe (1-2)   base=0.401  instruct=0.277  alphamed_it=0.320  alphamed_base=0.394   Δinstruct=-0.124 [-0.147,-0.102]   Δalphamed_it=-0.081 [-0.108,-0.056]   Δalphamed_base=-0.007 [-0.030,+0.017]   (pairs=1113)
+  moderate (3)   base=0.405  instruct=0.315  alphamed_it=0.337  alphamed_base=0.401   Δinstruct=-0.091 [-0.114,-0.070]   Δalphamed_it=-0.068 [-0.093,-0.047]   Δalphamed_base=-0.004 [-0.026,+0.017]   (pairs=906)
+  mild (4-5)     base=0.275  instruct=0.173  alphamed_it=0.212  alphamed_base=0.271   Δinstruct=-0.103 [-0.124,-0.083]   Δalphamed_it=-0.064 [-0.085,-0.042]   Δalphamed_base=-0.004 [-0.024,+0.017]   (pairs=926)
+
+Largest drops in considered@n (instruct vs base):
+  sev2 Stable angina                              0.43 -> 0.00 (-0.43)  gold p@32 0.75 -> 0.00  n=46
+  sev3 Spontaneous rib fracture                   0.42 -> 0.00 (-0.42)  gold p@32 0.55 -> 0.00  n=24
+  sev1 Acute pulmonary edema                      0.72 -> 0.31 (-0.41)  gold p@32 1.00 -> 0.75  n=54
+  sev2 Unstable angina                            0.31 -> 0.00 (-0.31)  gold p@32 0.90 -> 0.00  n=127
+  sev3 Atrial fibrillation                        0.52 -> 0.23 (-0.29)  gold p@32 1.00 -> 0.95  n=87
+  sev1 Anaphylaxis                                0.53 -> 0.24 (-0.29)  gold p@32 1.00 -> 1.00  n=108
+  sev4 Allergic sinusitis                         0.95 -> 0.67 (-0.29)  gold p@32 1.00 -> 0.70  n=21
+  sev2 Spontaneous pneumothorax                   0.92 -> 0.67 (-0.25)  gold p@32 1.00 -> 1.00  n=24
+  sev4 Acute laryngitis                           0.41 -> 0.19 (-0.22)  gold p@32 0.90 -> 0.30  n=63
+  sev5 URTI                                       0.23 -> 0.04 (-0.19)  gold p@32 0.50 -> 0.05  n=79
+  sev3 Influenza                                  0.65 -> 0.47 (-0.18)  gold p@32 0.80 -> 0.80  n=60
+  sev3 Bronchiolitis                              1.00 -> 0.82 (-0.18)  gold p@32 1.00 -> 0.80  n=17
+
+Most over-predicted by instruct (top-1 share vs reference rate):
+  Possible NSTEMI / STEMI                    instruct 0.117  base 0.082  reference 0.044
+  Pneumonia                                  instruct 0.082  base 0.040  reference 0.023
+  Acute COPD exacerbation / infection        instruct 0.057  base 0.085  reference 0.006
+  Acute rhinosinusitis                       instruct 0.057  base 0.143  reference 0.009
+  Pulmonary embolism                         instruct 0.081  base 0.027  reference 0.033
+  Bronchospasm / acute asthma exacerbation   instruct 0.056  base 0.023  reference 0.012
+
+Largest drops in considered@n (alphamed_it vs base):
+  sev1 Acute pulmonary edema                      0.72 -> 0.13 (-0.59)  gold p@32 1.00 -> 0.60  n=54
+  sev2 Stable angina                              0.43 -> 0.13 (-0.30)  gold p@32 0.75 -> 0.25  n=46
+  sev3 Atrial fibrillation                        0.52 -> 0.22 (-0.30)  gold p@32 1.00 -> 1.00  n=87
+  sev3 Spontaneous rib fracture                   0.42 -> 0.12 (-0.29)  gold p@32 0.55 -> 0.15  n=24
+  sev3 Pneumonia                                  0.53 -> 0.25 (-0.27)  gold p@32 1.00 -> 0.40  n=102
+  sev2 Acute dystonic reactions                   0.71 -> 0.44 (-0.27)  gold p@32 1.00 -> 0.95  n=48
+  sev1 Anaphylaxis                                0.53 -> 0.26 (-0.27)  gold p@32 1.00 -> 1.00  n=108
+  sev4 Acute laryngitis                           0.41 -> 0.22 (-0.19)  gold p@32 0.90 -> 0.55  n=63
+  sev1 Possible NSTEMI / STEMI                    0.59 -> 0.42 (-0.17)  gold p@32 1.00 -> 1.00  n=177
+  sev3 Influenza                                  0.65 -> 0.48 (-0.17)  gold p@32 0.80 -> 0.85  n=60
+  sev3 Pancreatic neoplasm                        0.64 -> 0.47 (-0.17)  gold p@32 1.00 -> 0.90  n=36
+  sev5 URTI                                       0.23 -> 0.08 (-0.15)  gold p@32 0.50 -> 0.05  n=79
+
+Most over-predicted by alphamed_it (top-1 share vs reference rate):
+  Spontaneous pneumothorax                   alphamed_it 0.103  base 0.036  reference 0.010
+  Pulmonary embolism                         alphamed_it 0.085  base 0.027  reference 0.033
+  Acute rhinosinusitis                       alphamed_it 0.052  base 0.143  reference 0.009
+  Bronchospasm / acute asthma exacerbation   alphamed_it 0.055  base 0.023  reference 0.012
+  Viral pharyngitis                          alphamed_it 0.047  base 0.010  reference 0.015
+  Anaphylaxis                                alphamed_it 0.062  base 0.045  reference 0.031
+
+Largest drops in considered@n (alphamed_base vs base):
+  sev1 Acute pulmonary edema                      0.72 -> 0.39 (-0.33)  gold p@32 1.00 -> 1.00  n=54
+  sev2 Acute dystonic reactions                   0.71 -> 0.48 (-0.23)  gold p@32 1.00 -> 1.00  n=48
+  sev3 Pneumonia                                  0.53 -> 0.34 (-0.19)  gold p@32 1.00 -> 1.00  n=102
+  sev1 Possible NSTEMI / STEMI                    0.59 -> 0.41 (-0.18)  gold p@32 1.00 -> 1.00  n=177
+  sev3 Pancreatic neoplasm                        0.64 -> 0.47 (-0.17)  gold p@32 1.00 -> 0.90  n=36
+  sev3 Atrial fibrillation                        0.52 -> 0.39 (-0.13)  gold p@32 1.00 -> 1.00  n=87
+  sev1 Anaphylaxis                                0.53 -> 0.43 (-0.10)  gold p@32 1.00 -> 1.00  n=108
+  sev3 Influenza                                  0.65 -> 0.57 (-0.08)  gold p@32 0.80 -> 0.90  n=60
+  sev4 Bronchitis                                 0.15 -> 0.07 (-0.08)  gold p@32 0.10 -> 0.40  n=275
+  sev3 Myasthenia gravis                          0.60 -> 0.53 (-0.06)  gold p@32 1.00 -> 1.00  n=47
+  sev4 Anemia                                     0.20 -> 0.15 (-0.05)  gold p@32 0.90 -> 0.90  n=123
+  sev2 Stable angina                              0.43 -> 0.39 (-0.04)  gold p@32 0.75 -> 0.85  n=46
+
+Most over-predicted by alphamed_base (top-1 share vs reference rate):
+  Acute rhinosinusitis                       alphamed_base 0.081  base 0.143  reference 0.009
+  Spontaneous pneumothorax                   alphamed_base 0.054  base 0.036  reference 0.010
+  Acute COPD exacerbation / infection        alphamed_base 0.046  base 0.085  reference 0.006
+  Bronchospasm / acute asthma exacerbation   alphamed_base 0.046  base 0.023  reference 0.012
+  Anaphylaxis                                alphamed_base 0.065  base 0.045  reference 0.031
+  Acute pulmonary edema                      alphamed_base 0.051  base 0.128  reference 0.021

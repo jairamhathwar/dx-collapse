@@ -205,6 +205,27 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - gm3t12 vs Multi-RLVR: pass@1 +8.9 (+7.4, +10.5), distinct +0.07 (+0.03, +0.11), cov@32 +3.0 (+2.3, +3.8). Multi-RLCR is similar.
   - **Pitfall:** `sbatch --export=ALL,SPEC=a,b` splits on commas, so the first scoring pass only scored the first tag in each list. Tags are now joined with `+`.
   - Tillicum spend after these runs: $40.79 / $250.
+- **Second family and medical RL from base (Tillicum 2026-10-21, `slurm/tillicum/submit_llama.sh descendants`, $2.63; scored on Klone in `runs/{ddx,go}_{base_rl,llama}`).**
+  - **AlphaMed-7B-base-rl** (AlphaMed RL applied directly to Qwen2.5-7B base), DDXPlus T=0.7:
+    | Model | pass@1 | pass@32 | Distinct | Entropy | Cov@32 | ECE |
+    |---|---|---|---|---|---|---|
+    | Qwen2.5-7B base | 0.352 | 0.695 | 4.91 | 1.00 | 0.335 | 0.29 |
+    | Qwen2.5-7B-Instruct | 0.478 | 0.598 | 1.82 | 0.30 | 0.239 | 0.11 |
+    | AlphaMed (from Instruct) | 0.516 | 0.682 | 1.87 | 0.28 | 0.266 | 0.12 |
+    | AlphaMed (from base) | 0.495 | 0.790 | 3.14 | 0.62 | 0.320 | 0.20 |
+    - vs base: pass@1 +14.3 (+13.1, +15.7), pass@32 +9.5 (+7.4, +11.6), distinct −1.77.
+    - vs AlphaMed-from-Instruct: pass@1 −2.2 (−3.9, −0.4), pass@32 +10.8 (+8.6, +13.2), distinct +1.28.
+    - Severe-tier Considered@32 vs base: base-RL −0.7 (−3.0, +1.7), Instruct −12.4, AlphaMed-from-Instruct −8.1 (`runs/analysis/pc_base_rl`).
+    - **Takeaway:** a third-party model reproduces our GRPO-from-base result. RL from base does not collapse; the collapse comes from instruction tuning.
+    - Phenopackets: pass@k vs base n.s.; conf 0.71, ECE 0.70, acc 1.4%. It is the most overconfident model we evaluated.
+  - **Llama-3.1-8B-Instruct medical descendants**, DDXPlus T=0.7. Parent pending Meta gate approval.
+    | Model | pass@1 | pass@32 | Distinct | Entropy | ECE |
+    |---|---|---|---|---|---|
+    | HuatuoGPT-o1-8B | 0.554 | 0.810 | 2.84 | 0.53 | 0.02 |
+    | AlphaMed-8B | 0.495 | 0.791 | 2.78 | 0.53 | 0.20 |
+    | UltraMedical-8B | 0.484 | 0.702 | 2.55 | 0.49 | 0.11 |
+    - Phenopackets: pass@32 9.4–9.8% (UltraMedical 6.6%); conf 0.58–0.64; acc about 3%.
+  - **Pitfall:** `score_new.sbatch` chose the scorer by a `*_ddx` suffix, so `ddx_*` dirs went to the Phenopacket scorer. It now matches `*ddx*`.
 - **Measurement runs completed on Tillicum (2026-10-20), scored on Klone.**
   - **Medical family on DDXPlus** (T=0.7, against Qwen2.5-7B-Instruct at 0.478 / 0.598, 1.82 distinct):
     | Model | pass@1 | pass@32 | Distinct | ECE |
