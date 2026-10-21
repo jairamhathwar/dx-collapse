@@ -242,11 +242,15 @@ m1-7B-23K & SFT distillation & 0.486 & \textbf{0.779} & \textbf{3.29} & \textbf{
 \end{figure}
 
 \subsection{Rare disease: overconfidence without accuracy}\label{sec:rare}
-On 500 Phenopacket Store cases covering 418 diseases, every 7B model is near the floor: $\passk{1}$ is 1.3--1.9\% and $\passk{32}$ is 6--7\%, and differences in pass@$k$ are within noise.
-Stated confidence is not near the floor. The parent model states a mean top-1 probability of 0.51, and its medical descendants state 0.66 (HuatuoGPT-o1) and 0.69 (AlphaMed), while their accuracy stays at 1.9\%. ECE accordingly rises from 0.50 to 0.64--0.67.
-Medical post-training thus increases overconfidence exactly where the model is out of its depth.
-HuatuoGPT-o1 is also the narrowest model here (9.4 distinct answers per 32 samples, against 11.5 for its parent).
-Accuracy depends strongly on when the source case report was published, which suggests memorization. Across the Qwen2.5 family, $\passk{32}$ is 8.1--9.6\% on cases published up to 2022 ($n{=}334$), 0.9--1.7\% on 2023--24 cases ($n{=}115$), and 3.9\% on 2025+ cases ($n{=}51$). Even the low absolute accuracy is therefore inflated by older, likely-memorized cases. \todo{m1 with an 8k token budget; Qwen3 pair; full 1,401-case set}.
+On 500 Phenopacket Store cases covering 418 diseases, every 7--8B model is near the floor: $\passk{1}$ is 1.3--2.2\% and $\passk{32}$ is 4--8\%.
+Stated confidence is not near the floor. Qwen2.5-7B-Instruct states a mean top-1 probability of 0.51, and its RL-trained medical descendants state 0.66 (HuatuoGPT-o1) and 0.69 (AlphaMed), while their accuracy stays at 1.9\%. ECE accordingly rises from 0.50 to 0.64--0.67.
+Medical RL thus increases overconfidence exactly where the model is out of its depth.
+The one descendant trained only with supervised reasoning traces, m1 (with its intended 8k-token budget), behaves differently. It is the only model that beats the parent at every $k$ ($+0.6$ $[+0.2,+1.1]$ points at $k{=}1$, $+2.0$ $[+0.2,+3.8]$ at $k{=}32$), it is the most diverse (15.4 distinct answers per 32 samples, against 11.5 for the parent and 9.5 for HuatuoGPT-o1), and its confidence rises less (0.56).
+
+General post-training shows a weak version of the DDXPlus pattern. Qwen3-8B beats its base at $\passk{1}$ ($+0.7$ $[+0.2,+1.3]$) and trails it at $\passk{32}$ ($-1.4$ $[-3.0,+0.2]$), with half the distinct answers (6.2 vs.\ 13.5); for Qwen2.5 no pass@$k$ difference is significant. Unlike medical RL, general post-training \emph{lowers} stated confidence here (0.61 to 0.46 for Qwen3, 0.60 to 0.51 for Qwen2.5), although base models also fail the output format more often (8.5\% of Qwen3-8B-Base samples).
+Our 8B GRPO runs (\S\ref{sec:training}) are indistinguishable from their base on this set (all pass@$k$ differences within $\pm0.6$ points).
+
+Accuracy depends strongly on when the source case report was published, which suggests memorization. Across the Qwen2.5 family, $\passk{32}$ is 8.1--10.8\% on cases published up to 2022 ($n{=}334$), 0.9--2.6\% on 2023--24 cases ($n{=}115$), and 3.9\% on 2025+ cases ($n{=}51$). Even the low absolute accuracy is therefore inflated by older, likely-memorized cases. \todo{full 1,401-case set}
 
 %=====================================================================
 \section{Training against the collapse}\label{sec:training}
@@ -285,7 +289,7 @@ Against \texttt{acc}, with paired bootstraps over cases averaged over seeds, \te
 Plain \texttt{gm} improves on \texttt{acc} in the same direction with smaller margins (e.g.\ pass@1 $+1.0$ $[+0.6,+1.6]$, entropy $+0.013$ $[+0.005,+0.021]$).
 Diversity increases monotonically with group-reward pressure, with no accuracy cost.
 The absolute effects are modest because the starting policy is already collapsed: there is little exploration for any reward to act on.
-None of the recipes changes rare-disease accuracy or confidence on Phenopacket Store, where a 1.7B model is at the floor.
+None of the recipes changes rare-disease accuracy or confidence on Phenopacket Store, where a 1.7B model is at the floor; the same holds at 8B (\S\ref{sec:rare}).
 \paragraph{Starting from a diverse base model.}
 The 1.7B experiment starts from an already collapsed instruct model. We therefore repeat the comparison from Qwen3-8B-Base, the diverse base model of \S\ref{sec:general}, with the same recipe and \texttt{acc} vs.\ \texttt{gm}. We compare against Qwen's own post-trained Qwen3-8B (Table~\ref{tab:training8b}; one seed \todo{second seed}).
 Both RL runs reach nearly the official model's top-1 accuracy (0.536 and 0.538 vs.\ 0.558, a gap of about 2 points). They keep more than twice its diversity (2.7--2.9 vs.\ 1.27 distinct answers) and beat it by 15--16 points at pass@32 (\texttt{gm}: $+16.3$ $[+14.0,+18.8]$).

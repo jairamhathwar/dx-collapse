@@ -20,6 +20,9 @@ COMPARISONS = [
     ("grpo_1p7b", "e7v2_ddx", "ddx", ["qwen3-1.7b", "acc-s0", "acc-s1", "dist-s0", "dist-s1", "gm-s0", "gm-s1", "gm3t12-s0", "gm3t12-s1"]),
     ("grpo_8b", "e9_ddx", "ddx", ["qwen3-8b-base", "b8-acc-s0", "b8-gm-s0", "qwen3-8b"]),
     ("pheno_qwen25", "go", "go", ["qwen25-7b-it", "alphamed-7b", "huatuo-o1-7b", "m1-7b"]),
+    ("pheno_pair25", "pheno25", "go", ["qwen25-7b-base", "qwen25-7b-it"]),
+    ("pheno_qwen3", "go_qwen3", "go", ["qwen3-8b-base", "qwen3-8b"]),
+    ("pheno_grpo_8b", "e9_go", "go", ["qwen3-8b-base", "b8-acc-s0", "b8-gm-s0", "qwen3-8b"]),
 ]
 
 

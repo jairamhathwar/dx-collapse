@@ -195,8 +195,23 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - T=0.7: Instruct +12.6 at k=1, base +9.7 at k=32.
     - T=1.0: Instruct +22.5 at k=1, base +10.3 at k=32.
   - **AlphaMed at T=1.0:** better than its parent at every k (+5.0 to +5.7).
-  - **Phenopacket scoring** for e9_go, go (m1 at 8k), go_qwen3 and pheno25 did not finish. The Klone Slurm controller was down on the night of 2026-10-20; resubmit when it is back.
-- **Publication-era check (Phenopackets, Qwen2.5 family):** pass@32 is 8.1–9.6% for cases published ≤2022, 0.9–1.7% for 2023–24 and 3.9% for 2025+, which points to memorization (`src/era_table.py`).
+  - **Phenopacket results (500 cases, 32 samples, T=0.7; scored on Klone job 42097417, 2026-10-21).** Deltas are vs the first-listed reference with 95% case-bootstrap CIs.
+    | Run | Model | pass@1 | pass@32 | Distinct | Conf | ECE | Unparsed / 16000 |
+    |---|---|---|---|---|---|---|---|
+    | go | Qwen2.5-7B-Instruct (ref) | 0.013 | 0.062 | 11.50 | 0.51 | 0.50 | 9 |
+    | go | AlphaMed | 0.018 (n.s.) | 0.072 (n.s.) | 11.20 | 0.69 | 0.67 | 30 |
+    | go | HuatuoGPT-o1 | 0.019 (+0.6, sig) | 0.060 (n.s.) | 9.46 | 0.66 | 0.64 | 70 |
+    | go | m1 (8k) | 0.019 (+0.6 [+0.2,+1.1]) | 0.082 (+2.0 [+0.2,+3.8]) | 15.36 | 0.56 | 0.54 | 72 |
+    | pheno25 | Qwen2.5-7B base (ref) | 0.011 | 0.054 | 15.76 | 0.60 | 0.59 | 53 |
+    | pheno25 | Qwen2.5-7B-Instruct | 0.013 (n.s.) | 0.062 (n.s.) | 11.50 | 0.51 | 0.50 | 9 |
+    | go_qwen3 | Qwen3-8B-Base (ref) | 0.015 | 0.054 | 13.51 | 0.61 | 0.59 | 1359 |
+    | go_qwen3 | Qwen3-8B | 0.022 (+0.7 [+0.2,+1.3]) | 0.040 (-1.4 [-3.0,+0.2]) | 6.22 | 0.46 | 0.44 | 0 |
+    | e9_go | b8-acc-s0 | 0.015 (n.s.) | 0.048 (n.s.) | 12.43 | 0.62 | 0.61 | 354 |
+    | e9_go | b8-gm-s0 | 0.014 (n.s.) | 0.048 (n.s.) | 12.65 | 0.61 | 0.60 | 392 |
+    - m1 (SFT-only) is the only model that beats its parent at every k, and it is the most diverse. The RL-trained descendants (AlphaMed, HuatuoGPT-o1) raise confidence the most.
+    - General post-training lowers confidence on rare disease (Qwen3 0.61 to 0.46, Qwen2.5 0.60 to 0.51). Medical RL raises it again.
+    - The 8B GRPO runs are indistinguishable from their base.
+- **Publication-era check (Phenopackets, Qwen2.5 family incl. m1 8k):** pass@32 is 8.1–10.8% for cases published ≤2022 (n=334), 0.9–2.6% for 2023–24 (n=115) and 3.9% for 2025+ (n=51), which points to memorization (`src/era_table.py`).
 
 ## Tillicum (UW H200 cluster; RCC student credit $250, expires 2027-04-19)
 - **Paths.** `/gpfs/projects/stf/jairamh/thesis` holds code, env, data and runs (persistent). `/gpfs/scrubbed/jairamh/thesis` holds caches. `~/.thesis_env` sets these.
