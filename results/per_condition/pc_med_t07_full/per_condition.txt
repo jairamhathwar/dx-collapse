@@ -1,0 +1,72 @@
+n_cases=980 tau=0.1  considered@n = condition appears as a top-1 answer in >=1 of n samples when the reference differential gives it >= tau
+
+By severity (considered@n, top-1):
+  severe (1-2)   instruct=0.277  alphamed=0.320  huatuo=0.360  m1=0.412   Δalphamed=+0.043 [+0.020,+0.066]   Δhuatuo=+0.084 [+0.061,+0.108]   Δm1=+0.135 [+0.108,+0.162]   (pairs=1113)
+  moderate (3)   instruct=0.315  alphamed=0.337  huatuo=0.374  m1=0.412   Δalphamed=+0.022 [+0.004,+0.040]   Δhuatuo=+0.060 [+0.040,+0.079]   Δm1=+0.097 [+0.072,+0.122]   (pairs=906)
+  mild (4-5)     instruct=0.173  alphamed=0.212  huatuo=0.268  m1=0.287   Δalphamed=+0.039 [+0.024,+0.054]   Δhuatuo=+0.095 [+0.075,+0.115]   Δm1=+0.114 [+0.092,+0.136]   (pairs=926)
+
+Largest drops in considered@n (alphamed vs instruct):
+  sev1 Acute pulmonary edema                      0.31 -> 0.13 (-0.19)  gold p@32 0.75 -> 0.60  n=54
+  sev3 Pneumonia                                  0.42 -> 0.25 (-0.17)  gold p@32 1.00 -> 0.40  n=102
+  sev2 Acute dystonic reactions                   0.54 -> 0.44 (-0.10)  gold p@32 1.00 -> 0.95  n=48
+  sev2 Pulmonary embolism                         0.35 -> 0.28 (-0.07)  gold p@32 1.00 -> 1.00  n=130
+  sev1 Possible NSTEMI / STEMI                    0.48 -> 0.42 (-0.06)  gold p@32 1.00 -> 1.00  n=177
+  sev3 Pancreatic neoplasm                        0.53 -> 0.47 (-0.06)  gold p@32 1.00 -> 0.90  n=36
+  sev3 HIV (initial infection)                    0.27 -> 0.24 (-0.03)  gold p@32 0.95 -> 0.80  n=70
+  sev2 Guillain-Barré syndrome                    0.37 -> 0.35 (-0.02)  gold p@32 0.95 -> 1.00  n=63
+  sev3 Atrial fibrillation                        0.23 -> 0.22 (-0.01)  gold p@32 0.95 -> 1.00  n=87
+  sev3 Acute COPD exacerbation / infection        1.00 -> 1.00 (+0.00)  gold p@32 1.00 -> 1.00  n=22
+  sev4 Acute otitis media                         0.65 -> 0.65 (+0.00)  gold p@32 1.00 -> 1.00  n=31
+  sev4 Acute rhinosinusitis                       0.97 -> 0.97 (+0.00)  gold p@32 1.00 -> 1.00  n=31
+
+Most over-predicted by alphamed (top-1 share vs reference rate):
+  Spontaneous pneumothorax                   alphamed 0.103  instruct 0.043  reference 0.010
+  Pulmonary embolism                         alphamed 0.085  instruct 0.081  reference 0.033
+  Acute rhinosinusitis                       alphamed 0.052  instruct 0.057  reference 0.009
+  Bronchospasm / acute asthma exacerbation   alphamed 0.055  instruct 0.056  reference 0.012
+  Viral pharyngitis                          alphamed 0.047  instruct 0.041  reference 0.015
+  Anaphylaxis                                alphamed 0.062  instruct 0.039  reference 0.031
+
+Largest drops in considered@n (huatuo vs instruct):
+  sev3 Pneumonia                                  0.42 -> 0.34 (-0.08)  gold p@32 1.00 -> 0.75  n=102
+  sev2 Pulmonary embolism                         0.35 -> 0.29 (-0.06)  gold p@32 1.00 -> 1.00  n=130
+  sev1 Acute pulmonary edema                      0.31 -> 0.28 (-0.04)  gold p@32 0.75 -> 0.85  n=54
+  sev2 Guillain-Barré syndrome                    0.37 -> 0.35 (-0.02)  gold p@32 0.95 -> 1.00  n=63
+  sev3 Acute COPD exacerbation / infection        1.00 -> 1.00 (+0.00)  gold p@32 1.00 -> 1.00  n=22
+  sev1 Ebola                                      0.86 -> 0.86 (+0.00)  gold p@32 1.00 -> 1.00  n=22
+  sev3 HIV (initial infection)                    0.27 -> 0.27 (+0.00)  gold p@32 0.95 -> 0.95  n=70
+  sev3 Inguinal hernia                            0.79 -> 0.79 (+0.00)  gold p@32 0.95 -> 1.00  n=24
+  sev4 Sarcoidosis                                0.00 -> 0.00 (+0.00)  gold p@32 0.00 -> 0.00  n=26
+  sev4 Viral pharyngitis                          0.50 -> 0.50 (+0.00)  gold p@32 0.85 -> 0.90  n=64
+  sev4 Whooping cough                             0.29 -> 0.29 (+0.00)  gold p@32 0.65 -> 0.65  n=45
+  sev2 Myocarditis                                0.00 -> 0.02 (+0.02)  gold p@32 0.00 -> 0.05  n=64
+
+Most over-predicted by huatuo (top-1 share vs reference rate):
+  Possible NSTEMI / STEMI                    huatuo 0.103  instruct 0.117  reference 0.044
+  Acute rhinosinusitis                       huatuo 0.068  instruct 0.057  reference 0.009
+  Acute COPD exacerbation / infection        huatuo 0.062  instruct 0.057  reference 0.006
+  Spontaneous pneumothorax                   huatuo 0.060  instruct 0.043  reference 0.010
+  Bronchospasm / acute asthma exacerbation   huatuo 0.052  instruct 0.056  reference 0.012
+  Bronchiolitis                              huatuo 0.030  instruct 0.018  reference 0.003
+
+Largest drops in considered@n (m1 vs instruct):
+  sev3 Inguinal hernia                            0.79 -> 0.62 (-0.17)  gold p@32 0.95 -> 0.80  n=24
+  sev4 Viral pharyngitis                          0.50 -> 0.36 (-0.14)  gold p@32 0.85 -> 0.75  n=64
+  sev3 Pneumonia                                  0.42 -> 0.33 (-0.09)  gold p@32 1.00 -> 0.80  n=102
+  sev3 Bronchiectasis                             0.31 -> 0.24 (-0.07)  gold p@32 0.75 -> 0.60  n=42
+  sev3 Acute COPD exacerbation / infection        1.00 -> 1.00 (+0.00)  gold p@32 1.00 -> 1.00  n=22
+  sev5 Chronic rhinosinusitis                     0.00 -> 0.00 (+0.00)  gold p@32 0.00 -> 0.00  n=40
+  sev1 Ebola                                      0.86 -> 0.86 (+0.00)  gold p@32 1.00 -> 1.00  n=22
+  sev2 Guillain-Barré syndrome                    0.37 -> 0.37 (+0.00)  gold p@32 0.95 -> 1.00  n=63
+  sev1 Acute pulmonary edema                      0.31 -> 0.33 (+0.02)  gold p@32 0.75 -> 1.00  n=54
+  sev4 Whooping cough                             0.29 -> 0.31 (+0.02)  gold p@32 0.65 -> 0.70  n=45
+  sev5 Panic attack                               0.38 -> 0.41 (+0.03)  gold p@32 1.00 -> 1.00  n=39
+  sev2 Croup                                      0.61 -> 0.64 (+0.03)  gold p@32 1.00 -> 0.95  n=33
+
+Most over-predicted by m1 (top-1 share vs reference rate):
+  Acute COPD exacerbation / infection        m1 0.142  instruct 0.057  reference 0.006
+  Acute rhinosinusitis                       m1 0.076  instruct 0.057  reference 0.009
+  Possible NSTEMI / STEMI                    m1 0.095  instruct 0.117  reference 0.044
+  Bronchospasm / acute asthma exacerbation   m1 0.046  instruct 0.056  reference 0.012
+  Spontaneous pneumothorax                   m1 0.035  instruct 0.043  reference 0.010
+  Bronchiolitis                              m1 0.017  instruct 0.018  reference 0.003

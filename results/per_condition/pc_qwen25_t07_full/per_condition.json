@@ -1,0 +1,1037 @@
+{
+ "n_cases": 980,
+ "tau": 0.1,
+ "models": [
+  "base",
+  "instruct"
+ ],
+ "conditions": {
+  "Acute COPD exacerbation / infection": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.9796875,
+    "gold_pass32": 1.0,
+    "considered_top1": 1.0,
+    "considered_listed": 1.0,
+    "n_considered_cases": 22,
+    "pred_rate": 0.08533163265306122
+   },
+   "instruct": {
+    "gold_pass1": 1.0,
+    "gold_pass32": 1.0,
+    "considered_top1": 1.0,
+    "considered_listed": 1.0,
+    "n_considered_cases": 22,
+    "pred_rate": 0.05707908163265306
+   },
+   "ref_rate": 0.00637450958598799
+  },
+  "Acute dystonic reactions": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.9796875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.7083333333333334,
+    "considered_listed": 1.0,
+    "n_considered_cases": 48,
+    "pred_rate": 0.058864795918367345
+   },
+   "instruct": {
+    "gold_pass1": 0.99375,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.5416666666666666,
+    "considered_listed": 0.9791666666666666,
+    "n_considered_cases": 48,
+    "pred_rate": 0.028348214285714286
+   },
+   "ref_rate": 0.033555215720694094
+  },
+  "Acute laryngitis": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.271875,
+    "gold_pass32": 0.9,
+    "considered_top1": 0.4126984126984127,
+    "considered_listed": 1.0,
+    "n_considered_cases": 63,
+    "pred_rate": 0.013360969387755103
+   },
+   "instruct": {
+    "gold_pass1": 0.04375,
+    "gold_pass32": 0.3,
+    "considered_top1": 0.19047619047619047,
+    "considered_listed": 0.7301587301587301,
+    "n_considered_cases": 63,
+    "pred_rate": 0.009853316326530612
+   },
+   "ref_rate": 0.01694136150309561
+  },
+  "Acute otitis media": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.8859375,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.7419354838709677,
+    "considered_listed": 1.0,
+    "n_considered_cases": 31,
+    "pred_rate": 0.02729591836734694
+   },
+   "instruct": {
+    "gold_pass1": 0.903125,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.6451612903225806,
+    "considered_listed": 1.0,
+    "n_considered_cases": 31,
+    "pred_rate": 0.018590561224489797
+   },
+   "ref_rate": 0.017488593836770133
+  },
+  "Acute pulmonary edema": {
+   "severity": 1,
+   "base": {
+    "gold_pass1": 0.5890625,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.7222222222222222,
+    "considered_listed": 1.0,
+    "n_considered_cases": 54,
+    "pred_rate": 0.12802933673469388
+   },
+   "instruct": {
+    "gold_pass1": 0.4515625,
+    "gold_pass32": 0.75,
+    "considered_top1": 0.3148148148148148,
+    "considered_listed": 1.0,
+    "n_considered_cases": 54,
+    "pred_rate": 0.05283801020408163
+   },
+   "ref_rate": 0.021065530865896517
+  },
+  "Acute rhinosinusitis": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.99375,
+    "gold_pass32": 1.0,
+    "considered_top1": 1.0,
+    "considered_listed": 1.0,
+    "n_considered_cases": 31,
+    "pred_rate": 0.1425701530612245
+   },
+   "instruct": {
+    "gold_pass1": 1.0,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.967741935483871,
+    "considered_listed": 1.0,
+    "n_considered_cases": 31,
+    "pred_rate": 0.05742984693877551
+   },
+   "ref_rate": 0.008728854418895707
+  },
+  "Allergic sinusitis": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.5265625,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.9523809523809523,
+    "considered_listed": 1.0,
+    "n_considered_cases": 21,
+    "pred_rate": 0.013584183673469388
+   },
+   "instruct": {
+    "gold_pass1": 0.396875,
+    "gold_pass32": 0.7,
+    "considered_top1": 0.6666666666666666,
+    "considered_listed": 1.0,
+    "n_considered_cases": 21,
+    "pred_rate": 0.00822704081632653
+   },
+   "ref_rate": 0.012951374397001425
+  },
+  "Anaphylaxis": {
+   "severity": 1,
+   "base": {
+    "gold_pass1": 0.878125,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.5277777777777778,
+    "considered_listed": 0.8981481481481481,
+    "n_considered_cases": 108,
+    "pred_rate": 0.04457908163265306
+   },
+   "instruct": {
+    "gold_pass1": 1.0,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.24074074074074073,
+    "considered_listed": 0.7407407407407407,
+    "n_considered_cases": 108,
+    "pred_rate": 0.03912627551020408
+   },
+   "ref_rate": 0.03145265318572716
+  },
+  "Anemia": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.5765625,
+    "gold_pass32": 0.9,
+    "considered_top1": 0.1951219512195122,
+    "considered_listed": 0.43089430894308944,
+    "n_considered_cases": 123,
+    "pred_rate": 0.012372448979591836
+   },
+   "instruct": {
+    "gold_pass1": 0.5109375,
+    "gold_pass32": 0.6,
+    "considered_top1": 0.0975609756097561,
+    "considered_listed": 0.3008130081300813,
+    "n_considered_cases": 123,
+    "pred_rate": 0.010427295918367347
+   },
+   "ref_rate": 0.04211871180925394
+  },
+  "Atrial fibrillation": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.6671875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.5172413793103449,
+    "considered_listed": 0.9540229885057471,
+    "n_considered_cases": 87,
+    "pred_rate": 0.023979591836734693
+   },
+   "instruct": {
+    "gold_pass1": 0.5234375,
+    "gold_pass32": 0.95,
+    "considered_top1": 0.22988505747126436,
+    "considered_listed": 0.6091954022988506,
+    "n_considered_cases": 87,
+    "pred_rate": 0.011224489795918367
+   },
+   "ref_rate": 0.03873117859210949
+  },
+  "Boerhaave": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.0359375,
+    "gold_pass32": 0.4,
+    "considered_top1": 0.1,
+    "considered_listed": 0.325,
+    "n_considered_cases": 40,
+    "pred_rate": 0.0009247448979591837
+   },
+   "instruct": {
+    "gold_pass1": 0.275,
+    "gold_pass32": 0.6,
+    "considered_top1": 0.2,
+    "considered_listed": 0.525,
+    "n_considered_cases": 40,
+    "pred_rate": 0.006345663265306122
+   },
+   "ref_rate": 0.01388970158724021
+  },
+  "Bronchiectasis": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.078125,
+    "gold_pass32": 0.8,
+    "considered_top1": 0.38095238095238093,
+    "considered_listed": 0.8571428571428571,
+    "n_considered_cases": 42,
+    "pred_rate": 0.0026785714285714286
+   },
+   "instruct": {
+    "gold_pass1": 0.275,
+    "gold_pass32": 0.75,
+    "considered_top1": 0.30952380952380953,
+    "considered_listed": 0.8809523809523809,
+    "n_considered_cases": 42,
+    "pred_rate": 0.008131377551020409
+   },
+   "ref_rate": 0.011359083916200514
+  },
+  "Bronchiolitis": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.3453125,
+    "gold_pass32": 1.0,
+    "considered_top1": 1.0,
+    "considered_listed": 1.0,
+    "n_considered_cases": 17,
+    "pred_rate": 0.029910714285714287
+   },
+   "instruct": {
+    "gold_pass1": 0.5953125,
+    "gold_pass32": 0.8,
+    "considered_top1": 0.8235294117647058,
+    "considered_listed": 1.0,
+    "n_considered_cases": 17,
+    "pred_rate": 0.018176020408163265
+   },
+   "ref_rate": 0.002628021546331018
+  },
+  "Bronchitis": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.003125,
+    "gold_pass32": 0.1,
+    "considered_top1": 0.14909090909090908,
+    "considered_listed": 0.9854545454545455,
+    "n_considered_cases": 275,
+    "pred_rate": 0.005420918367346939
+   },
+   "instruct": {
+    "gold_pass1": 0.0015625,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.01818181818181818,
+    "considered_listed": 0.7963636363636364,
+    "n_considered_cases": 275,
+    "pred_rate": 0.0023915816326530613
+   },
+   "ref_rate": 0.0718429326010524
+  },
+  "Bronchospasm / acute asthma exacerbation": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.51875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.6333333333333333,
+    "considered_listed": 0.9666666666666667,
+    "n_considered_cases": 30,
+    "pred_rate": 0.023150510204081633
+   },
+   "instruct": {
+    "gold_pass1": 0.9796875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.6333333333333333,
+    "considered_listed": 0.9,
+    "n_considered_cases": 30,
+    "pred_rate": 0.05628188775510204
+   },
+   "ref_rate": 0.011691863605327535
+  },
+  "Chagas": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.00625,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.05263157894736842,
+    "considered_listed": 0.19298245614035087,
+    "n_considered_cases": 114,
+    "pred_rate": 0.0006377551020408163
+   },
+   "instruct": {
+    "gold_pass1": 0.040625,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.043859649122807015,
+    "considered_listed": 0.17543859649122806,
+    "n_considered_cases": 114,
+    "pred_rate": 0.0017219387755102041
+   },
+   "ref_rate": 0.041804705634931154
+  },
+  "Chronic rhinosinusitis": {
+   "severity": 5,
+   "base": {
+    "gold_pass1": 0.0015625,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.025,
+    "considered_listed": 0.95,
+    "n_considered_cases": 40,
+    "pred_rate": 0.0011798469387755103
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.475,
+    "n_considered_cases": 40,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.008341118970889518
+  },
+  "Cluster headache": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.8484375,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.3026315789473684,
+    "considered_listed": 0.5263157894736842,
+    "n_considered_cases": 76,
+    "pred_rate": 0.017506377551020406
+   },
+   "instruct": {
+    "gold_pass1": 1.0,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.2631578947368421,
+    "considered_listed": 0.4342105263157895,
+    "n_considered_cases": 76,
+    "pred_rate": 0.020440051020408162
+   },
+   "ref_rate": 0.0246876652001135
+  },
+  "Croup": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.6046875,
+    "gold_pass32": 0.9,
+    "considered_top1": 0.5454545454545454,
+    "considered_listed": 0.696969696969697,
+    "n_considered_cases": 33,
+    "pred_rate": 0.012340561224489796
+   },
+   "instruct": {
+    "gold_pass1": 0.7671875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.6060606060606061,
+    "considered_listed": 0.696969696969697,
+    "n_considered_cases": 33,
+    "pred_rate": 0.01565688775510204
+   },
+   "ref_rate": 0.009531213754334036
+  },
+  "Ebola": {
+   "severity": 1,
+   "base": {
+    "gold_pass1": 0.8625,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.8636363636363636,
+    "considered_listed": 0.9090909090909091,
+    "n_considered_cases": 22,
+    "pred_rate": 0.017665816326530612
+   },
+   "instruct": {
+    "gold_pass1": 0.9890625,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.8636363636363636,
+    "considered_listed": 0.8636363636363636,
+    "n_considered_cases": 22,
+    "pred_rate": 0.020184948979591836
+   },
+   "ref_rate": 0.006399730437999494
+  },
+  "Epiglottitis": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.08,
+    "n_considered_cases": 25,
+    "pred_rate": 0.0
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.32,
+    "n_considered_cases": 25,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.005416144144046817
+  },
+  "GERD": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.66875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.32786885245901637,
+    "considered_listed": 0.819672131147541,
+    "n_considered_cases": 61,
+    "pred_rate": 0.014923469387755102
+   },
+   "instruct": {
+    "gold_pass1": 0.58125,
+    "gold_pass32": 0.85,
+    "considered_top1": 0.2786885245901639,
+    "considered_listed": 0.5081967213114754,
+    "n_considered_cases": 61,
+    "pred_rate": 0.011862244897959184
+   },
+   "ref_rate": 0.02137544835860162
+  },
+  "Guillain-Barr\u00e9 syndrome": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.50625,
+    "gold_pass32": 0.85,
+    "considered_top1": 0.31746031746031744,
+    "considered_listed": 0.4126984126984127,
+    "n_considered_cases": 63,
+    "pred_rate": 0.011256377551020408
+   },
+   "instruct": {
+    "gold_pass1": 0.8421875,
+    "gold_pass32": 0.95,
+    "considered_top1": 0.36507936507936506,
+    "considered_listed": 0.4603174603174603,
+    "n_considered_cases": 63,
+    "pred_rate": 0.02075892857142857
+   },
+   "ref_rate": 0.03787215052360835
+  },
+  "HIV (initial infection)": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.384375,
+    "gold_pass32": 0.95,
+    "considered_top1": 0.2857142857142857,
+    "considered_listed": 0.4,
+    "n_considered_cases": 70,
+    "pred_rate": 0.008896683673469389
+   },
+   "instruct": {
+    "gold_pass1": 0.7046875,
+    "gold_pass32": 0.95,
+    "considered_top1": 0.2714285714285714,
+    "considered_listed": 0.2857142857142857,
+    "n_considered_cases": 70,
+    "pred_rate": 0.014381377551020409
+   },
+   "ref_rate": 0.021244153070601592
+  },
+  "Influenza": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.09375,
+    "gold_pass32": 0.8,
+    "considered_top1": 0.65,
+    "considered_listed": 0.9166666666666666,
+    "n_considered_cases": 60,
+    "pred_rate": 0.011830357142857142
+   },
+   "instruct": {
+    "gold_pass1": 0.396875,
+    "gold_pass32": 0.8,
+    "considered_top1": 0.4666666666666667,
+    "considered_listed": 0.8833333333333333,
+    "n_considered_cases": 60,
+    "pred_rate": 0.018463010204081632
+   },
+   "ref_rate": 0.013277530968049121
+  },
+  "Inguinal hernia": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.2515625,
+    "gold_pass32": 0.8,
+    "considered_top1": 0.6666666666666666,
+    "considered_listed": 0.7916666666666666,
+    "n_considered_cases": 24,
+    "pred_rate": 0.005133928571428571
+   },
+   "instruct": {
+    "gold_pass1": 0.8796875,
+    "gold_pass32": 0.95,
+    "considered_top1": 0.7916666666666666,
+    "considered_listed": 0.7916666666666666,
+    "n_considered_cases": 24,
+    "pred_rate": 0.01795280612244898
+   },
+   "ref_rate": 0.010729930708065277
+  },
+  "Larygospasm": {
+   "severity": 1,
+   "base": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.09090909090909091,
+    "n_considered_cases": 33,
+    "pred_rate": 0.0
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.06060606060606061,
+    "n_considered_cases": 33,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.025028424783471163
+  },
+  "Localized edema": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.0046875,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.034482758620689655,
+    "considered_listed": 0.5172413793103449,
+    "n_considered_cases": 29,
+    "pred_rate": 9.566326530612244e-05
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.6551724137931034,
+    "n_considered_cases": 29,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.015364524250938065
+  },
+  "Myasthenia gravis": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.653125,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.5957446808510638,
+    "considered_listed": 0.8085106382978723,
+    "n_considered_cases": 47,
+    "pred_rate": 0.015529336734693878
+   },
+   "instruct": {
+    "gold_pass1": 0.784375,
+    "gold_pass32": 0.95,
+    "considered_top1": 0.425531914893617,
+    "considered_listed": 0.7872340425531915,
+    "n_considered_cases": 47,
+    "pred_rate": 0.016198979591836735
+   },
+   "ref_rate": 0.027693251574158376
+  },
+  "Myocarditis": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.003125,
+    "gold_pass32": 0.1,
+    "considered_top1": 0.046875,
+    "considered_listed": 0.734375,
+    "n_considered_cases": 64,
+    "pred_rate": 0.0020089285714285712
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.5625,
+    "n_considered_cases": 64,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.029049312225612318
+  },
+  "PSVT": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.0015625,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.018518518518518517,
+    "considered_listed": 0.42592592592592593,
+    "n_considered_cases": 54,
+    "pred_rate": 6.377551020408164e-05
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.2777777777777778,
+    "n_considered_cases": 54,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.019793477011640193
+  },
+  "Pancreatic neoplasm": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.4,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.6388888888888888,
+    "considered_listed": 0.9166666666666666,
+    "n_considered_cases": 36,
+    "pred_rate": 0.009279336734693878
+   },
+   "instruct": {
+    "gold_pass1": 0.9203125,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.5277777777777778,
+    "considered_listed": 0.6666666666666666,
+    "n_considered_cases": 36,
+    "pred_rate": 0.018845663265306123
+   },
+   "ref_rate": 0.013931042368717977
+  },
+  "Panic attack": {
+   "severity": 5,
+   "base": {
+    "gold_pass1": 0.3015625,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.4358974358974359,
+    "considered_listed": 0.5641025641025641,
+    "n_considered_cases": 39,
+    "pred_rate": 0.008545918367346939
+   },
+   "instruct": {
+    "gold_pass1": 0.7109375,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.38461538461538464,
+    "considered_listed": 0.5641025641025641,
+    "n_considered_cases": 39,
+    "pred_rate": 0.025
+   },
+   "ref_rate": 0.016851354782342988
+  },
+  "Pericarditis": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.271875,
+    "gold_pass32": 0.55,
+    "considered_top1": 0.1956521739130435,
+    "considered_listed": 0.30434782608695654,
+    "n_considered_cases": 46,
+    "pred_rate": 0.011575255102040816
+   },
+   "instruct": {
+    "gold_pass1": 0.1578125,
+    "gold_pass32": 0.25,
+    "considered_top1": 0.06521739130434782,
+    "considered_listed": 0.8043478260869565,
+    "n_considered_cases": 46,
+    "pred_rate": 0.00978954081632653
+   },
+   "ref_rate": 0.015369596748913826
+  },
+  "Pneumonia": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.246875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.5294117647058824,
+    "considered_listed": 0.9117647058823529,
+    "n_considered_cases": 102,
+    "pred_rate": 0.039987244897959184
+   },
+   "instruct": {
+    "gold_pass1": 0.653125,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.4215686274509804,
+    "considered_listed": 0.9411764705882353,
+    "n_considered_cases": 102,
+    "pred_rate": 0.08156887755102041
+   },
+   "ref_rate": 0.023042146885987592
+  },
+  "Possible NSTEMI / STEMI": {
+   "severity": 1,
+   "base": {
+    "gold_pass1": 0.7078125,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.5932203389830508,
+    "considered_listed": 0.7457627118644068,
+    "n_considered_cases": 177,
+    "pred_rate": 0.08201530612244898
+   },
+   "instruct": {
+    "gold_pass1": 1.0,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.480225988700565,
+    "considered_listed": 0.7457627118644068,
+    "n_considered_cases": 177,
+    "pred_rate": 0.11737882653061224
+   },
+   "ref_rate": 0.04354493438648643
+  },
+  "Pulmonary embolism": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.5046875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.33076923076923076,
+    "considered_listed": 0.8923076923076924,
+    "n_considered_cases": 130,
+    "pred_rate": 0.026817602040816325
+   },
+   "instruct": {
+    "gold_pass1": 0.91875,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.35384615384615387,
+    "considered_listed": 0.8692307692307693,
+    "n_considered_cases": 130,
+    "pred_rate": 0.0814094387755102
+   },
+   "ref_rate": 0.03327384403894248
+  },
+  "Pulmonary neoplasm": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.009375,
+    "gold_pass32": 0.3,
+    "considered_top1": 0.06896551724137931,
+    "considered_listed": 0.6896551724137931,
+    "n_considered_cases": 29,
+    "pred_rate": 0.00025510204081632655
+   },
+   "instruct": {
+    "gold_pass1": 0.0296875,
+    "gold_pass32": 0.3,
+    "considered_top1": 0.13793103448275862,
+    "considered_listed": 0.6206896551724138,
+    "n_considered_cases": 29,
+    "pred_rate": 0.0013073979591836735
+   },
+   "ref_rate": 0.011232988792894295
+  },
+  "SLE": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.0015625,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.0,
+    "considered_listed": 0.7142857142857143,
+    "n_considered_cases": 14,
+    "pred_rate": 0.0006058673469387755
+   },
+   "instruct": {
+    "gold_pass1": 0.0109375,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.07142857142857142,
+    "considered_listed": 0.2857142857142857,
+    "n_considered_cases": 14,
+    "pred_rate": 0.0002232142857142857
+   },
+   "ref_rate": 0.010798839483437123
+  },
+  "Sarcoidosis": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.07692307692307693,
+    "n_considered_cases": 26,
+    "pred_rate": 3.188775510204082e-05
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.15384615384615385,
+    "n_considered_cases": 26,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.014916478116817086
+  },
+  "Scombroid food poisoning": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.24375,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.3384615384615385,
+    "considered_listed": 0.4,
+    "n_considered_cases": 65,
+    "pred_rate": 0.005325255102040816
+   },
+   "instruct": {
+    "gold_pass1": 0.9015625,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.3384615384615385,
+    "considered_listed": 0.5692307692307692,
+    "n_considered_cases": 65,
+    "pred_rate": 0.01996173469387755
+   },
+   "ref_rate": 0.027932038078935885
+  },
+  "Spontaneous pneumothorax": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.8,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.9166666666666666,
+    "considered_listed": 1.0,
+    "n_considered_cases": 24,
+    "pred_rate": 0.03596938775510204
+   },
+   "instruct": {
+    "gold_pass1": 0.84375,
+    "gold_pass32": 1.0,
+    "considered_top1": 0.6666666666666666,
+    "considered_listed": 1.0,
+    "n_considered_cases": 24,
+    "pred_rate": 0.042889030612244895
+   },
+   "ref_rate": 0.009644777673047838
+  },
+  "Spontaneous rib fracture": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.034375,
+    "gold_pass32": 0.55,
+    "considered_top1": 0.4166666666666667,
+    "considered_listed": 0.9166666666666666,
+    "n_considered_cases": 24,
+    "pred_rate": 0.004815051020408163
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.6666666666666666,
+    "n_considered_cases": 24,
+    "pred_rate": 0.0008609693877551021
+   },
+   "ref_rate": 0.005860658152526063
+  },
+  "Stable angina": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.0828125,
+    "gold_pass32": 0.75,
+    "considered_top1": 0.43478260869565216,
+    "considered_listed": 0.9782608695652174,
+    "n_considered_cases": 46,
+    "pred_rate": 0.004878826530612245
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.6956521739130435,
+    "n_considered_cases": 46,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.019836115854243774
+  },
+  "Tuberculosis": {
+   "severity": 3,
+   "base": {
+    "gold_pass1": 0.0328125,
+    "gold_pass32": 0.35,
+    "considered_top1": 0.1076923076923077,
+    "considered_listed": 0.36923076923076925,
+    "n_considered_cases": 65,
+    "pred_rate": 0.0007334183673469388
+   },
+   "instruct": {
+    "gold_pass1": 0.04375,
+    "gold_pass32": 0.15,
+    "considered_top1": 0.046153846153846156,
+    "considered_listed": 0.3076923076923077,
+    "n_considered_cases": 65,
+    "pred_rate": 0.0008928571428571428
+   },
+   "ref_rate": 0.018924011271488718
+  },
+  "URTI": {
+   "severity": 5,
+   "base": {
+    "gold_pass1": 0.0421875,
+    "gold_pass32": 0.5,
+    "considered_top1": 0.22784810126582278,
+    "considered_listed": 0.9873417721518988,
+    "n_considered_cases": 79,
+    "pred_rate": 0.002423469387755102
+   },
+   "instruct": {
+    "gold_pass1": 0.0078125,
+    "gold_pass32": 0.05,
+    "considered_top1": 0.0379746835443038,
+    "considered_listed": 0.8734177215189873,
+    "n_considered_cases": 79,
+    "pred_rate": 0.0003826530612244898
+   },
+   "ref_rate": 0.017645925925916264
+  },
+  "Unstable angina": {
+   "severity": 2,
+   "base": {
+    "gold_pass1": 0.075,
+    "gold_pass32": 0.9,
+    "considered_top1": 0.30708661417322836,
+    "considered_listed": 0.8188976377952756,
+    "n_considered_cases": 127,
+    "pred_rate": 0.011001275510204082
+   },
+   "instruct": {
+    "gold_pass1": 0.0,
+    "gold_pass32": 0.0,
+    "considered_top1": 0.0,
+    "considered_listed": 0.3858267716535433,
+    "n_considered_cases": 127,
+    "pred_rate": 0.0
+   },
+   "ref_rate": 0.030412766774841924
+  },
+  "Viral pharyngitis": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.1515625,
+    "gold_pass32": 0.85,
+    "considered_top1": 0.515625,
+    "considered_listed": 0.953125,
+    "n_considered_cases": 64,
+    "pred_rate": 0.00978954081632653
+   },
+   "instruct": {
+    "gold_pass1": 0.6796875,
+    "gold_pass32": 0.85,
+    "considered_top1": 0.5,
+    "considered_listed": 0.625,
+    "n_considered_cases": 64,
+    "pred_rate": 0.04100765306122449
+   },
+   "ref_rate": 0.01510270696736979
+  },
+  "Whooping cough": {
+   "severity": 4,
+   "base": {
+    "gold_pass1": 0.1,
+    "gold_pass32": 0.55,
+    "considered_top1": 0.24444444444444444,
+    "considered_listed": 0.35555555555555557,
+    "n_considered_cases": 45,
+    "pred_rate": 0.002295918367346939
+   },
+   "instruct": {
+    "gold_pass1": 0.59375,
+    "gold_pass32": 0.65,
+    "considered_top1": 0.28888888888888886,
+    "considered_listed": 0.28888888888888886,
+    "n_considered_cases": 45,
+    "pred_rate": 0.015433673469387755
+   },
+   "ref_rate": 0.013251404908445634
+  }
+ },
+ "severity": {
+  "severe (1-2)": {
+   "base": {
+    "considered_top1": 0.40071877807726863,
+    "pairs": 1113
+   },
+   "instruct": {
+    "considered_top1": 0.27672955974842767,
+    "pairs": 1113,
+    "delta_vs_ref": [
+     -0.12398921832884097,
+     -0.14726058530510583,
+     -0.10185630609119374
+    ]
+   }
+  },
+  "moderate (3)": {
+   "base": {
+    "considered_top1": 0.40507726269315675,
+    "pairs": 906
+   },
+   "instruct": {
+    "considered_top1": 0.31456953642384106,
+    "pairs": 906,
+    "delta_vs_ref": [
+     -0.09050772626931569,
+     -0.11226873780997493,
+     -0.06737967914438503
+    ]
+   }
+  },
+  "mild (4-5)": {
+   "base": {
+    "considered_top1": 0.275377969762419,
+    "pairs": 926
+   },
+   "instruct": {
+    "considered_top1": 0.17278617710583152,
+    "pairs": 926,
+    "delta_vs_ref": [
+     -0.1025917926565875,
+     -0.12316544369073805,
+     -0.0825286682654221
+    ]
+   }
+  }
+ }
+}

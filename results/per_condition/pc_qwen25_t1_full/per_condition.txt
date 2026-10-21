@@ -1,0 +1,28 @@
+n_cases=980 tau=0.1  considered@n = condition appears as a top-1 answer in >=1 of n samples when the reference differential gives it >= tau
+
+By severity (considered@n, top-1):
+  severe (1-2)   base=0.510  instruct=0.341   Δinstruct=-0.170 [-0.197,-0.142]   (pairs=1113)
+  moderate (3)   base=0.496  instruct=0.374   Δinstruct=-0.121 [-0.147,-0.097]   (pairs=906)
+  mild (4-5)     base=0.384  instruct=0.234   Δinstruct=-0.150 [-0.174,-0.126]   (pairs=926)
+
+Largest drops in considered@n (instruct vs base):
+  sev2 Stable angina                              0.57 -> 0.02 (-0.54)  gold p@32 0.80 -> 0.05  n=46
+  sev3 Spontaneous rib fracture                   0.62 -> 0.08 (-0.54)  gold p@32 0.90 -> 0.10  n=24
+  sev5 Chronic rhinosinusitis                     0.55 -> 0.05 (-0.50)  gold p@32 0.55 -> 0.15  n=40
+  sev2 Unstable angina                            0.43 -> 0.01 (-0.42)  gold p@32 0.95 -> 0.00  n=127
+  sev3 Atrial fibrillation                        0.67 -> 0.25 (-0.41)  gold p@32 1.00 -> 0.95  n=87
+  sev1 Acute pulmonary edema                      0.72 -> 0.37 (-0.35)  gold p@32 1.00 -> 0.85  n=54
+  sev5 URTI                                       0.47 -> 0.19 (-0.28)  gold p@32 0.70 -> 0.30  n=79
+  sev4 Acute laryngitis                           0.51 -> 0.24 (-0.27)  gold p@32 0.95 -> 0.45  n=63
+  sev2 Myocarditis                                0.25 -> 0.00 (-0.25)  gold p@32 0.40 -> 0.00  n=64
+  sev2 PSVT                                       0.26 -> 0.02 (-0.24)  gold p@32 0.25 -> 0.05  n=54
+  sev2 Acute dystonic reactions                   0.79 -> 0.58 (-0.21)  gold p@32 1.00 -> 1.00  n=48
+  sev1 Anaphylaxis                                0.56 -> 0.36 (-0.20)  gold p@32 1.00 -> 1.00  n=108
+
+Most over-predicted by instruct (top-1 share vs reference rate):
+  Possible NSTEMI / STEMI                    instruct 0.123  base 0.061  reference 0.044
+  Pneumonia                                  instruct 0.083  base 0.040  reference 0.023
+  Acute rhinosinusitis                       instruct 0.061  base 0.090  reference 0.009
+  Pulmonary embolism                         instruct 0.080  base 0.023  reference 0.033
+  Acute COPD exacerbation / infection        instruct 0.053  base 0.056  reference 0.006
+  Bronchospasm / acute asthma exacerbation   instruct 0.055  base 0.022  reference 0.012

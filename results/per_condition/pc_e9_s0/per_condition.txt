@@ -1,0 +1,72 @@
+n_cases=980 tau=0.1  considered@n = condition appears as a top-1 answer in >=1 of n samples when the reference differential gives it >= tau
+
+By severity (considered@n, top-1):
+  severe (1-2)   base=0.338  acc=0.310  gm=0.323  official=0.240   Δacc=-0.028 [-0.044,-0.013]   Δgm=-0.015 [-0.032,+0.001]   Δofficial=-0.098 [-0.117,-0.078]   (pairs=1113)
+  moderate (3)   base=0.444  acc=0.423  gm=0.430  official=0.286   Δacc=-0.021 [-0.037,-0.006]   Δgm=-0.013 [-0.030,+0.003]   Δofficial=-0.158 [-0.182,-0.134]   (pairs=906)
+  mild (4-5)     base=0.314  acc=0.271  gm=0.284  official=0.180   Δacc=-0.043 [-0.062,-0.025]   Δgm=-0.030 [-0.048,-0.012]   Δofficial=-0.134 [-0.158,-0.111]   (pairs=926)
+
+Largest drops in considered@n (acc vs base):
+  sev3 Pneumonia                                  0.88 -> 0.69 (-0.20)  gold p@32 1.00 -> 1.00  n=102
+  sev2 Pulmonary embolism                         0.61 -> 0.45 (-0.16)  gold p@32 1.00 -> 1.00  n=130
+  sev4 Bronchitis                                 0.32 -> 0.17 (-0.15)  gold p@32 0.90 -> 0.80  n=275
+  sev1 Acute pulmonary edema                      0.50 -> 0.39 (-0.11)  gold p@32 1.00 -> 1.00  n=54
+  sev3 Influenza                                  0.73 -> 0.67 (-0.07)  gold p@32 1.00 -> 1.00  n=60
+  sev1 Possible NSTEMI / STEMI                    0.37 -> 0.31 (-0.06)  gold p@32 0.95 -> 1.00  n=177
+  sev3 Pancreatic neoplasm                        0.69 -> 0.64 (-0.06)  gold p@32 1.00 -> 1.00  n=36
+  sev4 Acute laryngitis                           0.60 -> 0.56 (-0.05)  gold p@32 1.00 -> 1.00  n=63
+  sev3 Acute COPD exacerbation / infection        1.00 -> 0.95 (-0.05)  gold p@32 1.00 -> 1.00  n=22
+  sev2 Spontaneous pneumothorax                   0.58 -> 0.54 (-0.04)  gold p@32 0.95 -> 0.95  n=24
+  sev1 Anaphylaxis                                0.33 -> 0.30 (-0.04)  gold p@32 1.00 -> 1.00  n=108
+  sev3 GERD                                       0.36 -> 0.33 (-0.03)  gold p@32 1.00 -> 1.00  n=61
+
+Most over-predicted by acc (top-1 share vs reference rate):
+  Pneumonia                                  acc 0.101  base 0.111  reference 0.023
+  Acute rhinosinusitis                       acc 0.064  base 0.062  reference 0.009
+  Bronchospasm / acute asthma exacerbation   acc 0.058  base 0.053  reference 0.012
+  Acute laryngitis                           acc 0.056  base 0.050  reference 0.017
+  Pulmonary embolism                         acc 0.070  base 0.087  reference 0.033
+  Acute pulmonary edema                      acc 0.053  base 0.071  reference 0.021
+
+Largest drops in considered@n (gm vs base):
+  sev3 Pneumonia                                  0.88 -> 0.69 (-0.20)  gold p@32 1.00 -> 1.00  n=102
+  sev4 Bronchitis                                 0.32 -> 0.19 (-0.13)  gold p@32 0.90 -> 0.85  n=275
+  sev2 Pulmonary embolism                         0.61 -> 0.48 (-0.13)  gold p@32 1.00 -> 1.00  n=130
+  sev1 Acute pulmonary edema                      0.50 -> 0.43 (-0.07)  gold p@32 1.00 -> 1.00  n=54
+  sev3 Influenza                                  0.73 -> 0.67 (-0.07)  gold p@32 1.00 -> 1.00  n=60
+  sev4 Acute laryngitis                           0.60 -> 0.56 (-0.05)  gold p@32 1.00 -> 1.00  n=63
+  sev4 Pericarditis                               0.24 -> 0.20 (-0.04)  gold p@32 0.55 -> 0.55  n=46
+  sev2 Spontaneous pneumothorax                   0.58 -> 0.54 (-0.04)  gold p@32 0.95 -> 0.95  n=24
+  sev1 Anaphylaxis                                0.33 -> 0.30 (-0.04)  gold p@32 1.00 -> 1.00  n=108
+  sev1 Possible NSTEMI / STEMI                    0.37 -> 0.33 (-0.03)  gold p@32 0.95 -> 1.00  n=177
+  sev4 Acute otitis media                         0.74 -> 0.71 (-0.03)  gold p@32 1.00 -> 1.00  n=31
+  sev2 PSVT                                       0.02 -> 0.00 (-0.02)  gold p@32 0.05 -> 0.00  n=54
+
+Most over-predicted by gm (top-1 share vs reference rate):
+  Pneumonia                                  gm 0.098  base 0.111  reference 0.023
+  Acute rhinosinusitis                       gm 0.061  base 0.062  reference 0.009
+  Bronchospasm / acute asthma exacerbation   gm 0.053  base 0.053  reference 0.012
+  Pulmonary embolism                         gm 0.072  base 0.087  reference 0.033
+  Acute laryngitis                           gm 0.055  base 0.050  reference 0.017
+  Acute pulmonary edema                      gm 0.049  base 0.071  reference 0.021
+
+Largest drops in considered@n (official vs base):
+  sev3 Bronchiolitis                              1.00 -> 0.18 (-0.82)  gold p@32 1.00 -> 0.15  n=17
+  sev4 Allergic sinusitis                         0.95 -> 0.19 (-0.76)  gold p@32 1.00 -> 0.20  n=21
+  sev3 Pneumonia                                  0.88 -> 0.33 (-0.55)  gold p@32 1.00 -> 1.00  n=102
+  sev1 Acute pulmonary edema                      0.50 -> 0.13 (-0.37)  gold p@32 1.00 -> 0.55  n=54
+  sev4 Acute laryngitis                           0.60 -> 0.25 (-0.35)  gold p@32 1.00 -> 0.65  n=63
+  sev4 Bronchitis                                 0.32 -> 0.05 (-0.27)  gold p@32 0.90 -> 0.40  n=275
+  sev2 Scombroid food poisoning                   0.29 -> 0.05 (-0.25)  gold p@32 0.95 -> 0.15  n=65
+  sev3 Influenza                                  0.73 -> 0.50 (-0.23)  gold p@32 1.00 -> 0.95  n=60
+  sev2 Pulmonary embolism                         0.61 -> 0.38 (-0.23)  gold p@32 1.00 -> 1.00  n=130
+  sev3 Atrial fibrillation                        0.30 -> 0.10 (-0.20)  gold p@32 1.00 -> 0.45  n=87
+  sev3 Myasthenia gravis                          0.45 -> 0.26 (-0.19)  gold p@32 1.00 -> 0.65  n=47
+  sev1 Possible NSTEMI / STEMI                    0.37 -> 0.18 (-0.19)  gold p@32 0.95 -> 1.00  n=177
+
+Most over-predicted by official (top-1 share vs reference rate):
+  Pulmonary embolism                         official 0.104  base 0.087  reference 0.033
+  Bronchospasm / acute asthma exacerbation   official 0.072  base 0.053  reference 0.012
+  Pneumonia                                  official 0.082  base 0.111  reference 0.023
+  Influenza                                  official 0.057  base 0.016  reference 0.013
+  Panic attack                               official 0.053  base 0.035  reference 0.017
+  Acute rhinosinusitis                       official 0.043  base 0.062  reference 0.009

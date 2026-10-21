@@ -155,9 +155,8 @@ Pair & Model & $\passk{1}$ & $\passk{32}$ & Distinct & Entropy & TV$\downarrow$ 
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.49\linewidth]{figures/passk_qwen3_t1.png}\hfill
-\includegraphics[width=0.49\linewidth]{figures/passk_qwen25_t1.png}
-\caption{pass@$k$ on DDXPlus at $T{=}1$. Left: Qwen3-8B-Base vs.\ Qwen3-8B. Right: Qwen2.5-7B base vs.\ Instruct. In each, the post-trained model wins at small $k$ and loses at large $k$. Right panels of each plot count a sample as correct if its answer is the gold condition or appears in the reference differential. \todo{redraw as one paper-style figure with CIs}}
+\includegraphics[width=\linewidth]{figures/fig_passk_pairs.pdf}
+\caption{pass@$k$ on DDXPlus at $T{=}1$ (980 cases, 32 samples), base model (dashed) vs.\ its post-trained version (solid), with 95\% case-bootstrap bands. ``Gold'': the top-1 answer is the true pathology; ``gold or in ref.\ ddx'': it is the true pathology or appears in the reference differential. In both families the post-trained model wins at small $k$ and loses at large $k$.}
 \label{fig:passk}
 \end{figure}
 
@@ -190,23 +189,34 @@ Comparison & Severe (1--2) & Moderate (3) & Mild (4--5) & \\
 \midrule
 Qwen3-8B, $T{=}1$ & 0.45 $\rightarrow$ 0.27 & 0.50 $\rightarrow$ 0.32 & 0.45 $\rightarrow$ 0.20 & \\
  & \footnotesize{$-18.4$ [$-20.8,-15.9$]} & \footnotesize{$-18.1$ [$-20.7,-15.7$]} & \footnotesize{$-24.2$ [$-27.0,-21.4$]} & \\
-Qwen2.5-7B, $T{=}1$ & 0.52 $\rightarrow$ 0.34 & 0.50 $\rightarrow$ 0.38 & 0.39 $\rightarrow$ 0.23 & \\
- & \footnotesize{$-18.2$ [$-21.4,-15.2$]} & \footnotesize{$-12.3$ [$-15.2,-9.4$]} & \footnotesize{$-15.4$ [$-18.2,-12.5$]} & \\
+Qwen2.5-7B, $T{=}1$ & 0.51 $\rightarrow$ 0.34 & 0.50 $\rightarrow$ 0.37 & 0.38 $\rightarrow$ 0.23 & \\
+ & \footnotesize{$-17.0$ [$-19.7,-14.2$]} & \footnotesize{$-12.1$ [$-14.7,-9.7$]} & \footnotesize{$-15.0$ [$-17.4,-12.6$]} & \\
 Qwen3-8B, $T{=}0.7$ & 0.34 $\rightarrow$ 0.24 & 0.44 $\rightarrow$ 0.29 & 0.31 $\rightarrow$ 0.18 & \\
  & \footnotesize{$-9.8$ [$-11.8,-7.9$]} & \footnotesize{$-15.8$ [$-18.2,-13.5$]} & \footnotesize{$-13.4$ [$-15.8,-11.1$]} & \\
+Qwen2.5-7B, $T{=}0.7$ & 0.40 $\rightarrow$ 0.28 & 0.41 $\rightarrow$ 0.32 & 0.28 $\rightarrow$ 0.17 & \\
+ & \footnotesize{$-12.4$ [$-14.7,-10.2$]} & \footnotesize{$-9.1$ [$-11.2,-6.7$]} & \footnotesize{$-10.3$ [$-12.3,-8.3$]} & \\
 \midrule
 Instruct $\rightarrow$ AlphaMed, $T{=}0.7$ & 0.28 $\rightarrow$ 0.32 & 0.32 $\rightarrow$ 0.34 & 0.17 $\rightarrow$ 0.21 & \\
- & \footnotesize{$+4.3$ [$+2.0,+6.6$]} & \footnotesize{$+2.2$ [$+0.3,+4.1$]} & \footnotesize{$+3.9$ [$+2.4,+5.5$]} & \\
+ & \footnotesize{$+4.3$ [$+2.0,+6.6$]} & \footnotesize{$+2.2$ [$+0.4,+4.0$]} & \footnotesize{$+3.9$ [$+2.4,+5.4$]} & \\
+Instruct $\rightarrow$ HuatuoGPT-o1, $T{=}0.7$ & 0.28 $\rightarrow$ 0.36 & 0.32 $\rightarrow$ 0.37 & 0.17 $\rightarrow$ 0.27 & \\
+ & \footnotesize{$+8.4$ [$+6.1,+10.8$]} & \footnotesize{$+6.0$ [$+4.0,+7.9$]} & \footnotesize{$+9.5$ [$+7.5,+11.5$]} & \\
+Instruct $\rightarrow$ m1, $T{=}0.7$ & 0.28 $\rightarrow$ 0.41 & 0.32 $\rightarrow$ 0.41 & 0.17 $\rightarrow$ 0.29 & \\
+ & \footnotesize{$+13.5$ [$+10.8,+16.2$]} & \footnotesize{$+9.7$ [$+7.2,+12.2$]} & \footnotesize{$+11.4$ [$+9.2,+13.6$]} & \\
+\midrule
+Base $\rightarrow$ \texttt{acc} GRPO (8B), $T{=}0.7$ & 0.34 $\rightarrow$ 0.31 & 0.44 $\rightarrow$ 0.42 & 0.31 $\rightarrow$ 0.27 & \\
+ & \footnotesize{$-2.8$ [$-4.4,-1.3$]} & \footnotesize{$-2.1$ [$-3.7,-0.6$]} & \footnotesize{$-4.3$ [$-6.2,-2.5$]} & \\
+Base $\rightarrow$ \texttt{gm} GRPO (8B), $T{=}0.7$ & 0.34 $\rightarrow$ 0.32 & 0.44 $\rightarrow$ 0.43 & 0.31 $\rightarrow$ 0.28 & \\
+ & \footnotesize{$-1.5$ [$-3.2,+0.1$]} & \footnotesize{$-1.3$ [$-3.0,+0.3$]} & \footnotesize{$-3.0$ [$-4.8,-1.2$]} & \\
 \bottomrule
 \end{tabular}
-\caption{Share of (case, condition) pairs with reference probability $\geq 0.1$ in which the condition is a top-1 answer in at least one of 32 samples, by DDXPlus severity. Second rows give differences in points with 95\% case-bootstrap intervals. Post-training lowers consideration in every tier, including the can't-miss tier; medical RL slightly raises it. (Qwen2.5 at $T{=}1$: 811 cases, \todo{complete}.)}
+\caption{Share of (case, condition) pairs with reference probability $\geq 0.1$ in which the condition is a top-1 answer in at least one of 32 samples, by DDXPlus severity. Second rows give differences in points with 95\% case-bootstrap intervals. All rows use the 980 test cases; GRPO rows are seed 0. General post-training lowers consideration in every tier, including the can't-miss tier; medical post-training raises it; our GRPO from the base model loses at most 4 points, and with the group reward the severe-tier loss is not significant.}
 \label{tab:severity}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.62\linewidth]{figures/per_condition_qwen25_t1.png}
-\caption{Change in consideration per condition, Qwen2.5-7B-Instruct minus its base model ($T{=}1$), colored by severity (red = most severe). Angina, acute pulmonary edema, anaphylaxis and myocarditis are among the largest drops. \todo{paper-style redraw}}
+\includegraphics[width=0.55\linewidth]{figures/fig_percond.pdf}
+\caption{Change in Considered@32 per condition, Qwen2.5-7B-Instruct minus its base model ($T{=}1$, 980 cases), colored by DDXPlus severity (dark red = most severe). Conditions with fewer than five cases giving them reference probability $\geq 0.1$ are omitted. Angina, acute pulmonary edema, anaphylaxis and myocarditis are among the largest drops.}
 \label{fig:percond}
 \end{figure}
 
@@ -236,8 +246,8 @@ m1-7B-23K & SFT distillation & 0.486 & \textbf{0.779} & \textbf{3.29} & \textbf{
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.6\linewidth]{figures/passk_alphamed_t07.png}
-\caption{DDXPlus at $T{=}0.7$: Qwen2.5-7B-Instruct (dashed) vs.\ its RL-trained medical descendant AlphaMed. The gap widens with $k$, so there is no sharpening tax at the medical stage.}
+\includegraphics[width=0.5\linewidth]{figures/fig_passk_medical.pdf}
+\caption{DDXPlus at $T{=}0.7$ (980 cases): Qwen2.5-7B-Instruct (dashed) vs.\ its medical descendants, with 95\% case-bootstrap bands. Every descendant matches or beats its parent at every $k$, and the gaps widen with $k$: there is no sharpening tax at the medical stage.}
 \label{fig:alphamed}
 \end{figure}
 
@@ -297,7 +307,14 @@ None of the recipes changes rare-disease accuracy or confidence on Phenopacket S
 The 1.7B experiment starts from an already collapsed instruct model. We therefore repeat the comparison from Qwen3-8B-Base, the diverse base model of \S\ref{sec:general}, with the same recipe and \texttt{acc} vs.\ \texttt{gm}. We compare against Qwen's own post-trained Qwen3-8B (Table~\ref{tab:training8b}; means of two seeds).
 Both RL recipes reach nearly the official model's top-1 accuracy (0.537 and 0.539 vs.\ 0.558; \texttt{gm}: $-1.9$ $[-3.9,+0.1]$ points). They keep more than twice its diversity (2.7--2.9 vs.\ 1.27 distinct answers) and beat it by 15--16 points at pass@32 (\texttt{gm}: $+16.3$ $[+14.0,+18.8]$).
 The collapse produced by general post-training is therefore not the price of its top-1 accuracy.
-Both runs still narrow the base model somewhat, and the group reward narrows it less. At equal pass@1 ($+0.2$, n.s.), \texttt{gm} beats \texttt{acc} on distinct answers $+0.14$ $[+0.11,+0.17]$, entropy $+0.035$ $[+0.029,+0.041]$, coverage@32 $+1.1$ $[+0.8,+1.5]$ points, and pass@32 $+1.2$ $[+0.5,+1.9]$. Each seed reproduces the ordering.
+Both runs still narrow the base model somewhat, and the group reward narrows it less. At equal pass@1 ($+0.2$, n.s.), \texttt{gm} beats \texttt{acc} on distinct answers $+0.14$ $[+0.11,+0.17]$, entropy $+0.035$ $[+0.029,+0.041]$, coverage@32 $+1.1$ $[+0.8,+1.5]$ points, and pass@32 $+1.2$ $[+0.5,+1.9]$. Each seed reproduces the ordering. The severe tier tells the same story (Table~\ref{tab:severity}): official post-training removes 9.8 points of can't-miss consideration, \texttt{acc} 2.8, and \texttt{gm} 1.5 (not significant). Figure~\ref{fig:grpo8b} shows the pass@$k$ curves.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.5\linewidth]{figures/fig_passk_grpo8b.pdf}
+\caption{pass@$k$ on DDXPlus ($T{=}0.7$, 980 cases) from the same pretrained weights: Qwen3-8B-Base, our GRPO runs (pooled over two seeds), and the official post-trained Qwen3-8B, with 95\% case-bootstrap bands. Our RL lifts the whole curve; official post-training trades the right end for the left.}
+\label{fig:grpo8b}
+\end{figure}
 
 \begin{table}[t]
 \centering\small
