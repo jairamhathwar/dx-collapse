@@ -4,6 +4,7 @@
 #   bash slurm/tillicum/submit_llama.sh descendants   # ungated medical descendants (run now)
 #   bash slurm/tillicum/submit_llama.sh pair          # Llama-3.1-8B base + Instruct (needs Meta gate approval)
 #   bash slurm/tillicum/submit_llama.sh prompts       # prompt-robustness variants on the Qwen3-8B pair
+#   bash slurm/tillicum/submit_llama.sh fullpheno     # remaining 901 Phenopacket cases (eval_full minus eval_go)
 set -euo pipefail
 source ~/.thesis_env
 cd "$THESIS"
@@ -44,5 +45,16 @@ case "${1:-}" in
         run pv_${v}_t1 $tag $model $DDX $STD $T1 --prompt-variant $v
       done
     done ;;
-  *) echo "usage: $0 descendants|pair|prompts"; exit 1 ;;
+  fullpheno)
+    comm -23 <(sort data/phenopackets/splits/eval_full.txt) <(sort data/phenopackets/splits/eval_go.txt) > data/phenopackets/splits/eval_rest.txt
+    echo "eval_rest: $(wc -l < data/phenopackets/splits/eval_rest.txt) cases"
+    REST="--cases data/phenopackets/cases.jsonl --case-ids data/phenopackets/splits/eval_rest.txt --k 32 --shard -1 --num-shards 2"
+    for spec in qwen25-7b-base:Qwen/Qwen2.5-7B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct alphamed-7b:che111/AlphaMed-7B-instruct-rl \
+                huatuo-o1-7b:FreedomIntelligence/HuatuoGPT-o1-7B alphamed-7b-base-rl:che111/AlphaMed-7B-base-rl \
+                qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run meas_rest $tag $model $REST $STD
+    done
+    run meas_rest m1-7b UCSC-VLAA/m1-7B-23K $REST --max-tokens 8192 --max-model-len 10240 ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno"; exit 1 ;;
 esac

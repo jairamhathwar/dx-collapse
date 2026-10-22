@@ -23,7 +23,7 @@ We evaluate them with 32 samples per case on DDXPlus, whose patients come with a
 When models answer directly, general post-training raises first-answer accuracy by 17 to 27 points but lowers coverage at larger sample budgets: base models are 10 to 15 points better at $\passk{32}$. Asking the post-trained model to reason first recovers this coverage but not the diversity of its samples.
 The post-trained models' sampled differentials collapse onto one or two diagnoses (answer entropy 0.18 vs.\ 1.31 for the base at $T{=}1$, against 1.87 for the reference), even though their top-1 calibration improves.
 Medical RL applied after instruction tuning improves pass@$k$ at every $k$ but does not undo the collapse; the same RL applied to the base model avoids it.
-On rare disease, medical post-training raises stated confidence from 0.51 to 0.66--0.69 while accuracy stays below 2\%.
+On rare disease, medical RL raises stated confidence from 0.51 to 0.67--0.71 while accuracy stays near 2\%.
 Single-answer metrics, including pass@$k$ at small $k$, therefore rate the post-trained models as strictly better while missing a large loss of diagnostic coverage.
 In GRPO from Qwen3-8B-Base, a diagnosis reward reaches nearly the official model's top-1 accuracy while keeping more than twice its diversity and beating it by 15--16 points at pass@32. A group-level reward that scores the spread of sampled answers narrows the model less than standard RLVR at equal accuracy.
 \end{abstract}
@@ -46,7 +46,7 @@ We draw 32 samples per case and evaluate each model's sampled differentials agai
 \item \textbf{General post-training trades coverage for top-1 accuracy.} In both families the post-trained model is far better on its first answer (+17 to +27 points) but worse at larger sample budgets. Its pass@$k$ curve crosses the base model's at $k{\approx}4$--8, and at $k{=}32$ the base model leads by 10--15 points. All intervals exclude zero (\S\ref{sec:general}). The pattern survives a reworded prompt and controls for invalid outputs; prompting for step-by-step reasoning removes the large-$k$ loss but not the loss of diversity (\S\ref{sec:robust}).
 \item \textbf{The differential collapses, and single-answer metrics do not show it.} Post-trained models give 1.3--2.6 distinct top answers per 32 samples, against 3.8--8.3 for their base models. Their answer entropy is 0.11--0.49, against 0.78--1.59 for base models and 1.87 for the reference differential. This holds even when sampling at $T{=}1$. Their top-1 calibration is \emph{better}, so on every single-answer metric they look strictly superior (\S\ref{sec:collapse}).
 \item \textbf{Medical RL on an instruction-tuned model adds accuracy without undoing the collapse.} AlphaMed improves on its parent at every $k$ (+3.9 at $k{=}1$, +8.4 at $k{=}32$), so we see no sharpening tax at the medical stage. Its answer diversity matches its parent's, which is already collapsed. The same RL applied directly to the base model keeps most of the base model's diversity and its can't-miss coverage, so the collapse comes from instruction tuning, not from RL (\S\ref{sec:medical}).
-\item \textbf{On rare disease, medical post-training increases overconfidence.} With accuracy below 2\% for every model, mean stated confidence rises from 0.51 for the parent to 0.66--0.69 for its RL-trained descendants (\S\ref{sec:rare}).
+\item \textbf{On rare disease, medical post-training increases overconfidence.} With accuracy near 2\% for every model, mean stated confidence rises from 0.51 for the parent to 0.67--0.71 for the RL-trained medical models, whether trained from the instruct or the base model, while their accuracy gains are under 1.5 points (\S\ref{sec:rare}).
 \end{enumerate}
 \begin{enumerate}\setcounter{enumi}{4}
 \item \textbf{A group-level reward avoids the collapse.} Rewarding each GRPO sample for its contribution to the match between the group's sampled answers and the reference differential raises accuracy as much as standard RLVR, while preserving and then widening the differential; per-sample distributional rewards do not (\S\ref{sec:training}).
@@ -84,7 +84,7 @@ Our group-level reward instead operates on the distribution of independently sam
 We use 980 test patients, 20 per condition. Each patient's coded symptoms and history are rendered as a short vignette; we fix known mistranslations in the English evidence descriptions.
 The prompt lists all 49 conditions and asks for the five most likely, with probabilities, as JSON.
 \textbf{Phenopacket Store}~\citep{danis2025phenopacketstore} (v0.1.27): published rare-disease cases annotated with HPO phenotypes and an OMIM diagnosis.
-We use a disease-balanced set of 500 cases covering 418 diseases. Each case is a vignette of present and absent phenotypes, and the model is asked for an open-ended differential.
+We use a disease-balanced set of 1,401 cases covering 749 diseases (at most two per disease). Each case is a vignette of present and absent phenotypes, and the model is asked for an open-ended differential.
 Answers are graded by mapping names to Mondo; we credit an exact match, and separately a ``related'' match to a specific ancestor group or subtype.
 
 \paragraph{Models.} Table~\ref{tab:models}. All checkpoints are public. For the medical models we verified the parent model from each released configuration.
@@ -295,15 +295,38 @@ AlphaMed-7B (base-RL) & rule-based RL & 0.495 & \textbf{0.790} & 3.14 & 0.62 & 0
 \end{figure}
 
 \subsection{Rare disease: overconfidence without accuracy}\label{sec:rare}
-On 500 Phenopacket Store cases covering 418 diseases, every 7--8B model is near the floor: $\passk{1}$ is 1.3--2.2\% and $\passk{32}$ is 4--8\%.
-Stated confidence is not near the floor. Qwen2.5-7B-Instruct states a mean top-1 probability of 0.51, and its RL-trained medical descendants state 0.66 (HuatuoGPT-o1) and 0.69 (AlphaMed), while their accuracy stays at 1.9\%. ECE accordingly rises from 0.50 to 0.64--0.67.
-Medical RL thus increases overconfidence exactly where the model is out of its depth. The effect does not depend on the starting point: AlphaMed trained from the base model is the most overconfident model we evaluate (mean confidence 0.71, ECE 0.70, accuracy 1.4\%).
-The one descendant trained only with supervised reasoning traces, m1 (with its intended 8k-token budget), behaves differently. It is the only model that beats the parent at every $k$ ($+0.6$ $[+0.2,+1.1]$ points at $k{=}1$, $+2.0$ $[+0.2,+3.8]$ at $k{=}32$), it is the most diverse (15.4 distinct answers per 32 samples, against 11.5 for the parent and 9.5 for HuatuoGPT-o1), and its confidence rises less (0.56).
+On 1,401 Phenopacket Store cases covering 749 diseases, every 7--8B model is near the floor: $\passk{1}$ is 1.4--2.2\% and $\passk{32}$ is 3.7--7.0\%.
+Stated confidence is not near the floor. Qwen2.5-7B-Instruct states a mean top-1 probability of 0.51, and its RL-trained medical descendants state 0.67 (HuatuoGPT-o1) and 0.69 (AlphaMed), while their accuracy is about 2\%. ECE accordingly rises from 0.49 to 0.64--0.67.
+Medical RL thus increases overconfidence exactly where the model is out of its depth. The effect does not depend on the starting point: AlphaMed trained from the base model is the most overconfident model we evaluate (mean confidence 0.71, ECE 0.70, accuracy 1.7\%).
+The medical descendants do gain a little accuracy: AlphaMed beats its parent at every $k$ ($+0.6$ $[+0.2,+0.9]$ points at $k{=}1$, $+1.0$ $[+0.1,+2.1]$ at $k{=}32$), HuatuoGPT-o1 at $k \le 8$, and m1 at $k \ge 2$ ($+1.4$ $[+0.4,+2.5]$ at $k{=}32$). These gains are an order of magnitude smaller than the rise in confidence.
+m1, trained only with supervised reasoning traces (at its intended 8k-token budget), is the exception on calibration and diversity: it is the most diverse model (15.3 distinct answers per 32 samples, against 11.5 for the parent and 9.2 for HuatuoGPT-o1), and its confidence rises least (0.57).
 
-General post-training shows a weak version of the DDXPlus pattern. Qwen3-8B beats its base at $\passk{1}$ ($+0.7$ $[+0.2,+1.3]$) and trails it at $\passk{32}$ ($-1.4$ $[-3.0,+0.2]$), with half the distinct answers (6.2 vs.\ 13.5); for Qwen2.5 no pass@$k$ difference is significant. Unlike medical RL, general post-training \emph{lowers} stated confidence here (0.61 to 0.46 for Qwen3, 0.60 to 0.51 for Qwen2.5), although base models also fail the output format more often (8.5\% of Qwen3-8B-Base samples).
-Our 8B GRPO runs (\S\ref{sec:training}) are indistinguishable from their base on this set (all pass@$k$ differences within $\pm0.6$ points).
+General post-training reproduces the DDXPlus pattern on Qwen3. Qwen3-8B beats its base at $\passk{1}$ ($+0.7$ $[+0.4,+1.1]$) and trails it from $k{=}8$ on, by $-2.2$ $[-3.1,-1.3]$ points at $\passk{32}$ (a relative loss of 37\%), with half the distinct answers (6.4 vs.\ 13.4). For Qwen2.5 no pass@$k$ difference is significant.
+Unlike medical RL, general post-training \emph{lowers} stated confidence here (0.61 to 0.46 for Qwen3, 0.61 to 0.51 for Qwen2.5), although base models also give invalid answers more often (8.5\% of Qwen3-8B-Base samples).
+On the 500-case subset, our 8B GRPO runs (\S\ref{sec:training}) are indistinguishable from their base (all pass@$k$ differences within $\pm0.6$ points).
 
-Accuracy depends strongly on when the source case report was published, which suggests memorization. Across the Qwen2.5 family, $\passk{32}$ is 8.1--10.8\% on cases published up to 2022 ($n{=}334$), 0.9--2.6\% on 2023--24 cases ($n{=}115$), and 3.9\% on 2025+ cases ($n{=}51$). Even the low absolute accuracy is therefore inflated by older, likely-memorized cases. \todo{full 1,401-case set}
+Accuracy depends strongly on when the source case report was published, which suggests memorization (Table~\ref{tab:era}). For every model, $\passk{32}$ is 5--10\% on cases published up to 2022 ($n{=}901$), at most 1.7\% on 2023--24 cases ($n{=}348$), and 2.6--4.6\% on 2025+ cases ($n{=}152$). Even the low absolute accuracy is therefore inflated by older, likely-memorized cases.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{2}{c}{$\le$2022 ($n{=}901$)} & \multicolumn{2}{c}{2023--24 ($n{=}348$)} & \multicolumn{2}{c}{2025+ ($n{=}152$)} \\
+Model & pass@1 & pass@32 & pass@1 & pass@32 & pass@1 & pass@32 \\
+\midrule
+Qwen2.5-7B (base) & 2.0 & 8.2 & 0.0 & 0.3 & 0.6 & 3.3 \\
+Qwen2.5-7B-Instruct & 2.3 & 7.7 & 0.0 & 0.9 & 0.8 & 3.9 \\
+AlphaMed-7B & 3.0 & 9.0 & 0.3 & 1.4 & 1.4 & 3.9 \\
+AlphaMed-7B (base-RL) & 2.4 & 8.8 & 0.1 & 1.1 & 1.4 & 4.6 \\
+HuatuoGPT-o1-7B & 3.1 & 8.4 & 0.3 & 1.4 & 1.3 & 3.9 \\
+m1-7B & 2.6 & 9.5 & 0.3 & 1.7 & 1.0 & 3.9 \\
+Qwen3-8B-Base & 2.1 & 8.3 & 0.1 & 0.6 & 1.1 & 3.9 \\
+Qwen3-8B & 3.1 & 5.2 & 0.1 & 0.3 & 2.0 & 2.6 \\
+\bottomrule
+\end{tabular}
+\caption{Phenopacket Store accuracy (\%, exact diagnosis) by publication year of the source case report (1,401 cases, 32 samples, $T{=}0.7$). Every model is far more accurate on cases published up to 2022 than on 2023--24 cases, consistent with memorization of older case reports.}
+\label{tab:era}
+\end{table}
 
 %=====================================================================
 \section{Training against the collapse}\label{sec:training}

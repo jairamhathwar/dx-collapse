@@ -205,6 +205,20 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - gm3t12 vs Multi-RLVR: pass@1 +8.9 (+7.4, +10.5), distinct +0.07 (+0.03, +0.11), cov@32 +3.0 (+2.3, +3.8). Multi-RLCR is similar.
   - **Pitfall:** `sbatch --export=ALL,SPEC=a,b` splits on commas, so the first scoring pass only scored the first tag in each list. Tags are now joined with `+`.
   - Tillicum spend after these runs: $40.79 / $250.
+- **Full Phenopacket eval set: 1,401 cases / 749 diseases (2026-10-21).** Tillicum ran the remaining 901 cases (`submit_llama.sh fullpheno`, `splits/eval_rest.txt`, $3.17) with the same settings as the go set. Merged with the go-set samples in `runs/go_full` by `runs/fullpheno_klone.sh`; reports are in `go_full{,_pair25,_q3,_base_rl}`.
+  | Model | pass@1 | pass@32 | Distinct | Conf | ECE |
+  |---|---|---|---|---|---|
+  | Qwen2.5-7B base | 0.014 | 0.057 | 15.59 | 0.61 | 0.59 |
+  | Qwen2.5-7B-Instruct | 0.016 | 0.056 | 11.46 | 0.51 | 0.49 |
+  | AlphaMed | 0.021 | 0.066 | 11.14 | 0.69 | 0.67 |
+  | AlphaMed base-RL | 0.017 | 0.064 | 13.23 | 0.71 | 0.70 |
+  | HuatuoGPT-o1 | 0.022 | 0.062 | 9.24 | 0.67 | 0.64 |
+  | m1 (8k) | 0.018 | 0.070 | 15.26 | 0.57 | 0.55 |
+  | Qwen3-8B-Base | 0.015 | 0.059 | 13.37 | 0.61 | 0.59 |
+  | Qwen3-8B | 0.022 | 0.037 | 6.36 | 0.46 | 0.44 |
+  - **vs Instruct:** AlphaMed is significant at every k (+0.6 at k=1, +1.0 at k=32). HuatuoGPT-o1 is significant for k≤8. m1 is significant for k≥2 (+1.4 at k=32).
+  - **Qwen3-8B vs base:** +0.7 (+0.4, +1.1) at k=1 and −2.2 (−3.1, −1.3) at k=32. The crossing is now significant on rare disease as well; on 500 cases it was n.s. The Qwen2.5 pair is n.s. everywhere.
+  - **Era, pass@32:** ≤2022 (n=901) 5.2–9.5%; 2023–24 (n=348) 0.3–1.7%; 2025+ (n=152) 2.6–4.6%.
 - **Prompt robustness and output format (2026-10-21).** Ran on Tillicum with `submit_llama.sh prompts` ($3.89). The flag is `--prompt-variant plain|cot` in `sample_diagnoses.py`; the default prompt is unchanged. Scored in `runs/pv_{plain,cot}_{t07,t1}`.
   | Prompt | T | Δpass@1 | Δpass@32 | Distinct base / post |
   |---|---|---|---|---|
