@@ -246,6 +246,9 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - vs AlphaMed-from-Instruct: pass@1 −2.2 (−3.9, −0.4), pass@32 +10.8 (+8.6, +13.2), distinct +1.28.
     - Severe-tier Considered@32 vs base: base-RL −0.7 (−3.0, +1.7), Instruct −12.4, AlphaMed-from-Instruct −8.1 (`runs/analysis/pc_base_rl`).
     - **Takeaway:** a third-party model reproduces our GRPO-from-base result. RL from base does not collapse; the collapse comes from instruction tuning.
+    - **Provenance (checked 2026-10-22):** arXiv 2505.17952 has only v1, which describes only instruct-initialized models. Training: GRPO, binary boxed-answer reward, 19,178 MedQA + MedMCQA QA pairs, batch 64×8, 300 steps, verl; lr and KL not reported. AlphaMed-7B (Qwen2.5-7B-Instruct) is in Appendix A.3.
+      - The base-rl checkpoint is not mentioned in the paper. Its `config.json` `_name_or_path` is `.../Qwen2.5-7B`; the instruct-rl one is `.../Qwen2.5-7B-Instruct`. Both were uploaded the same day with the same model card.
+      - The paper therefore treats it as corroborating, not controlled, evidence.
     - Phenopackets: pass@k vs base n.s.; conf 0.71, ECE 0.70, acc 1.4%. It is the most overconfident model we evaluated.
   - **Llama-3.1-8B-Instruct medical descendants**, DDXPlus T=0.7. Parent pending Meta gate approval.
     | Model | pass@1 | pass@32 | Distinct | Entropy | ECE |

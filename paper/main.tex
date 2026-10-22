@@ -22,7 +22,7 @@ We compare base models with their post-trained descendants under a controlled de
 We evaluate them with 32 samples per case on DDXPlus, whose patients come with a reference differential, and on rare-disease cases from Phenopacket Store.
 When models answer directly, general post-training raises first-answer accuracy by 17 to 27 points but lowers coverage at larger sample budgets: base models are 10 to 15 points better at $\passk{32}$. Asking the post-trained model to reason first recovers this coverage but not the diversity of its samples.
 The post-trained models' sampled differentials collapse onto one or two diagnoses (answer entropy 0.18 vs.\ 1.31 for the base at $T{=}1$, against 1.87 for the reference), even though their top-1 calibration improves.
-Medical RL applied after instruction tuning improves pass@$k$ at every $k$ but does not undo the collapse; the same RL applied to the base model avoids it.
+Medical RL applied after instruction tuning improves pass@$k$ at every $k$ but does not undo the collapse; a medical RL model trained from the base model avoids it.
 On rare disease, medical RL raises stated confidence from 0.51 to 0.67--0.71 while accuracy stays near 2\%.
 Single-answer metrics, including pass@$k$ at small $k$, therefore rate the post-trained models as strictly better while missing a large loss of diagnostic coverage.
 In GRPO from Qwen3-8B-Base, a diagnosis reward reaches nearly the official model's top-1 accuracy while keeping more than twice its diversity and beating it by 15--16 points at pass@32. A group-level reward that scores the spread of sampled answers narrows the model less than standard RLVR at equal accuracy.
@@ -38,14 +38,14 @@ Whether a similar trade-off holds for diagnosis, and whether it shows up in the 
 
 We measure it directly. Our design holds the pretrained model fixed and varies only the post-training:
 (i) two base/instruct pairs, Qwen2.5-7B and Qwen3-8B, which isolate general post-training;
-(ii) three public medical models fine-tuned from the same parent, Qwen2.5-7B-Instruct: AlphaMed (rule-based RL), HuatuoGPT-o1 (SFT then PPO), and m1 (SFT distillation), plus AlphaMed's RL applied directly to the base model.
+(ii) three public medical models fine-tuned from the same parent, Qwen2.5-7B-Instruct: AlphaMed (rule-based RL), HuatuoGPT-o1 (SFT then PPO), and m1 (SFT distillation), plus AlphaMed's companion checkpoint trained from the base model.
 We draw 32 samples per case and evaluate each model's sampled differentials against a reference distribution on DDXPlus~\citep{fansi2022ddxplus}, which ships a differential for every synthetic patient, and against an ontology on rare-disease cases from Phenopacket Store~\citep{danis2025phenopacketstore}.
 
 \paragraph{Findings.}
 \begin{enumerate}
 \item \textbf{General post-training trades coverage for top-1 accuracy.} In both families the post-trained model is far better on its first answer (+17 to +27 points) but worse at larger sample budgets. Its pass@$k$ curve crosses the base model's at $k{\approx}4$--8, and at $k{=}32$ the base model leads by 10--15 points. All intervals exclude zero (\S\ref{sec:general}). The pattern survives a reworded prompt and controls for invalid outputs; prompting for step-by-step reasoning removes the large-$k$ loss but not the loss of diversity (\S\ref{sec:robust}).
 \item \textbf{The differential collapses, and single-answer metrics do not show it.} Post-trained models give 1.3--2.6 distinct top answers per 32 samples, against 3.8--8.3 for their base models. Their answer entropy is 0.11--0.49, against 0.78--1.59 for base models and 1.87 for the reference differential. This holds even when sampling at $T{=}1$. Their top-1 calibration is \emph{better}, so on every single-answer metric they look strictly superior (\S\ref{sec:collapse}).
-\item \textbf{Medical RL on an instruction-tuned model adds accuracy without undoing the collapse.} AlphaMed improves on its parent at every $k$ (+3.9 at $k{=}1$, +8.4 at $k{=}32$), so we see no sharpening tax at the medical stage. Its answer diversity matches its parent's, which is already collapsed. The same RL applied directly to the base model keeps most of the base model's diversity and its can't-miss coverage, so the collapse comes from instruction tuning, not from RL (\S\ref{sec:medical}).
+\item \textbf{Medical RL on an instruction-tuned model adds accuracy without undoing the collapse.} AlphaMed improves on its parent at every $k$ (+3.9 at $k{=}1$, +8.4 at $k{=}32$), so we see no sharpening tax at the medical stage. Its answer diversity matches its parent's, which is already collapsed. AlphaMed's companion checkpoint trained from the base model keeps most of the base model's diversity and its can't-miss coverage, which, with our own GRPO runs, suggests that the collapse comes from instruction tuning, not from RL (\S\ref{sec:medical}).
 \item \textbf{On rare disease, medical post-training increases overconfidence.} With accuracy near 2\% for every model, mean stated confidence rises from 0.51 for the parent to 0.67--0.71 for the RL-trained medical models, whether trained from the instruct or the base model, while their accuracy gains are under 1.5 points (\S\ref{sec:rare}).
 \end{enumerate}
 \begin{enumerate}\setcounter{enumi}{4}
@@ -262,11 +262,12 @@ Medical post-training thus operates on an already collapsed distribution; the co
 The other two descendants go further (Table~\ref{tab:medical}). HuatuoGPT-o1 (SFT then PPO) and m1 (SFT distillation from a reasoning teacher) both \emph{widen} the differential relative to their parent: 2.49 and 3.29 distinct answers vs.\ 1.82, and coverage@32 of 0.31 and 0.33 vs.\ 0.24. Their pass@32 rises by 13.7 $[+11.3,+16.0]$ and 18.1 $[+15.5,+20.7]$ points. m1 gains almost nothing at $k{=}1$ (+0.9, interval includes zero), so its improvement lies entirely in breadth. Both reasoning-trained models are also less calibrated (ECE 0.17 and 0.21 vs.\ 0.11). Medical post-training on an instruction-tuned model thus never adds to the collapse, and reasoning distillation partially reverses it.
 
 \paragraph{Medical RL from the base model.}
-AlphaMed was also released as a model trained with its rule-based RL directly from Qwen2.5-7B, skipping instruction tuning~\citep{liu2025alphamed}. \todo{confirm in the AlphaMed paper that the base and instruct variants share data and hyperparameters} This gives a third-party test of whether RL itself causes the collapse (Table~\ref{tab:medical}, lower block).
-It does not. RL from the base model improves on the base at every $k$ ($+14.3$ $[+13.1,+15.7]$ points at $k{=}1$, $+9.5$ $[+7.4,+11.6]$ at $k{=}32$). It keeps 3.14 distinct answers, against 1.87 for the same recipe applied to the instruct model.
+Alongside the instruct-initialized AlphaMed-7B, the AlphaMed authors released a companion checkpoint, AlphaMed-7B-base-rl, initialized from Qwen2.5-7B rather than Qwen2.5-7B-Instruct (according to its configuration file). The paper~\citep{liu2025alphamed} describes only the instruct-initialized models: GRPO with a binary correctness reward on about 19k multiple-choice questions from MedQA and MedMCQA, with a 64-question by 8-sample batch for 300 steps. It does not document the base-initialized checkpoint, so we cannot rule out differences in data or hyperparameters, and we treat it as corroborating rather than controlled evidence.
+It offers a third-party check on whether RL itself causes the collapse (Table~\ref{tab:medical}, lower block).
+It does not. RL from the base model improves on the base at every $k$ ($+14.3$ $[+13.1,+15.7]$ points at $k{=}1$, $+9.5$ $[+7.4,+11.6]$ at $k{=}32$). It keeps 3.14 distinct answers, against 1.87 for the instruct-initialized AlphaMed.
 Against that instruct-model AlphaMed, it is 2.2 $[0.4,3.9]$ points worse at $k{=}1$ and 10.8 $[+8.6,+13.2]$ points better at $k{=}32$.
 It also preserves can't-miss consideration: severe-tier Considered@32 changes by $-0.7$ $[-3.0,+1.7]$ points relative to the base, against $-12.4$ for instruction tuning and $-8.1$ for instruction tuning followed by AlphaMed's RL (Table~\ref{tab:severity}).
-This independently reproduces our own GRPO-from-base result (\S\ref{sec:training}): with a verifiable diagnosis reward, RL from a base model buys accuracy without the collapse, which is introduced by general instruction tuning and inherited by everything trained on top of it.
+This is consistent with our own controlled GRPO-from-base result (\S\ref{sec:training}): with a verifiable correctness reward, RL from a base model buys accuracy without the collapse, which is introduced by general instruction tuning and inherited by everything trained on top of it.
 
 \begin{table}[t]
 \centering\small
@@ -283,7 +284,7 @@ Qwen2.5-7B (base) & (parent) & 0.352 & 0.695 & \textbf{4.91} & \textbf{1.00} & \
 AlphaMed-7B (base-RL) & rule-based RL & 0.495 & \textbf{0.790} & 3.14 & 0.62 & 0.320 & 0.202 \\
 \bottomrule
 \end{tabular}
-\caption{Medical models on DDXPlus (980 cases, 32 samples, $T{=}0.7$). Upper block: descendants of Qwen2.5-7B-Instruct; none narrows the differential further, and the reasoning-trained models widen it. Lower block: AlphaMed's RL applied directly to the base model, which keeps most of the base model's diversity and has the best pass@32 of any 7B model.}
+\caption{Medical models on DDXPlus (980 cases, 32 samples, $T{=}0.7$). Upper block: descendants of Qwen2.5-7B-Instruct; none narrows the differential further, and the reasoning-trained models widen it. Lower block: AlphaMed's companion checkpoint trained from the base model, which keeps most of the base model's diversity and has the best pass@32 of any 7B model.}
 \label{tab:medical}
 \end{table}
 
@@ -297,7 +298,7 @@ AlphaMed-7B (base-RL) & rule-based RL & 0.495 & \textbf{0.790} & 3.14 & 0.62 & 0
 \subsection{Rare disease: overconfidence without accuracy}\label{sec:rare}
 On 1,401 Phenopacket Store cases covering 749 diseases, every 7--8B model is near the floor: $\passk{1}$ is 1.4--2.2\% and $\passk{32}$ is 3.7--7.0\%.
 Stated confidence is not near the floor. Qwen2.5-7B-Instruct states a mean top-1 probability of 0.51, and its RL-trained medical descendants state 0.67 (HuatuoGPT-o1) and 0.69 (AlphaMed), while their accuracy is about 2\%. ECE accordingly rises from 0.49 to 0.64--0.67.
-Medical RL thus increases overconfidence exactly where the model is out of its depth. The effect does not depend on the starting point: AlphaMed trained from the base model is the most overconfident model we evaluate (mean confidence 0.71, ECE 0.70, accuracy 1.7\%).
+Medical RL thus increases overconfidence exactly where the model is out of its depth. The effect also appears without instruction tuning: AlphaMed's base-initialized checkpoint is the most overconfident model we evaluate (mean confidence 0.71, ECE 0.70, accuracy 1.7\%).
 The medical descendants do gain a little accuracy: AlphaMed beats its parent at every $k$ ($+0.6$ $[+0.2,+0.9]$ points at $k{=}1$, $+1.0$ $[+0.1,+2.1]$ at $k{=}32$), HuatuoGPT-o1 at $k \le 8$, and m1 at $k \ge 2$ ($+1.4$ $[+0.4,+2.5]$ at $k{=}32$). These gains are an order of magnitude smaller than the rise in confidence.
 m1, trained only with supervised reasoning traces (at its intended 8k-token budget), is the exception on calibration and diversity: it is the most diverse model (15.3 distinct answers per 32 samples, against 11.5 for the parent and 9.2 for HuatuoGPT-o1), and its confidence rises least (0.57).
 
