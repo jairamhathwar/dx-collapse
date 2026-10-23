@@ -205,6 +205,14 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - gm3t12 vs Multi-RLVR: pass@1 +8.9 (+7.4, +10.5), distinct +0.07 (+0.03, +0.11), cov@32 +3.0 (+2.3, +3.8). Multi-RLCR is similar.
   - **Pitfall:** `sbatch --export=ALL,SPEC=a,b` splits on commas, so the first scoring pass only scored the first tag in each list. Tags are now joined with `+`.
   - Tillicum spend after these runs: $40.79 / $250.
+- **OLMo 3 7B post-training stages (IN PROGRESS, launched 2026-10-23 ~10:06 on Tillicum, `submit_llama.sh olmo`).** This replaces the Llama pair: Meta access was still pending after more than 2 days, and OLMo is ungated.
+  - **Checkpoints:** `Olmo-3-1025-7B` (base; uses `templates/olmo3_sft.jinja` via `--chat-template`), `-Instruct-SFT`, `-Instruct-DPO`, `-Instruct` (RLVR), `-RL-Zero-General` (RL from base).
+  - **Output dirs:** DDXPlus T=0.7 → `meas_ddx/`, T=1 → `meas_ddx_t1/`, full 1,401 Phenopackets → `meas_full/`.
+  - **Status at 12:13:** SFT, DPO, Instruct and RL-Zero-General are complete (980/980/1401). Base is partial (512, 640, 512) and may need resubmission after the 4 h limit; sampling is resumable.
+  - **RL-Zero-Mix failed:** model type `olmo2-retrofit` isn't supported by our Transformers/vLLM. Skipped.
+  - **Smoke test:** vLLM resolves `Olmo3ForCausalLM`. Instruct output is clean JSON; base output is often invalid (refusals, plain lists, rambling).
+  - **Next:** relay to Klone `runs/{ddx_olmo,ddx_olmo_t1,go_full_olmo}`, then run `slurm/olmo_klone.sh` (scoring, format robustness, stage-to-stage comparisons, severity).
+  - **Spend:** $65.68 at 12:13, up from $50.78 before OLMo.
 - **Full Phenopacket eval set: 1,401 cases / 749 diseases (2026-10-21).** Tillicum ran the remaining 901 cases (`submit_llama.sh fullpheno`, `splits/eval_rest.txt`, $3.17) with the same settings as the go set. Merged with the go-set samples in `runs/go_full` by `runs/fullpheno_klone.sh`; reports are in `go_full{,_pair25,_q3,_base_rl}`.
   | Model | pass@1 | pass@32 | Distinct | Conf | ECE |
   |---|---|---|---|---|---|

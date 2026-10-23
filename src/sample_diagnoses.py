@@ -97,6 +97,8 @@ def main():
     ap.add_argument("--enforce-eager", action="store_true", help="skip torch.compile/CUDA graphs")
     ap.add_argument("--task", choices=["phenopacket", "ddxplus"], default="phenopacket")
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
+    ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
+                    "(for base models that ship without one)")
     ap.add_argument("--prompt-variant", choices=["default", "plain", "cot"], default="default",
                     help="ddxplus prompt-robustness variant")
     a = ap.parse_args()
@@ -131,6 +133,8 @@ def main():
     sp = SamplingParams(n=a.k, temperature=a.temperature, top_p=a.top_p,
                         max_tokens=a.max_tokens, seed=a.seed, stop_token_ids=stop_ids)
     chat_kwargs = {"chat_template_kwargs": {"enable_thinking": a.thinking}}
+    if a.chat_template:
+        chat_kwargs["chat_template"] = Path(a.chat_template).read_text()
 
     for b in range(0, len(todo), a.batch_cases):
         batch = todo[b:b + a.batch_cases]
@@ -143,7 +147,8 @@ def main():
         try:
             res = llm.chat(msgs, sp, use_tqdm=False, **chat_kwargs)
         except TypeError:  # template without enable_thinking support
-            res = llm.chat(msgs, sp, use_tqdm=False)
+            res = llm.chat(msgs, sp, use_tqdm=False,
+                           **{k: v for k, v in chat_kwargs.items() if k != "chat_template_kwargs"})
         with out.open("a") as fh:
             for c, r in zip(batch, res):
                 samples = [{"text": o.text, "dx": parse_dx(o.text),
