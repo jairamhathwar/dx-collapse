@@ -253,6 +253,29 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - **Medical (vs Qwen2.5-7B-Instruct):** AlphaMed and HuatuoGPT-o1 lists slightly better (TV −0.01). m1 lists worse (+0.017) while its sampling is better (−0.038).
   - **Absolute level:** every model is far from the reference. Single lists cover 0.22–0.41 of reference mass, against 0.735 for the reference's own top 5.
   - **Reading:** for Qwen, post-training improves the stated differential and collapses the sampled one, so pass@k and sample diversity report a collapse the stated list does not show. The paper's "differential collapse" wording overstates the effect for Qwen. Close prior work: Verbalized Sampling (2510.01171) shows that aligned models recover diversity when asked to verbalize a distribution.
+- **Consequences: aggregation and uncertainty (2026-10-23, `src/consequences.py`, `slurm/consequences.sh`, job 42219843, CPU only).** The single-call answer is the top-1 of the first valid sample. Klone `runs/analysis/cons/*.json`.
+  - **Self-consistency (vote@32 minus single-call accuracy, points):** base models gain a lot: Qwen3 +3.4 / +10.4 (T=0.7 / T=1), Qwen2.5 +5.2 / +14.1, OLMo +4.0 / +14.2. Direct-answer post-trained models gain little: Qwen3-8B +0.3 (n.s.) / +1.4, Qwen2.5-Instruct +0.8 (n.s.) / +4.4, OLMo DPO and Instruct about 0. Reasoning-style models still gain: HuatuoGPT-o1 +4.8, m1 +3.8, Qwen3-8B with CoT +4.5.
+  - **Averaging stated lists instead of voting:** no accuracy difference anywhere (within ±2 points).
+  - **Top-3 from one stated list vs the 3 most frequent of 32 sampled answers:** post-trained Qwen3-8B +13.7 [+11.4, +15.9] / +10.0; Qwen2.5-Instruct +7.3 / +2.0 (n.s.); OLMo Instruct +1.9 (n.s.) / −4.7; OLMo DPO −7.8 / −9.6; base models −7 to −19. So for post-trained Qwen, one call's list beats 32 samples; for base models, sampling wins.
+  - **Uncertainty: AUROC for the single-call answer being correct.** Signals: stated probability of the answer (no extra calls) vs agreement of other samples (4 or 31 extra calls).
+
+    | Model | Stated p | Agreement, 5 samples | Agreement, 32 | Stated − agreement@32 |
+    |---|---|---|---|---|
+    | Qwen3-8B-Base, T=0.7 | 0.595 | 0.772 | 0.810 | −0.216 [−0.257, −0.173] |
+    | Qwen3-8B, T=0.7 | **0.734** | 0.613 | 0.655 | **+0.079 [+0.046, +0.110]** |
+    | Qwen3-8B, T=1 | **0.726** | 0.658 | 0.701 | +0.025 (n.s.) |
+    | Qwen2.5-7B base, T=0.7 | 0.576 | 0.764 | 0.811 | −0.235 |
+    | Qwen2.5-7B-Instruct, T=0.7 | 0.571 | 0.653 | **0.702** | −0.131 [−0.174, −0.087] |
+    | OLMo base, T=0.7 | 0.538 | 0.761 | 0.802 | −0.264 |
+    | OLMo DPO, T=0.7 | 0.738 | 0.702 | 0.751 | −0.013 (n.s.) |
+    | OLMo Instruct, T=0.7 | **0.796** | 0.668 | 0.731 | **+0.064 [+0.027, +0.101]** |
+    | OLMo Instruct, T=1 | 0.769 | 0.724 | 0.780 | −0.011 (n.s.) |
+    | HuatuoGPT-o1 / m1 / AlphaMed | 0.59 / 0.68 / 0.67 | 0.72 / 0.74 / 0.66 | 0.78 / 0.78 / 0.72 | agreement wins |
+
+    - In every family, post-training lowers the agreement signal (Qwen3 0.81 → 0.66, Qwen2.5 0.81 → 0.70, OLMo 0.80 → 0.73) and moves the best signal toward the stated probability (by +0.10 to +0.33 AUROC). The stated probability overtakes agreement only for Qwen3-8B and OLMo Instruct at T=0.7.
+    - AUROCs are for each model's own answers and accuracy, so they compare within a model, not across models.
+  - **Does uncertainty track true ambiguity? (Spearman correlation with the entropy of the reference differential):** almost not at all for any signal or model (−0.10 to +0.13). The exception is AlphaMed's stated probability (+0.30). Neither readout tells ambiguous cases from clear ones.
+  - **Prior work found while checking:** "The Alignment Tax" (Liu, arXiv 2603.24124, Mar 2026, single author, not peer reviewed): aligned models give one answer cluster on 40–79% of TruthfulQA questions, sampling-based uncertainty then has AUROC 0.500, and its Zephyr ablation puts the collapse at DPO. Meister et al. (NAACL 2025, 2411.05403): stated distributions beat sampled ones on opinion surveys; instruct and closed models only, no base comparison. Verbalized Sampling §5.3: Tulu-3-70B poem diversity 45.4% (base) → 20.8% (SFT) → 10.8% (DPO) with direct prompting, about 30% with verbalized sampling; the RLVR value is only in the figure.
 - **Full Phenopacket eval set: 1,401 cases / 749 diseases (2026-10-21).** Tillicum ran the remaining 901 cases (`submit_llama.sh fullpheno`, `splits/eval_rest.txt`, $3.17) with the same settings as the go set. Merged with the go-set samples in `runs/go_full` by `runs/fullpheno_klone.sh`; reports are in `go_full{,_pair25,_q3,_base_rl}`.
   | Model | pass@1 | pass@32 | Distinct | Conf | ECE |
   |---|---|---|---|---|---|
