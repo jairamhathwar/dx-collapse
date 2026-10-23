@@ -231,6 +231,19 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
 
     - **Stage to stage (T=0.7):** SFT vs base pass@32 −14.6, distinct −0.92. DPO vs SFT pass@32 +5.4, distinct −0.71. **Instruct (RLVR) vs DPO: pass@1 −5.9, pass@32 −19.1, distinct −0.92, cov@32 −7.7** (all significant). The T=1 pattern is the same (Instruct vs DPO pass@32 −12.7).
     - **Format:** base invalid rate 39.7% at T=0.7 and 47.2% at T=1 (SFT 16% / 21%). No case has all 32 base samples valid, so the fully-parsed subset check is empty. Valid-only pass@1 vs base: SFT −1.7, DPO +4.0, Instruct −1.9, RL-Zero +2.0 at T=0.7 (T=1: +1.3, +8.1, +3.8, +5.8). **So OLMo's raw pass@1 gains are mostly format.** Invalid samples count as misses for pass@k and are excluded from distinct/entropy, so base coverage and diversity are understated and the large-k losses are conservative.
+    - **Phenopackets (Klone `runs/go_full_olmo`, 1,401 cases, T=0.7; base finished via resume 383706, scored by job 42221122):**
+
+      | Stage | pass@1 | pass@32 | Δ pass@32 vs base | Distinct | Conf | ECE | Unparsable |
+      |---|---|---|---|---|---|---|---|
+      | Base | 0.007 | 0.045 | | 12.66 | 0.74 | 0.73 | 36% |
+      | SFT | 0.006 | 0.025 | −2.0 [−3.0, −1.1] | 16.60 | 0.84 | 0.83 | 3.6% |
+      | DPO | 0.007 | 0.030 | −1.5 [−2.5, −0.5] | 18.81 | 0.73 | 0.72 | 0.2% |
+      | Instruct (RLVR) | 0.008 | 0.031 | −1.4 [−2.4, −0.5] | 16.03 | 0.76 | 0.76 | 0.4% |
+      | RL-Zero-General | 0.009 | 0.039 | −0.6 [−1.4, +0.2] | 14.51 | 0.74 | 0.73 | 0.9% |
+
+      - Everything is near the floor, as for Qwen (pass@32 3.7–7.0%); OLMo is lower. Every instruct-pipeline stage loses at k=32 (−1.4 to −2.0, significant), and RL-Zero does not.
+      - Distinct answers are higher after post-training here, but base distinct is counted over its valid samples only (36% unparsable), so this does not show post-trained models are more diverse.
+      - Stated confidence is 0.73–0.84 for every stage, at about 1% accuracy. SFT is the most overconfident (ECE 0.83). Unlike Qwen, general post-training does not lower confidence.
     - **Reading:** the largest single narrowing is the RLVR step after SFT+DPO, which also lowers pass@1. RL-Zero from base keeps base-level pass@32 at T=1 (not at T=0.7) and loses the least on the mild and moderate tiers.
   - **Spend:** $65.68 at 12:13, up from $50.78 before OLMo.
 - **Stated list vs sampled top-1 (2026-10-23, `src/stated_vs_sampled.py`, `slurm/stated_vs_sampled.sh`, job 42218824, CPU only).** Question: does post-training collapse the differential a model *states* (one sample's top-5 list with probabilities), or only the distribution of its *sampled* top-1 answers? Valid samples only; results in Klone `runs/analysis/svs/*.json`.
