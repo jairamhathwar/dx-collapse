@@ -14,7 +14,7 @@ Notation: **[V]** = verified in this session from files or command output; **[A]
    - The **base model may hit the 4 h time limit** at about 14:06 PDT on 10-23 [A]. At 2h07 it had 512/980 DDXPlus cases (each temperature) and 512/1401 Phenopacket cases [V].
    - Sampling is resumable. Resubmit any unfinished base run with the command in section 6.
 3. When all OLMo samples are complete, **copy, score and analyze** them (section 6, steps 2–4). Then **write the OLMo stage-wise results into the paper** (section 7).
-4. **Commit.** As of this writing, Klone has uncommitted changes: `src/sample_diagnoses.py` (the `--chat-template` flag) and the new `templates/` folder [V]. Also the laptop working copy has new `slurm/olmo_klone.sh`, `slurm/relay_olmo_laptop.sh`, an updated `slurm/tillicum/submit_llama.sh`, and this file. The outgoing session tried to sync and commit these; check `git status` on Klone.
+4. **Commits are up to date.** Everything above, including this file, is pushed as **`d935238`** [V]. The Tillicum `code/` copy is synced too.
 
 ---
 
@@ -50,7 +50,7 @@ Notation: **[V]** = verified in this session from files or command output; **[A]
 
 | Location | What |
 |---|---|
-| GitHub `jairamhathwar/dx-collapse` | Source of truth: code, docs, paper. Last pushed commit **`dc369c4`** [V]. |
+| GitHub `jairamhathwar/dx-collapse` | Source of truth: code, docs, paper. Last pushed commit **`d935238`** [V]. |
 | Klone `/gscratch/scrubbed/jairamh/thesis/` | `code/` (the git checkout), `envs/thesis` (conda: vLLM 0.31.0, torch 2.13 cu130, TRL 1.16), `envs/tex` (Tectonic), `data/`, `runs/`, `logs/`. **Scrubbed storage purges files with old timestamps.** A daily scrontab `touch` job (03:30, ckpt-all) prevents this; check that `touch-thesis` is still queued. |
 | Tillicum `/gpfs/projects/stf/jairamh/thesis/` | `code/` (rsynced, **not** git; sync it from the laptop or Klone before running), `envs/thesis`, `data/`, `runs/`, `logs/`. Caches are in `/gpfs/scrubbed/jairamh/thesis`. |
 | `~/.thesis_env` on each cluster | Sets `$THESIS`, `HF_HOME` and caches. `source ~/.thesis_env` before anything. |
