@@ -187,7 +187,7 @@ On every single-answer criterion (accuracy, small-$k$ pass@$k$, calibration), th
 For each case and each condition that the reference differential weights at least 0.1, we ask whether the model names that condition as its top answer in at least one of its 32 samples. We call this \emph{considering} the condition.
 We group the 49 conditions by DDXPlus severity (1 = most severe).
 Post-training lowers consideration in every tier (Table~\ref{tab:severity}), and the severe ``can't-miss'' tier is not spared.
-For the 17 severity-1--2 conditions (e.g.\ NSTEMI/STEMI, acute pulmonary edema, anaphylaxis, pulmonary embolism, unstable angina), consideration falls from 0.45 to 0.27 for Qwen3 and from 0.52 to 0.34 for Qwen2.5 at $T{=}1$. The differences are $-18.4$ $[-20.8,-15.9]$ and $-18.2$ $[-21.4,-15.2]$ points.
+For the 17 severity-1--2 conditions (e.g.\ NSTEMI/STEMI, acute pulmonary edema, anaphylaxis, pulmonary embolism, unstable angina), consideration falls from 0.45 to 0.27 for Qwen3 and from 0.51 to 0.34 for Qwen2.5 at $T{=}1$. The differences are $-18.4$ $[-20.8,-15.9]$ and $-17.0$ $[-19.7,-14.2]$ points.
 Some diagnoses disappear from the top answer almost entirely.
 Qwen2.5-7B-Instruct names unstable angina as its top answer in one of 107 eligible cases, where its base model does in 47\%. When unstable angina is the true pathology, $\passk{32}$ falls from 1.00 to 0.00. Stable angina (0.89 to 0.06) and myocarditis (0.41 to 0.00) follow the same pattern.
 These conditions are not forgotten: they still appear lower in the listed differential (unstable angina in 50\% of eligible cases, against 95\% for the base model). The model ranks them but no longer commits to them.
@@ -310,7 +310,7 @@ $T$ & Stage & pass@1 & pass@32 & Distinct & Entropy & Cov@32 & Severe C@32 \\
 Every completion also \emph{states} a differential: up to five conditions with probabilities. We read it directly.
 For each valid sample we renormalize its stated probabilities over the conditions it names (uniform if the probabilities are missing or invalid) and compare this single list with the reference differential: its total-variation distance to the reference, the reference mass of the conditions it names, and, for each severe condition with reference probability at least 0.1, whether the list names it.
 For the sampled readout we use the empirical distribution of top-1 answers over the valid samples and, for the same budget of five names, the reference mass covered by the distinct top answers of five random samples.
-Two oracles bound what each format can achieve: the reference's own top five stated as a list, and as many draws from the reference as the model has valid samples (Table~\ref{tab:stated}).
+Two oracles bound what each format can achieve: the reference's own top five stated as a list, and as many draws from the reference as the model has valid samples (Table~\ref{tab:stated}, Figure~\ref{fig:stated}).
 
 For the Qwen models the two readouts move in opposite directions under post-training.
 In both families and at both temperatures, the post-trained model's single list is closer to the reference than the base model's (TV $-0.043$ to $-0.086$, all intervals exclude zero), covers more of its mass ($+6.1$ to $+10.8$ points), and names severe conditions more often ($+9.1$ to $+13.4$ points).
@@ -322,6 +322,13 @@ This quantifies the observation of \S\ref{sec:collapse} that conditions dropping
 OLMo is the exception. Its DPO and Instruct models' lists are no closer to the reference than the base model's (TV $+0.000$ and $+0.028$ at $T{=}0.7$; $-0.026$ and $-0.005$ at $T{=}1$) and cover at most 5 points more of it; only the naming of severe conditions improves ($+6.1$ to $+12.8$ points). RL-Zero's lists improve slightly (TV $-0.020$ and $-0.039$).
 The medical descendants change little relative to their parent (TV $-0.012$ for AlphaMed, $-0.014$ for HuatuoGPT-o1, $+0.017$ for m1).
 In absolute terms every model is far from the reference: a single list covers 0.22--0.41 of the reference mass, against 0.74 for the reference's own top five.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_stated_sampled.pdf}
+\caption{Base (hollow) $\rightarrow$ post-trained (filled) on DDXPlus (980 cases; OLMo: base $\rightarrow$ Instruct). (a) TV distance to the reference differential of one stated list (blue circles) and of the sampled top-1 answers (orange squares). (b) AUROC for the single-call answer being correct, of its stated probability (blue) and of agreement across 31 further samples (orange).}
+\label{fig:stated}
+\end{figure}
 
 \begin{table}[t]
 \centering\small
