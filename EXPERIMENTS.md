@@ -233,6 +233,26 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
     - **Format:** base invalid rate 39.7% at T=0.7 and 47.2% at T=1 (SFT 16% / 21%). No case has all 32 base samples valid, so the fully-parsed subset check is empty. Valid-only pass@1 vs base: SFT −1.7, DPO +4.0, Instruct −1.9, RL-Zero +2.0 at T=0.7 (T=1: +1.3, +8.1, +3.8, +5.8). **So OLMo's raw pass@1 gains are mostly format.** Invalid samples count as misses for pass@k and are excluded from distinct/entropy, so base coverage and diversity are understated and the large-k losses are conservative.
     - **Reading:** the largest single narrowing is the RLVR step after SFT+DPO, which also lowers pass@1. RL-Zero from base keeps base-level pass@32 at T=1 (not at T=0.7) and loses the least on the mild and moderate tiers.
   - **Spend:** $65.68 at 12:13, up from $50.78 before OLMo.
+- **Stated list vs sampled top-1 (2026-10-23, `src/stated_vs_sampled.py`, `slurm/stated_vs_sampled.sh`, job 42218824, CPU only).** Question: does post-training collapse the differential a model *states* (one sample's top-5 list with probabilities), or only the distribution of its *sampled* top-1 answers? Valid samples only; results in Klone `runs/analysis/svs/*.json`.
+  - **Note:** `list_recall` in `compare_runs.py` reports is gold-in-list rate, not reference-mass coverage. Do not quote it as differential coverage.
+
+  | Pair | TV one list (base → post) | TV sampled top-1 (base → post) | Ref. mass in one list | Ref. mass, top-1 of 5 samples | Severe named in one list |
+  |---|---|---|---|---|---|
+  | Qwen3-8B, T=0.7 | 0.743 → **0.700** | 0.749 → 0.793 | 0.335 → **0.396** | 0.245 → 0.207 | 0.347 → **0.437** |
+  | Qwen3-8B, T=1 | 0.772 → **0.700** | 0.712 → 0.783 | 0.293 → **0.396** | 0.275 → 0.215 | 0.312 → **0.440** |
+  | Qwen2.5-7B, T=0.7 | 0.779 → **0.716** | 0.756 → 0.785 | 0.291 → **0.364** | 0.233 → 0.214 | 0.345 → **0.440** |
+  | Qwen2.5-7B, T=1 | 0.803 → **0.717** | 0.715 → 0.761 | 0.255 → **0.363** | 0.257 → 0.234 | 0.304 → **0.438** |
+  | Qwen3-8B CoT, T=0.7 | 0.726 → **0.684** | 0.733 → 0.735 | 0.351 → **0.409** | 0.263 → 0.261 | 0.365 → **0.446** |
+  | OLMo base → Instruct, T=0.7 | 0.795 → 0.823 (worse) | 0.757 → 0.851 | 0.268 → 0.257 (worse) | 0.237 → 0.150 | 0.256 → **0.317** |
+  | OLMo base → Instruct, T=1 | 0.822 → 0.817 (n.s.) | 0.733 → 0.824 | 0.227 → **0.262** | 0.247 → 0.173 | 0.245 → **0.324** |
+  | OLMo base → DPO, T=0.7 | 0.795 → 0.795 (n.s.) | 0.757 → 0.804 | 0.268 → 0.277 | 0.237 → 0.193 | 0.256 → **0.378** |
+  | Oracle (reference itself) | 0.265 (reference top 5) | 0.18–0.25 (draws from reference) | 0.735 | 0.56 | 0.975 |
+
+  - **Qwen (all four pair × temperature settings and CoT):** the two views disagree in sign, and all differences are significant (paired case bootstrap). The post-trained model's single list is closer to the reference (TV −0.04 to −0.09), covers more reference mass (+0.06 to +0.11) and names severe conditions more often (+0.08 to +0.13). Its sampled top-1 distribution is further from the reference (+0.03 to +0.07; CoT: no difference), and 5 samples cover less (−0.02 to −0.06). Within the post-trained model the list beats its own samples by 0.04–0.09 TV; for base models the gap is about zero or negative.
+  - **OLMo:** the reversal does not hold cleanly. DPO and Instruct lists are no closer to the reference than the base model's (Instruct at T=0.7 is slightly worse). Only severe-condition naming improves (+0.06 to +0.13), plus RL-Zero's lists (TV −0.02 to −0.04).
+  - **Medical (vs Qwen2.5-7B-Instruct):** AlphaMed and HuatuoGPT-o1 lists slightly better (TV −0.01). m1 lists worse (+0.017) while its sampling is better (−0.038).
+  - **Absolute level:** every model is far from the reference. Single lists cover 0.22–0.41 of reference mass, against 0.735 for the reference's own top 5.
+  - **Reading:** for Qwen, post-training improves the stated differential and collapses the sampled one, so pass@k and sample diversity report a collapse the stated list does not show. The paper's "differential collapse" wording overstates the effect for Qwen. Close prior work: Verbalized Sampling (2510.01171) shows that aligned models recover diversity when asked to verbalize a distribution.
 - **Full Phenopacket eval set: 1,401 cases / 749 diseases (2026-10-21).** Tillicum ran the remaining 901 cases (`submit_llama.sh fullpheno`, `splits/eval_rest.txt`, $3.17) with the same settings as the go set. Merged with the go-set samples in `runs/go_full` by `runs/fullpheno_klone.sh`; reports are in `go_full{,_pair25,_q3,_base_rl}`.
   | Model | pass@1 | pass@32 | Distinct | Conf | ECE |
   |---|---|---|---|---|---|
