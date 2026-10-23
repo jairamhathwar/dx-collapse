@@ -208,10 +208,30 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
 - **OLMo 3 7B post-training stages (IN PROGRESS, launched 2026-10-23 ~10:06 on Tillicum, `submit_llama.sh olmo`).** This replaces the Llama pair: Meta access was still pending after more than 2 days, and OLMo is ungated.
   - **Checkpoints:** `Olmo-3-1025-7B` (base; uses `templates/olmo3_sft.jinja` via `--chat-template`), `-Instruct-SFT`, `-Instruct-DPO`, `-Instruct` (RLVR), `-RL-Zero-General` (RL from base).
   - **Output dirs:** DDXPlus T=0.7 → `meas_ddx/`, T=1 → `meas_ddx_t1/`, full 1,401 Phenopackets → `meas_full/`.
-  - **Status at 12:13:** SFT, DPO, Instruct and RL-Zero-General are complete (980/980/1401). Base is partial (512, 640, 512) and may need resubmission after the 4 h limit; sampling is resumable.
+  - **Status at 14:45:** DDXPlus complete for all five stages (980 cases each, both temperatures). Base T=0.7 finished just inside the 4 h limit; its resume (383707) exited after 5 s. Phenopacket base was cut at 1024/1401 and is resuming (383706, 5 h limit).
   - **RL-Zero-Mix failed:** model type `olmo2-retrofit` isn't supported by our Transformers/vLLM. Skipped.
   - **Smoke test:** vLLM resolves `Olmo3ForCausalLM`. Instruct output is clean JSON; base output is often invalid (refusals, plain lists, rambling).
-  - **Next:** relay to Klone `runs/{ddx_olmo,ddx_olmo_t1,go_full_olmo}`, then run `slurm/olmo_klone.sh` (scoring, format robustness, stage-to-stage comparisons, severity).
+  - **DDXPlus results (Klone `runs/ddx_olmo{,_t1}`, `slurm/olmo_ddx_analysis.sh`, job 42217232).** Δ = vs base, points, 95% paired case bootstrap.
+
+    | T=0.7 | pass@1 | pass@32 | Δ pass@32 | Distinct | cov@32 | Severe Considered@32 (Δ) |
+    |---|---|---|---|---|---|---|
+    | Base | 0.178 | 0.705 | | 4.93 | 0.351 | 0.412 |
+    | SFT | 0.222 | 0.559 | −14.6 [−17.5, −11.7] | 4.01 | 0.257 | −3.9 [−6.5, −1.3] |
+    | DPO | 0.324 | 0.613 | −9.2 [−12.1, −6.1] | 3.30 | 0.272 | −7.4 [−10.0, −4.9] |
+    | Instruct (RLVR) | 0.266 | 0.422 | −28.3 [−31.5, −25.0] | 2.37 | 0.195 | −16.1 [−18.6, −13.5] |
+    | RL-Zero-General | 0.295 | 0.572 | −13.3 [−16.1, −10.5] | 4.06 | 0.286 | −8.5 [−10.9, −6.2] |
+
+    | T=1 | pass@1 | pass@32 | Δ pass@32 | Distinct | cov@32 | Severe Considered@32 (Δ) |
+    |---|---|---|---|---|---|---|
+    | Base | 0.128 | 0.713 | | 7.53 | 0.398 | 0.469 |
+    | SFT | 0.191 | 0.634 | −8.0 [−11.0, −4.9] | 6.32 | 0.321 | −4.3 [−7.4, −1.3] |
+    | DPO | 0.313 | 0.688 | −2.5 [−5.3, +0.4] | 4.48 | 0.312 | −5.9 [−8.9, −3.1] |
+    | Instruct (RLVR) | 0.272 | 0.561 | −15.2 [−18.3, −12.1] | 3.58 | 0.259 | −14.4 [−17.5, −11.4] |
+    | RL-Zero-General | 0.279 | 0.695 | −1.8 [−4.5, +0.8] | 6.28 | 0.367 | −4.0 [−6.9, −1.2] |
+
+    - **Stage to stage (T=0.7):** SFT vs base pass@32 −14.6, distinct −0.92. DPO vs SFT pass@32 +5.4, distinct −0.71. **Instruct (RLVR) vs DPO: pass@1 −5.9, pass@32 −19.1, distinct −0.92, cov@32 −7.7** (all significant). The T=1 pattern is the same (Instruct vs DPO pass@32 −12.7).
+    - **Format:** base invalid rate 39.7% at T=0.7 and 47.2% at T=1 (SFT 16% / 21%). No case has all 32 base samples valid, so the fully-parsed subset check is empty. Valid-only pass@1 vs base: SFT −1.7, DPO +4.0, Instruct −1.9, RL-Zero +2.0 at T=0.7 (T=1: +1.3, +8.1, +3.8, +5.8). **So OLMo's raw pass@1 gains are mostly format.** Invalid samples count as misses for pass@k and are excluded from distinct/entropy, so base coverage and diversity are understated and the large-k losses are conservative.
+    - **Reading:** the largest single narrowing is the RLVR step after SFT+DPO, which also lowers pass@1. RL-Zero from base keeps base-level pass@32 at T=1 (not at T=0.7) and loses the least on the mild and moderate tiers.
   - **Spend:** $65.68 at 12:13, up from $50.78 before OLMo.
 - **Full Phenopacket eval set: 1,401 cases / 749 diseases (2026-10-21).** Tillicum ran the remaining 901 cases (`submit_llama.sh fullpheno`, `splits/eval_rest.txt`, $3.17) with the same settings as the go set. Merged with the go-set samples in `runs/go_full` by `runs/fullpheno_klone.sh`; reports are in `go_full{,_pair25,_q3,_base_rl}`.
   | Model | pass@1 | pass@32 | Distinct | Conf | ECE |

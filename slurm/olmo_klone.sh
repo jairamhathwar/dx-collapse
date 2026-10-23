@@ -20,6 +20,7 @@ echo "##### stage-to-stage (T=0.7)"
 python compare_recipes.py --runs-dir $R/ddx_olmo --a olmo3-sft --b olmo3-base
 python compare_recipes.py --runs-dir $R/ddx_olmo --a olmo3-dpo --b olmo3-sft
 python compare_recipes.py --runs-dir $R/ddx_olmo --a olmo3-instruct --b olmo3-dpo
+python compare_recipes.py --runs-dir $R/ddx_olmo --a olmo3-rlzero-general --b olmo3-base
 python per_condition.py --cases $THESIS/data/ddxplus/cases_test.jsonl --conditions-json $THESIS/data/ddxplus/release_conditions.json \
   $(for t in olmo3-base olmo3-sft olmo3-dpo olmo3-instruct olmo3-rlzero-general; do echo --model ${t#olmo3-}=$R/ddx_olmo/$t/samples.jsonl; done) \
   --ref base --out-dir $R/analysis/pc_olmo > /dev/null

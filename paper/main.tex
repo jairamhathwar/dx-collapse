@@ -18,10 +18,11 @@
 \begin{abstract}
 A clinical diagnosis is a ranked differential, not a single answer, yet language models are mostly judged by whether their top answer is correct.
 We study what post-training does to the rest of the differential.
-We compare base models with their post-trained descendants under a controlled design: two base/instruct pairs (Qwen2.5-7B, Qwen3-8B), and three public medical models fine-tuned from the same parent with reinforcement learning, SFT with PPO, or distillation.
+We compare base models with their post-trained descendants under a controlled design: two base/instruct pairs (Qwen2.5-7B, Qwen3-8B), every released post-training stage of OLMo~3 7B, and three public medical models fine-tuned from the same parent with reinforcement learning, SFT with PPO, or distillation.
 We evaluate them with 32 samples per case on DDXPlus, whose patients come with a reference differential, and on rare-disease cases from Phenopacket Store.
-When models answer directly, general post-training raises first-answer accuracy by 17 to 27 points but lowers coverage at larger sample budgets: base models are 10 to 15 points better at $\passk{32}$. Asking the post-trained model to reason first recovers this coverage but not the diversity of its samples.
+When models answer directly, general post-training of the Qwen models raises first-answer accuracy by 17 to 27 points but lowers coverage at larger sample budgets: base models are 10 to 15 points better at $\passk{32}$. Asking the post-trained model to reason first recovers this coverage but not the diversity of its samples.
 The post-trained models' sampled differentials collapse onto one or two diagnoses (answer entropy 0.18 vs.\ 1.31 for the base at $T{=}1$, against 1.87 for the reference), even though their top-1 calibration improves.
+In OLMo~3, diversity falls at every stage of the instruct pipeline, and the largest single loss comes from RL applied after SFT and DPO (19 points at $\passk{32}$), while RL applied directly to the base model narrows the differential less.
 Medical RL applied after instruction tuning improves pass@$k$ at every $k$ but does not undo the collapse; a medical RL model trained from the base model avoids it.
 On rare disease, medical RL raises stated confidence from 0.51 to 0.67--0.71 while accuracy stays near 2\%.
 Single-answer metrics, including pass@$k$ at small $k$, therefore rate the post-trained models as strictly better while missing a large loss of diagnostic coverage.
@@ -38,17 +39,19 @@ Whether a similar trade-off holds for diagnosis, and whether it shows up in the 
 
 We measure it directly. Our design holds the pretrained model fixed and varies only the post-training:
 (i) two base/instruct pairs, Qwen2.5-7B and Qwen3-8B, which isolate general post-training;
-(ii) three public medical models fine-tuned from the same parent, Qwen2.5-7B-Instruct: AlphaMed (rule-based RL), HuatuoGPT-o1 (SFT then PPO), and m1 (SFT distillation), plus AlphaMed's companion checkpoint trained from the base model.
+(ii) three public medical models fine-tuned from the same parent, Qwen2.5-7B-Instruct: AlphaMed (rule-based RL), HuatuoGPT-o1 (SFT then PPO), and m1 (SFT distillation), plus AlphaMed's companion checkpoint trained from the base model;
+(iii) every released stage of OLMo~3 7B~\citep{olmo2025olmo3}, from one base model through SFT, DPO and RL, plus a checkpoint trained with RL directly from the base, which locates the collapse within the pipeline.
 We draw 32 samples per case and evaluate each model's sampled differentials against a reference distribution on DDXPlus~\citep{fansi2022ddxplus}, which ships a differential for every synthetic patient, and against an ontology on rare-disease cases from Phenopacket Store~\citep{danis2025phenopacketstore}.
 
 \paragraph{Findings.}
 \begin{enumerate}
-\item \textbf{General post-training trades coverage for top-1 accuracy.} In both families the post-trained model is far better on its first answer (+17 to +27 points) but worse at larger sample budgets. Its pass@$k$ curve crosses the base model's at $k{\approx}4$--8, and at $k{=}32$ the base model leads by 10--15 points. All intervals exclude zero (\S\ref{sec:general}). The pattern survives a reworded prompt and controls for invalid outputs; prompting for step-by-step reasoning removes the large-$k$ loss but not the loss of diversity (\S\ref{sec:robust}).
+\item \textbf{General post-training trades coverage for top-1 accuracy.} In both Qwen families the post-trained model is far better on its first answer (+17 to +27 points) but worse at larger sample budgets. Its pass@$k$ curve crosses the base model's at $k{\approx}4$--8, and at $k{=}32$ the base model leads by 10--15 points. All intervals exclude zero (\S\ref{sec:general}). The pattern survives a reworded prompt and controls for invalid outputs; prompting for step-by-step reasoning removes the large-$k$ loss but not the loss of diversity (\S\ref{sec:robust}).
 \item \textbf{The differential collapses, and single-answer metrics do not show it.} Post-trained models give 1.3--2.6 distinct top answers per 32 samples, against 3.8--8.3 for their base models. Their answer entropy is 0.11--0.49, against 0.78--1.59 for base models and 1.87 for the reference differential. This holds even when sampling at $T{=}1$. Their top-1 calibration is \emph{better}, so on every single-answer metric they look strictly superior (\S\ref{sec:collapse}).
-\item \textbf{Medical RL on an instruction-tuned model adds accuracy without undoing the collapse.} AlphaMed improves on its parent at every $k$ (+3.9 at $k{=}1$, +8.4 at $k{=}32$), so we see no sharpening tax at the medical stage. Its answer diversity matches its parent's, which is already collapsed. AlphaMed's companion checkpoint trained from the base model keeps most of the base model's diversity and its can't-miss coverage, which, with our own GRPO runs, suggests that the collapse comes from instruction tuning, not from RL (\S\ref{sec:medical}).
+\item \textbf{Medical RL on an instruction-tuned model adds accuracy without undoing the collapse.} AlphaMed improves on its parent at every $k$ (+3.9 at $k{=}1$, +8.4 at $k{=}32$), so we see no sharpening tax at the medical stage. Its answer diversity matches its parent's, which is already collapsed. AlphaMed's companion checkpoint trained from the base model keeps most of the base model's diversity and its can't-miss coverage (\S\ref{sec:medical}).
+\item \textbf{The collapse accumulates over the instruction-tuning pipeline, and RL on top of it narrows most.} In OLMo~3, whose every stage is public, the base model leads every post-trained stage at $k{=}32$ ($T{=}0.7$). Distinct answers fall from 4.93 to 4.01 after SFT, 3.30 after DPO and 2.37 after RLVR, and the RLVR step alone costs 19 points of $\passk{32}$. RL applied directly to the base narrows less: OLMo's RL-Zero matches its base at $\passk{32}$ at $T{=}1$, and, with AlphaMed's base-initialized checkpoint and our GRPO runs, this indicates that the collapse is not a necessary effect of RL (\S\ref{sec:stages}).
 \item \textbf{On rare disease, medical post-training increases overconfidence.} With accuracy near 2\% for every model, mean stated confidence rises from 0.51 for the parent to 0.67--0.71 for the RL-trained medical models, whether trained from the instruct or the base model, while their accuracy gains are under 1.5 points (\S\ref{sec:rare}).
 \end{enumerate}
-\begin{enumerate}\setcounter{enumi}{4}
+\begin{enumerate}\setcounter{enumi}{5}
 \item \textbf{A group-level reward avoids the collapse.} Rewarding each GRPO sample for its contribution to the match between the group's sampled answers and the reference differential raises accuracy as much as standard RLVR, while preserving and then widening the differential; per-sample distributional rewards do not (\S\ref{sec:training}).
 \end{enumerate}
 
@@ -102,14 +105,20 @@ HuatuoGPT-o1-7B~\citep{chen2024huatuogpto1} & Qwen2.5-7B-Instruct & SFT + PPO (v
 m1-7B-23K~\citep{huang2025m1} & Qwen2.5-7B-Instruct & SFT distillation & medical \\
 Qwen3-8B-Base & n/a & none (pretrained) & base \\
 Qwen3-8B & Qwen3-8B-Base & general post-training & instruct \\
+\midrule
+OLMo-3-1025-7B~\citep{olmo2025olmo3} & n/a & none (pretrained) & base \\
+OLMo-3-7B-Instruct-SFT & OLMo-3-1025-7B & SFT & stage 1 \\
+OLMo-3-7B-Instruct-DPO & OLMo-3 SFT & DPO & stage 2 \\
+OLMo-3-7B-Instruct & OLMo-3 DPO & RLVR & stage 3 (instruct) \\
+OLMo-3-7B-RL-Zero-General & OLMo-3-1025-7B & RL (LM judge) & RL from base \\
 \bottomrule
 \end{tabular}
-\caption{Models studied. Each pair or family shares its pretrained weights, so differences reflect post-training.}
+\caption{Models studied. Each pair or family shares its pretrained weights, so differences reflect post-training. OLMo~3 releases every stage of its instruct pipeline.}
 \label{tab:models}
 \end{table}
 
 \paragraph{Sampling.}
-We draw $n{=}32$ samples per case with vLLM, at $T{=}0.7$, top-$p$ 0.95, and at $T{=}1.0$, top-$p$ 1.0 (sampling from the model's own distribution). All models use their chat template and the same prompt.
+We draw $n{=}32$ samples per case with vLLM, at $T{=}0.7$, top-$p$ 0.95, and at $T{=}1.0$, top-$p$ 1.0 (sampling from the model's own distribution). All models use their chat template and the same prompt; OLMo-3-1025-7B ships without one, so it gets its SFT checkpoint's template.
 Completions are capped at 4,096 tokens (8,192 for m1, whose long reasoning otherwise truncates), and generation stops at the end-of-turn token.
 We take the last valid JSON list in each completion. Unparsable completions count as incorrect; this affects mainly base models, so base-model pass@$k$ is a lower bound at large $k$, while post-trained gains at small $k$ are partly format. \S\ref{sec:robust} reports format-controlled comparisons.
 
@@ -253,6 +262,44 @@ CoT & 1.0 & 0.275 & \textbf{0.642} & 0.837 & 0.837 & 6.31 & 2.24 \\
 \label{tab:prompts}
 \end{table}
 
+\subsection{Which post-training stage narrows the differential?}\label{sec:stages}
+The Qwen pairs compare a base model with the end of a post-training pipeline. OLMo~3~\citep{olmo2025olmo3} releases every stage of its 7B instruct pipeline from one base model: supervised fine-tuning, then DPO, then RL with verifiable rewards on math, code, instruction-following and chat prompts (the released OLMo-3-7B-Instruct). It also releases RL-Zero checkpoints trained with RL directly from the base; we use the general one, trained on chat prompts with an LM-judge reward. (The RL-Zero-Mix checkpoint does not load in our vLLM version.) Table~\ref{tab:stages} gives the results.
+
+The coverage loss replicates in this third family. At $T{=}0.7$, every post-trained stage is worse than the base at $k{=}32$: by $-14.6$ $[-17.5,-11.7]$ points after SFT, $-9.2$ $[-12.1,-6.1]$ after DPO, $-28.3$ $[-31.5,-25.0]$ after RLVR, and $-13.3$ $[-16.1,-10.5]$ for RL-Zero. Diversity falls at every stage of the pipeline, from 4.93 distinct answers for the base to 4.01 after SFT, 3.30 after DPO and 2.37 after RLVR.
+
+Compared stage to stage, DPO recovers part of what SFT lost at large $k$ ($+5.4$ $[+2.9,+8.0]$ points at $k{=}32$, and $+10.3$ $[+9.0,+11.6]$ at $k{=}1$) while narrowing the differential further ($-0.71$ distinct answers).
+The final RLVR stage is the largest single narrowing. Against the DPO model it loses $-19.1$ $[-21.8,-16.3]$ points at $k{=}32$, 0.92 distinct answers and 7.7 points of coverage@32, and it is also worse at $k{=}1$ ($-5.9$ $[-7.2,-4.6]$). It drops severe-tier Considered@32 to 0.25, a loss of $-16.1$ $[-18.6,-13.5]$ points relative to the base, against $-7.4$ for the DPO model. At $T{=}1$ the pattern is the same (RLVR vs.\ DPO: $-12.7$ $[-15.4,-9.9]$ at $k{=}32$).
+
+RL applied directly to the base narrows the differential less. At $T{=}1$, RL-Zero keeps the base model's $\passk{32}$ ($-1.8$ $[-4.5,+0.8]$) and 6.28 of its 7.53 distinct answers, and it loses 4.0 $[1.2,6.9]$ points of severe-tier consideration, against 14.4 for the full instruct pipeline. At $T{=}0.7$ it still loses 13.3 points at $k{=}32$, about as much as SFT.
+
+The OLMo base model often breaks the output format: 40\% of its samples are invalid at $T{=}0.7$ and 47\% at $T{=}1$, while unparsable completions are 16--21\% for the SFT model and at most 1.6\% for the later stages. No case has 32 valid base samples, so the all-valid check of \S\ref{sec:robust} is not possible here. Among valid samples, the post-trained models' gains at $k{=}1$ are small ($-1.9$ to $+4.0$ points at $T{=}0.7$, $+1.3$ to $+8.1$ at $T{=}1$), so most of OLMo's raw gain at $k{=}1$ is format. Invalid samples count as misses and are excluded from distinct answers and entropy, so the base model's coverage and diversity are understated and the losses above are conservative.
+
+Across three families, then, the collapse is not a necessary effect of RL. It accumulates over the instruction-tuning pipeline, and in OLMo~3 its largest step is RL applied on top of SFT and DPO; RL applied directly to a base model (OLMo RL-Zero, AlphaMed's base-initialized checkpoint, and our GRPO runs in \S\ref{sec:training}) narrows the differential less.
+\todo{OLMo Phenopacket results (base run still sampling).}
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{llcccccc}
+\toprule
+$T$ & Stage & pass@1 & pass@32 & Distinct & Entropy & Cov@32 & Severe C@32 \\
+\midrule
+0.7 & Base & 0.178 & \textbf{0.705} & \textbf{4.93} & \textbf{1.16} & \textbf{0.351} & \textbf{0.412} \\
+ & SFT & 0.222 & 0.559 & 4.01 & 0.87 & 0.257 & 0.373 \\
+ & SFT+DPO & \textbf{0.324} & 0.613 & 3.30 & 0.63 & 0.272 & 0.338 \\
+ & SFT+DPO+RLVR (Instruct) & 0.266 & 0.422 & 2.37 & 0.42 & 0.195 & 0.251 \\
+ & RL-Zero (RL from base) & 0.295 & 0.572 & 4.06 & 0.84 & 0.286 & 0.326 \\
+\midrule
+1.0 & Base & 0.128 & \textbf{0.713} & \textbf{7.53} & \textbf{1.66} & \textbf{0.398} & \textbf{0.469} \\
+ & SFT & 0.191 & 0.634 & 6.32 & 1.29 & 0.321 & 0.426 \\
+ & SFT+DPO & \textbf{0.313} & 0.688 & 4.48 & 0.87 & 0.312 & 0.410 \\
+ & SFT+DPO+RLVR (Instruct) & 0.272 & 0.561 & 3.58 & 0.68 & 0.259 & 0.325 \\
+ & RL-Zero (RL from base) & 0.279 & 0.695 & 6.28 & 1.21 & 0.367 & 0.429 \\
+\bottomrule
+\end{tabular}
+\caption{OLMo~3 7B post-training stages on DDXPlus (980 cases, 32 samples). Severe C@32 is severe-tier Considered@32 as in Table~\ref{tab:severity}. Bold marks the best value in each block. Diversity falls at every stage of the instruct pipeline, and the RLVR stage loses the most coverage; RL from the base keeps the base model's pass@32 at $T{=}1$.}
+\label{tab:stages}
+\end{table}
+
 \subsection{Medical post-training}\label{sec:medical}
 Applied after instruction tuning, medical RL does not cost coverage. AlphaMed improves on its parent at every $k$ (Figure~\ref{fig:alphamed}): +3.9 points at $k{=}1$ ($[+2.2,+5.5]$), widening to +8.4 at $k{=}32$ ($[+6.0,+10.6]$). It reaches at least one correct sample for 47 of 49 conditions, against 39 for its parent.
 It does not restore breadth, though: distinct answers (1.87 vs.\ 1.82), entropy (0.29 vs.\ 0.30), and coverage (0.27 vs.\ 0.24) stay at the instruction-tuned level, far below the base model.
@@ -267,7 +314,7 @@ It offers a third-party check on whether RL itself causes the collapse (Table~\r
 It does not. RL from the base model improves on the base at every $k$ ($+14.3$ $[+13.1,+15.7]$ points at $k{=}1$, $+9.5$ $[+7.4,+11.6]$ at $k{=}32$). It keeps 3.14 distinct answers, against 1.87 for the instruct-initialized AlphaMed.
 Against that instruct-model AlphaMed, it is 2.2 $[0.4,3.9]$ points worse at $k{=}1$ and 10.8 $[+8.6,+13.2]$ points better at $k{=}32$.
 It also preserves can't-miss consideration: severe-tier Considered@32 changes by $-0.7$ $[-3.0,+1.7]$ points relative to the base, against $-12.4$ for instruction tuning and $-8.1$ for instruction tuning followed by AlphaMed's RL (Table~\ref{tab:severity}).
-This is consistent with our own controlled GRPO-from-base result (\S\ref{sec:training}): with a verifiable correctness reward, RL from a base model buys accuracy without the collapse, which is introduced by general instruction tuning and inherited by everything trained on top of it.
+This is consistent with our own controlled GRPO-from-base result (\S\ref{sec:training}): with a verifiable correctness reward, RL from a base model buys accuracy without the collapse, which is introduced by general instruction tuning and inherited by everything trained on top of it. OLMo~3 refines this (\S\ref{sec:stages}): within its instruct pipeline, the RL stage applied after SFT and DPO is the largest single narrowing.
 
 \begin{table}[t]
 \centering\small
@@ -422,7 +469,7 @@ Qwen3-1.7B (untrained) & 0.378 & 0.435 & 1.41 & 0.151 & 0.162 & 0.850 \\
 \section{Limitations}
 DDXPlus is synthetic: its reference differential is the posterior of a rule-based engine, and the simulated pathology is not always ranked first in it (it is for ``more than 70\%'' of patients~\citep[\S3.5]{fansi2022ddxplus}), so we treat TV and coverage as distance to a \emph{reference} posterior rather than to clinical truth.
 Base models more often give invalid answers. We count these as errors, which makes the large-$k$ losses conservative but inflates post-trained gains at small $k$; conditioning on valid samples removes a quarter to a third of the $T{=}1$ pass@1 gain (\S\ref{sec:robust}).
-The base/instruct pairs are Qwen-family 7--8B models; prompt robustness is tested on one pair, and the collapse at large $k$ largely disappears when the model is asked to reason first (\S\ref{sec:robust}). \todo{Llama-3.1-8B base/instruct pair (pending access); Llama medical descendants are run.}
+The base/instruct pairs are Qwen-family 7--8B models; prompt robustness is tested on one pair, and the collapse at large $k$ largely disappears when the model is asked to reason first (\S\ref{sec:robust}). OLMo~3 adds a third family and every pipeline stage, but its base model gives invalid answers on 40--47\% of samples, so its format-controlled comparisons are weaker than for Qwen. We evaluate one RL-Zero checkpoint, trained with an LM-judge reward on chat prompts rather than a diagnosis reward.
 Phenopacket cases are drawn from published literature and may be in pretraining data, which we partly address with era splits.
 We do not evaluate clinical utility with clinicians.
 
