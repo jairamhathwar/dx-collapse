@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 
 from ddx_names import Matcher
-from parsing import parse_dx
+from parsing import parse_dx, sort_by_prob
 
 METRICS = ["tv_sampled", "tv_list", "tv_list_mean", "rec_list", "cov5_sampled", "sev_list", "sev_top1_5",
            "h_list", "h_sampled", "valid"]
@@ -112,6 +112,7 @@ def main():
     ap.add_argument("--conditions-json", required=True)
     ap.add_argument("--tau", type=float, default=0.1)
     ap.add_argument("--out")
+    ap.add_argument("--top-by-prob", action="store_true", help="top-1 = highest stated probability (full-distribution prompt)")
     a = ap.parse_args()
 
     raw = json.load(open(a.conditions_json))
@@ -132,7 +133,7 @@ def main():
             severe = [c for c, p in ref.items() if p >= a.tau and severity.get(c, 9) <= 2]
             tops, lists = [], []
             for s in rec["samples"]:
-                d, top = stated_dist(parse_dx(s["text"]), match)
+                d, top = stated_dist((sort_by_prob if a.top_by_prob else list)(parse_dx(s["text"])), match)
                 if d is None or top is None:
                     continue
                 tops.append(top)

@@ -55,3 +55,9 @@ def parse_dx(text):
         if isinstance(arr, list) and (out := _clean(arr)):
             return out
     return _clean(_bare_objects(text))
+
+
+def sort_by_prob(dx):
+    """Order a parsed differential by stated probability, highest first (missing probabilities last).
+    Used for the full-distribution prompt, where the model may not list conditions in order."""
+    return sorted(dx, key=lambda d: -(d["probability"] if d["probability"] is not None else -1.0))

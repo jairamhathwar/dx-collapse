@@ -47,12 +47,25 @@ DDX_PLAIN_INSTRUCTIONS = (
 )
 DDX_COT_PREFIX = ("First reason step by step about the patient's findings and which conditions they support "
                   "or argue against. Then give your answer.\n")
+# Full-distribution elicitation: a probability for every listed condition (stated-readout robustness).
+DDX_FULL_INSTRUCTIONS = (
+    "Based on the patient's answers above, give your differential diagnosis.\n"
+    "Here is the list of possible conditions:\n{conditions}\n\n"
+    "Give your probability that each condition is the correct diagnosis, for EVERY condition in the list, "
+    "so that the probabilities sum to 1. List them from most to least likely and use the condition names "
+    "exactly as written in the list.\n"
+    "End your answer with a JSON array in exactly this format:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
+)
 
 
 def build_ddx_messages(case, n_dx, conditions, variant="default"):
     cond = "\n".join(f"- {c}" for c in conditions)
     if variant == "plain":
         return [{"role": "user", "content": case["vignette"] + "\n\n" + DDX_PLAIN_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
+    if variant == "full":
+        return [{"role": "system", "content": DDX_SYSTEM},
+                {"role": "user", "content": case["vignette"] + "\n\n" + DDX_FULL_INSTRUCTIONS.format(conditions=cond)}]
     body = DDX_INSTRUCTIONS.format(conditions=cond, n=n_dx)
     if variant == "cot":
         body = DDX_COT_PREFIX + body
@@ -99,7 +112,7 @@ def main():
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
-    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot"], default="default",
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full"], default="default",
                     help="ddxplus prompt-robustness variant")
     a = ap.parse_args()
     conditions = json.load(open(a.conditions)) if a.task == "ddxplus" else None

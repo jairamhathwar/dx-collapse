@@ -21,7 +21,7 @@ from collections import Counter
 import numpy as np
 
 from ddx_names import Matcher
-from parsing import parse_dx
+from parsing import parse_dx, sort_by_prob
 
 
 def ece(conf, correct, bins=10):
@@ -54,6 +54,7 @@ def main():
     ap.add_argument("--conditions", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--graded-out")
+    ap.add_argument("--top-by-prob", action="store_true", help="top-1 = highest stated probability (full-distribution prompt)")
     a = ap.parse_args()
 
     match = Matcher(json.load(open(a.conditions)))
@@ -72,7 +73,7 @@ def main():
         ddx = {c: p / tot for c, p in ddx.items()}
         top1, list_hits, ddx_recall = [], 0, []
         for s in rec["samples"]:
-            s["dx"] = parse_dx(s["text"])  # re-parse with the current parser
+            s["dx"] = (sort_by_prob if a.top_by_prob else list)(parse_dx(s["text"]))  # re-parse with the current parser
             if not s["dx"]:
                 unparsed += 1
                 top1.append(None)

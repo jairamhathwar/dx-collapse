@@ -6,6 +6,8 @@
 #   bash slurm/tillicum/submit_llama.sh prompts       # prompt-robustness variants on the Qwen3-8B pair
 #   bash slurm/tillicum/submit_llama.sh fullpheno     # remaining 901 Phenopacket cases (eval_full minus eval_go)
 #   bash slurm/tillicum/submit_llama.sh olmo          # OLMo 3 7B post-training stages (base, SFT, DPO, RLVR, RL-Zero)
+#   bash slurm/tillicum/submit_llama.sh full49        # full 49-condition distribution prompt, 7B pairs + OLMo base/Instruct (T=0.7)
+#   bash slurm/tillicum/submit_llama.sh big32         # 32B replication: Qwen2.5-32B pair + OLMo 3.1 32B stages (T=0.7)
 set -euo pipefail
 source ~/.thesis_env
 cd "$THESIS"
@@ -14,6 +16,13 @@ DDX="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxpl
 PHENO="--cases data/phenopackets/cases.jsonl --case-ids data/phenopackets/splits/eval_go.txt --k 32 --shard -1 --num-shards 2"
 STD="--max-tokens 4096 --max-model-len 6144"
 T1="--temperature 1.0 --top-p 1.0"
+
+run4() {  # dir tag model time args...   (4 shards, larger memory; for 32B models)
+  local dir=$1 tag=$2 model=$3 t=$4; shift 4
+  j=$(sbatch --parsable -p gpu-h200 --time=$t --mem=96G --array=0-3 --job-name=m-$dir-$tag $S \
+      --model $model --out runs/$dir/$tag/samples.s{shard}.jsonl "$@")
+  echo "$dir/$tag  $model  job=$j"
+}
 
 run() {  # dir tag model args...
   local dir=$1 tag=$2 model=$3; shift 3
@@ -68,5 +77,20 @@ case "${1:-}" in
       run meas_ddx_t1 $tag $model $DDX $STD $T1 $tpl
       run meas_full $tag $model $FULL $STD $tpl
     done ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo"; exit 1 ;;
+  full49)
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B qwen25-7b-base:Qwen/Qwen2.5-7B \
+                qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-base:allenai/Olmo-3-1025-7B olmo3-instruct:allenai/Olmo-3-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      tpl=""; [ "$tag" = olmo3-base ] && tpl="--chat-template code/templates/olmo3_sft.jinja"
+      run pv_full_t07 $tag $model $DDX $STD --prompt-variant full $tpl
+    done ;;
+  big32)
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    run4 big32_ddx qwen25-32b-base Qwen/Qwen2.5-32B 06:00:00 $DDX4 $STD
+    run4 big32_ddx qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 06:00:00 $DDX4 $STD
+    run4 big32_ddx olmo31-32b-base allenai/Olmo-3-1125-32B 12:00:00 $DDX4 $STD --chat-template code/templates/olmo31_32b_sft.jinja
+    run4 big32_ddx olmo31-32b-sft allenai/Olmo-3.1-32B-Instruct-SFT 08:00:00 $DDX4 $STD
+    run4 big32_ddx olmo31-32b-dpo allenai/Olmo-3.1-32B-Instruct-DPO 08:00:00 $DDX4 $STD
+    run4 big32_ddx olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $DDX4 $STD ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32"; exit 1 ;;
 esac

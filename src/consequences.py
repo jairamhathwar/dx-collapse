@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 
 from ddx_names import Matcher
-from parsing import parse_dx
+from parsing import parse_dx, sort_by_prob
 from stated_vs_sampled import entropy, stated_dist
 
 ACC = ["single", "vote@5", "vote@32", "stated@5", "stated@32", "top3_list1", "top3_vote@32", "top3_stated@32"]
@@ -164,6 +164,7 @@ def main():
     ap.add_argument("--cases", required=True)
     ap.add_argument("--conditions-json", required=True)
     ap.add_argument("--out")
+    ap.add_argument("--top-by-prob", action="store_true", help="top-1 = highest stated probability (full-distribution prompt)")
     a = ap.parse_args()
 
     raw = json.load(open(a.conditions_json))
@@ -179,7 +180,7 @@ def main():
             ref = {c: p / z for c, p in case["gt_differential"]}
             tops, lists = [], []
             for s in rec["samples"]:
-                d, top = stated_dist(parse_dx(s["text"]), match)
+                d, top = stated_dist((sort_by_prob if a.top_by_prob else list)(parse_dx(s["text"])), match)
                 if d is not None and top is not None:
                     tops.append(top)
                     lists.append(d)
