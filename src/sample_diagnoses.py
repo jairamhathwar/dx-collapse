@@ -108,6 +108,8 @@ def main():
     ap.add_argument("--max-model-len", type=int, default=8192)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--enforce-eager", action="store_true", help="skip torch.compile/CUDA graphs")
+    ap.add_argument("--dtype", default="auto", help="vLLM dtype; use bfloat16 for checkpoints stored in float32 "
+                    "(vLLM's auto would load those as float16)")
     ap.add_argument("--task", choices=["phenopacket", "ddxplus"], default="phenopacket")
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
@@ -138,7 +140,7 @@ def main():
 
     from vllm import LLM, SamplingParams
     llm = LLM(model=a.model, max_model_len=a.max_model_len, seed=a.seed, trust_remote_code=True,
-              enforce_eager=a.enforce_eager)
+              enforce_eager=a.enforce_eager, dtype=a.dtype)
     # Base models don't treat the chat end-of-turn token as EOS; stop there explicitly
     # (no-op for instruct models, which already stop on it).
     vocab = llm.get_tokenizer().get_vocab()

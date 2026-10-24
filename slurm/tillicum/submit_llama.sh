@@ -89,8 +89,12 @@ case "${1:-}" in
     run4 big32_ddx qwen25-32b-base Qwen/Qwen2.5-32B 06:00:00 $DDX4 $STD
     run4 big32_ddx qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 06:00:00 $DDX4 $STD
     run4 big32_ddx olmo31-32b-base allenai/Olmo-3-1125-32B 12:00:00 $DDX4 $STD --chat-template code/templates/olmo31_32b_sft.jinja
-    run4 big32_ddx olmo31-32b-sft allenai/Olmo-3.1-32B-Instruct-SFT 08:00:00 $DDX4 $STD
-    run4 big32_ddx olmo31-32b-dpo allenai/Olmo-3.1-32B-Instruct-DPO 08:00:00 $DDX4 $STD
+    run4 big32_ddx olmo31-32b-sft allenai/Olmo-3.1-32B-Instruct-SFT 08:00:00 $DDX4 $STD --dtype bfloat16
+    run4 big32_ddx olmo31-32b-dpo allenai/Olmo-3.1-32B-Instruct-DPO 08:00:00 $DDX4 $STD --dtype bfloat16
     run4 big32_ddx olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $DDX4 $STD ;;
+  big32fix)  # SFT and DPO checkpoints are stored in float32; load as bfloat16 like the other stages
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    run4 big32_ddx olmo31-32b-sft allenai/Olmo-3.1-32B-Instruct-SFT 08:00:00 $DDX4 $STD --dtype bfloat16
+    run4 big32_ddx olmo31-32b-dpo allenai/Olmo-3.1-32B-Instruct-DPO 08:00:00 $DDX4 $STD --dtype bfloat16 ;;
   *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32"; exit 1 ;;
 esac
