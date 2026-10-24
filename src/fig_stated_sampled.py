@@ -7,6 +7,7 @@ and of the sampled top-1 answers (from stated_vs_sampled.py, runs/analysis/svs/*
 Panel b: AUROC for the single-call answer being correct, of its stated probability and of agreement
 across 31 further samples (from consequences.py, runs/analysis/cons/*.json).
 Each arrow runs from the base model (hollow marker) to its post-trained model (filled marker).
+OLMo rows: base -> final Instruct (OLMo 3 7B; OLMo 3.1 32B).
 """
 import argparse
 import json
@@ -23,8 +24,10 @@ ROWS = [  # label, svs/cons file, base tag, post tag
     ("Qwen3-8B, $T{=}1$", "ddx_qwen3_t1", "qwen3-8b-base", "qwen3-8b"),
     ("Qwen2.5-7B, $T{=}0.7$", "pair25_t07", "qwen25-7b-base", "qwen25-7b-it"),
     ("Qwen2.5-7B, $T{=}1$", "pair25_t1", "qwen25-7b-base", "qwen25-7b-it"),
+    ("Qwen2.5-32B, $T{=}0.7$", "big32_q", "qwen25-32b-base", "qwen25-32b-it"),
     ("OLMo-3-7B, $T{=}0.7$", "ddx_olmo", "olmo3-base", "olmo3-instruct"),
     ("OLMo-3-7B, $T{=}1$", "ddx_olmo_t1", "olmo3-base", "olmo3-instruct"),
+    ("OLMo-3.1-32B, $T{=}0.7$", "big32_o", "olmo31-32b-base", "olmo31-32b-instruct"),
 ]
 
 plt.rcParams.update({
@@ -50,7 +53,7 @@ def main():
     a = ap.parse_args()
     A = Path(a.analysis)
 
-    fig, axes = plt.subplots(1, 2, figsize=(6.4, 2.5), sharey=True, gridspec_kw={"wspace": 0.08})
+    fig, axes = plt.subplots(1, 2, figsize=(6.4, 3.1), sharey=True, gridspec_kw={"wspace": 0.08})
     off = 0.17
     for i, (label, d, base, post) in enumerate(ROWS):
         y = len(ROWS) - 1 - i
@@ -67,15 +70,15 @@ def main():
     axes[0].set_title("(a) Distance to the reference differential", loc="left")
     axes[1].set_xlabel("AUROC, single-call answer correct (higher is better)")
     axes[1].set_title("(b) Error signal", loc="left")
-    axes[0].set_xlim(0.68, 0.87)
+    axes[0].set_xlim(0.66, 0.87)
     axes[1].set_xlim(0.50, 0.89)
     for ax in axes:
         ax.tick_params(axis="y", length=0)
         ax.grid(axis="x", color="#e6e5e1", lw=0.5)
         ax.set_axisbelow(True)
         ax.set_ylim(-0.6, len(ROWS) - 0.4)
-        for y in [1.5, 3.5]:
-            ax.axhline(y, color="#d0cfca", lw=0.5)
+        for b in [2, 4, 5, 7]:  # family/size groups, counted from the top row
+            ax.axhline(len(ROWS) - b - 0.5, color="#d0cfca", lw=0.5)
 
     from matplotlib.lines import Line2D
     handles = [
@@ -84,7 +87,7 @@ def main():
         Line2D([], [], color=MUTED, marker="o", ms=5, mfc="white", lw=0, label="base model"),
         Line2D([], [], color=MUTED, marker="o", ms=5, lw=0, label="post-trained model"),
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.24))
+    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.19))
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(a.out)
     fig.savefig(str(a.out).replace(".pdf", ".png"), dpi=200)
