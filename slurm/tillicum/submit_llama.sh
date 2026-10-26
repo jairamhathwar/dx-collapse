@@ -96,5 +96,25 @@ case "${1:-}" in
     DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
     run4 big32_ddx olmo31-32b-sft allenai/Olmo-3.1-32B-Instruct-SFT 08:00:00 $DDX4 $STD --dtype bfloat16
     run4 big32_ddx olmo31-32b-dpo allenai/Olmo-3.1-32B-Instruct-DPO 08:00:00 $DDX4 $STD --dtype bfloat16 ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32"; exit 1 ;;
+  fewshot)  # review control: few-shot base elicitation (plain completion) and the same examples for post-trained models (chat)
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen25-7b-base:Qwen/Qwen2.5-7B olmo3-base:allenai/Olmo-3-1025-7B; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run fewshot_t07 $tag $model $DDX $FS --completion --max-tokens 512 --max-model-len 6144
+    done
+    for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run fewshot_t07 $tag $model $DDX $FS $STD
+    done
+    run4 fewshot_t07 qwen25-32b-base Qwen/Qwen2.5-32B 04:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144
+    run4 fewshot_t07 olmo31-32b-base allenai/Olmo-3-1125-32B 04:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144
+    run4 fewshot_t07 qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 04:00:00 $DDX4 $FS $STD
+    run4 fewshot_t07 olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $DDX4 $FS $STD ;;
+  fewshot-smoke)  # 8 cases x 4 samples per mode, to check the prompts before the full run
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fewshot-base $S --model Qwen/Qwen2.5-7B --out runs/fewshot_smoke/qwen25-7b-base.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fewshot-it $S --model Qwen/Qwen2.5-7B-Instruct --out runs/fewshot_smoke/qwen25-7b-it.jsonl $SM $FS $STD ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke"; exit 1 ;;
 esac

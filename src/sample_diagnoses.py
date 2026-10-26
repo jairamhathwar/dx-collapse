@@ -59,6 +59,51 @@ DDX_FULL_INSTRUCTIONS = (
 )
 
 
+# Few-shot elicitation (review control for base models): three fixed DDXPlus training patients, each
+# followed by the top five of its reference differential. Base models get a plain completion prompt;
+# post-trained models get the same examples as chat turns.
+FEWSHOT_HEADER = ("Emergency and primary care patients' answers, each followed by the physician's differential "
+                  "diagnosis: the five most likely conditions, most likely first, with probabilities, chosen ONLY "
+                  "from this list of possible conditions:\n{conditions}\n\n")
+FEWSHOT_Q = "### Patient\n{vignette}\n### Differential diagnosis\n"
+
+
+def fewshot_examples(train_path, k=3, seed=0):
+    rows = [json.loads(l) for l in open(train_path)]
+    rng = random.Random(seed)
+    rng.shuffle(rows)
+    out, golds = [], set()
+    for r in rows:
+        if r["gold"] in golds:
+            continue
+        z = sum(p for _, p in r["gt_differential"])
+        top = sorted(((c, p / z) for c, p in r["gt_differential"]), key=lambda x: -x[1])[:5]
+        ans = json.dumps([{"diagnosis": c, "probability": round(p, 2)} for c, p in top])
+        out.append((r["vignette"], ans))
+        golds.add(r["gold"])
+        if len(out) == k:
+            return out
+    return out
+
+
+def build_fewshot_completion(case, conditions, shots):
+    cond = "\n".join(f"- {c}" for c in conditions)
+    text = FEWSHOT_HEADER.format(conditions=cond)
+    for v, ans in shots:
+        text += FEWSHOT_Q.format(vignette=v) + ans + "\n\n"
+    return text + FEWSHOT_Q.format(vignette=case["vignette"])
+
+
+def build_fewshot_messages(case, n_dx, conditions, shots):
+    msgs = [{"role": "system", "content": DDX_SYSTEM}]
+    for v, ans in shots:
+        msgs += [{"role": "user", "content": v + "\n\n" + DDX_INSTRUCTIONS.format(conditions="\n".join(f"- {c}" for c in conditions), n=n_dx)},
+                 {"role": "assistant", "content": ans}]
+    msgs.append({"role": "user", "content": case["vignette"] + "\n\n" + DDX_INSTRUCTIONS.format(
+        conditions="\n".join(f"- {c}" for c in conditions), n=n_dx)})
+    return msgs
+
+
 def build_ddx_messages(case, n_dx, conditions, variant="default"):
     cond = "\n".join(f"- {c}" for c in conditions)
     if variant == "plain":
@@ -114,10 +159,14 @@ def main():
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
-    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full"], default="default",
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot"], default="default",
                     help="ddxplus prompt-robustness variant")
+    ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
+    ap.add_argument("--completion", action="store_true",
+                    help="fewshot: plain completion prompt without a chat template (for base models)")
     a = ap.parse_args()
     conditions = json.load(open(a.conditions)) if a.task == "ddxplus" else None
+    shots = fewshot_examples(a.fewshot_train) if a.prompt_variant == "fewshot" else None
     # Slurm job arrays: shard = array index, and --out may contain "{shard}"
     if a.shard < 0:
         a.shard = int(os.environ["SLURM_ARRAY_TASK_ID"])
@@ -146,21 +195,28 @@ def main():
     vocab = llm.get_tokenizer().get_vocab()
     stop_ids = [vocab[t] for t in ("<|im_end|>", "<|eot_id|>", "<end_of_turn>") if t in vocab]
     sp = SamplingParams(n=a.k, temperature=a.temperature, top_p=a.top_p,
-                        max_tokens=a.max_tokens, seed=a.seed, stop_token_ids=stop_ids)
+                        max_tokens=a.max_tokens, seed=a.seed, stop_token_ids=stop_ids,
+                        stop=["\n###", "\n\n"] if a.completion else None)
     chat_kwargs = {"chat_template_kwargs": {"enable_thinking": a.thinking}}
     if a.chat_template:
         chat_kwargs["chat_template"] = Path(a.chat_template).read_text()
 
     for b in range(0, len(todo), a.batch_cases):
         batch = todo[b:b + a.batch_cases]
-        if a.task == "ddxplus":
+        if a.task == "ddxplus" and a.completion:
+            res = llm.generate([build_fewshot_completion(c, conditions, shots) for c in batch], sp, use_tqdm=False)
+            msgs = None
+        elif a.task == "ddxplus" and a.prompt_variant == "fewshot":
+            msgs = [build_fewshot_messages(c, a.n_dx, conditions, shots) for c in batch]
+        elif a.task == "ddxplus":
             msgs = [build_ddx_messages(c, a.n_dx, conditions, a.prompt_variant) for c in batch]
         else:
             msgs = [[{"role": "system", "content": SYSTEM},
                      {"role": "user", "content": build_prompt(c, a.n_dx, random.Random(c["case_id"]))}]
                     for c in batch]
         try:
-            res = llm.chat(msgs, sp, use_tqdm=False, **chat_kwargs)
+            if msgs is not None:
+                res = llm.chat(msgs, sp, use_tqdm=False, **chat_kwargs)
         except TypeError:  # template without enable_thinking support
             res = llm.chat(msgs, sp, use_tqdm=False,
                            **{k: v for k, v in chat_kwargs.items() if k != "chat_template_kwargs"})

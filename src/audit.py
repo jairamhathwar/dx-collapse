@@ -19,7 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
-from consequences import auroc, case_row, spearman
+from consequences import auroc, case_row, rank, spearman
 from ddx_names import Matcher
 from parsing import parse_dx, sort_by_prob
 from stated_vs_sampled import entropy, stated_dist
@@ -49,6 +49,18 @@ def usable(rows):
     return [r for r in rows if r.get("A_correct") is not None and r["consist@5"] is not None and r["consist@32"] is not None]
 
 
+def fit_logistic(X, y, l2=1e-2, iters=50):
+    """Newton's method for L2-regularized logistic regression with an intercept."""
+    X = np.column_stack([np.ones(len(X)), X])
+    w = np.zeros(X.shape[1])
+    for _ in range(iters):
+        p = 1 / (1 + np.exp(-X @ w))
+        g = X.T @ (p - y) + l2 * np.r_[0, w[1:]]
+        H = X.T @ (X * (p * (1 - p))[:, None]) + l2 * np.diag(np.r_[0, np.ones(len(w) - 1)])
+        w -= np.linalg.solve(H + 1e-9 * np.eye(len(w)), g)
+    return w
+
+
 def model_summary(rows, rng, sizes=(50, 100, 200), n_draw=500):
     sub = usable(rows)
     y = np.array([r["A_correct"] for r in sub])
@@ -67,6 +79,7 @@ def model_summary(rows, rng, sizes=(50, 100, 200), n_draw=500):
     out["audit"] = {}
     for n in sizes:
         agree, loss, agree_ho, loss_ho = [], [], [], []
+        ho = {"audit": [], "always_agree": [], "always_stated": [], "rank_avg": [], "logistic": []}
         for _ in range(n_draw):
             i = rng.choice(len(sub), size=min(n, len(sub)), replace=False)
             s_, a_ = auroc(sp[i], y[i]), auroc(a5[i], y[i])
@@ -80,8 +93,19 @@ def model_summary(rows, rng, sizes=(50, 100, 200), n_draw=500):
             sr, ar = auroc(sp[rest], y[rest]), auroc(a5[rest], y[rest])
             agree_ho.append(pick_stated == (sr > ar))
             loss_ho.append(max(sr, ar) - (sr if pick_stated else ar))
+            # combined signals, fitted or ranked on the audit cases and scored on the rest
+            ho["audit"].append(sr if pick_stated else ar)
+            ho["always_agree"].append(ar)
+            ho["always_stated"].append(sr)
+            ho["rank_avg"].append(auroc(rank(sp[rest]) + rank(a5[rest]), y[rest]))
+            mu, sd = np.array([sp[i].mean(), a5[i].mean()]), np.array([sp[i].std() + 1e-6, a5[i].std() + 1e-6])
+            Xa = (np.column_stack([sp[i], a5[i]]) - mu) / sd
+            Xr = (np.column_stack([sp[rest], a5[rest]]) - mu) / sd
+            w = fit_logistic(Xa, y[i])
+            ho["logistic"].append(auroc(Xr @ w[1:], y[rest]))
         out["audit"][n] = {"match_rate": float(np.mean(agree)), "mean_auroc_loss": float(np.mean(loss)),
-                           "heldout_match_rate": float(np.mean(agree_ho)), "heldout_mean_auroc_loss": float(np.mean(loss_ho))}
+                           "heldout_match_rate": float(np.mean(agree_ho)), "heldout_mean_auroc_loss": float(np.mean(loss_ho)),
+                           "heldout_auroc": {k: float(np.nanmean(v)) for k, v in ho.items()}}
     out["gap5"] = out["auroc_stated"] - out["auroc_agree5"]
     out["always_agree_loss"] = max(0.0, out["gap5"])
     return out
@@ -133,6 +157,10 @@ def main():
         summary[f"audit{n}_heldout_loss_mean"] = float(np.mean([res[k]["audit"][n]["heldout_mean_auroc_loss"] for k in keys]))
         summary[f"post_audit{n}_heldout_match_mean"] = float(np.mean([res[k]["audit"][n]["heldout_match_rate"] for k in post]))
         summary[f"post_audit{n}_heldout_loss_mean"] = float(np.mean([res[k]["audit"][n]["heldout_mean_auroc_loss"] for k in post]))
+    for strat in ["audit", "always_agree", "always_stated", "rank_avg", "logistic"]:
+        summary[f"heldout100_auroc_{strat}"] = float(np.mean([res[k]["audit"][100]["heldout_auroc"][strat] for k in keys]))
+        summary[f"post_heldout100_auroc_{strat}"] = float(np.mean([res[k]["audit"][100]["heldout_auroc"][strat] for k in post]))
+        summary[f"post_heldout100_wins_vs_audit_{strat}"] = int(sum(res[k]["audit"][100]["heldout_auroc"][strat] > res[k]["audit"][100]["heldout_auroc"]["audit"] for k in post))
     # match rate by size of the true gap
     for lo, hi in [(0, 0.02), (0.02, 0.05), (0.05, 1)]:
         sel = [k for k in keys if lo <= abs(res[k]["gap5"]) < hi]
