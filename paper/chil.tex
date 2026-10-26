@@ -18,7 +18,7 @@
 A language model's differential diagnosis can be read from the ranked list it states in one answer or from the spread of its answers over repeated samples; pass@$k$, self-consistency and sampling-based uncertainty use the second. Instruction-tuned models are known to sample poorly from distributions they can describe.
 In a clinical measurement study, we test what this means for differential diagnosis, with base/post-trained pairs from two open families at 7--32B (Qwen2.5-7B and -32B, Qwen3-8B, and every released stage of OLMo~3 7B and OLMo~3.1 32B) and three medical models, using 32 samples per case on DDXPlus, whose synthetic patients carry a rule-based reference differential, and on real rare-disease cases from Phenopacket Store.
 Post-training narrows the sampled answers to 1.3--3.6 distinct top answers per 32 samples, against 3.8--8.2, and in five of eight settings leaves them farther from the reference than a guesser that ignores the patient.
-The stated list moves the other way, closer to the reference even with the true diagnosis removed, for Qwen and OLMo~3.1 32B but not OLMo~3 7B; yet post-trained lists name 4--8 of the 17 severe conditions less often.
+The stated list moves the other way, closer to the reference even with the true diagnosis removed, for Qwen at 7--32B under zero- and few-shot prompts and for OLMo~3.1 32B under the zero-shot prompt only, but not for OLMo~3 7B; yet post-trained lists name 4--8 of the 17 severe conditions less often.
 Majority voting stops helping and agreement between samples becomes a weaker error signal; a two-feature combination of agreement and stated probability, fitted on 100 labeled cases, beats either signal alone.
 On real cases the shifts appear without a crossover. Which post-training stage narrows the samples most depends on the recipe.
 Evaluations of diagnostic breadth should say which readout they use.
@@ -43,7 +43,7 @@ On DDXPlus~\citep{fansi2022ddxplus}, which ships a reference differential for ev
 Our measurements:
 \begin{itemize}
 \item \textbf{Sampled answers narrow} after post-training at 7--32B, often to below a patient-blind guesser's fit to the reference, and the stage that narrows them most depends on the recipe (\S\ref{sec:sampled}).
-\item \textbf{Stated lists move closer to the reference}, even with the true diagnosis removed and by DDXPlus's own set metric, for Qwen and OLMo~3.1 32B, though they name specific severe conditions, such as acute pulmonary edema and NSTEMI, less often (\S\ref{sec:stated}).
+\item \textbf{Stated lists move closer to the reference}, even with the true diagnosis removed and by DDXPlus's own set metric, for Qwen under zero- and few-shot prompts (for OLMo~3.1 32B only zero-shot), though they name specific severe conditions, such as acute pulmonary edema and NSTEMI, less often (\S\ref{sec:stated}).
 \item \textbf{Sampling-based methods lose value.} Majority voting stops helping and agreement weakens as an error signal; combining it with the stated probability on 100 labeled cases works better than either (\S\ref{sec:consequences}).
 \item \textbf{On real rare-disease cases} the same shifts appear but stop short of a crossover (\S\ref{sec:medrare}).
 \end{itemize}
@@ -80,7 +80,7 @@ The \emph{single-call answer} is the top answer of a model's first valid sample.
 \section{Results}
 \subsection{Post-training narrows the sampled answers}\label{sec:sampled}
 Table~\ref{tab:sampled} compares each base model with its post-trained versions.
-At 7--8B the post-trained Qwen model is far better on its first answer ($+12.6$ to $+27.5$ points), but its pass@$k$ curve crosses the base model's at $k{\approx}4$--8, and at $k{=}32$ the base model leads by 9.7--14.6 points (Figure~\ref{fig:passk} in Appendix~\ref{sec:general}); these losses survive clustering and correction. At 32B the losses are smaller and do not: Qwen2.5-32B-Instruct gains 10.4 points at $k{=}1$ and loses 4.9 $[2.8,7.1]$ at $k{=}32$, OLMo~3.1 32B Instruct loses 4.0 $[2.0,5.9]$.
+At 7--8B the post-trained Qwen model is far better on its first answer ($+12.6$ to $+27.5$ points), but its pass@$k$ curve crosses the base model's at $k{\approx}4$--8, and at $k{=}32$ the base model leads by 9.7--14.6 points (Figure~\ref{fig:passk} in Appendix~\ref{sec:general}); these losses survive clustering and correction. At 32B the losses are smaller and do not: Qwen2.5-32B-Instruct gains 10.4 points at $k{=}1$ and loses 4.9 $[2.8,7.1]$ at $k{=}32$, OLMo~3.1 32B Instruct loses 4.0 $[2.0,5.9]$. With three worked examples in every prompt, base models answer validly and both 32B losses grow, to 15.2 and 19.1 points, and survive correction (Appendix~\ref{sec:fewshot}).
 The narrowing itself is robust: post-trained models give 1.3--3.6 distinct top answers per 32 samples, against 3.8--8.2, and cover less of the reference mass. Coverage@32 favors spreading answers, though: a guesser drawing uniformly from the 49 conditions covers 0.48 and one drawing from the average reference differential 0.56, more than any model. By TV, which also rewards concentrating on the right conditions, base models' samples beat that patient-blind guesser (0.71--0.76 against 0.77), while five of the eight post-trained settings fall behind it (0.78--0.85).
 Which stage narrows the samples most depends on the recipe. In OLMo~3 7B, distinct answers fall from 4.93 to 4.01 after SFT, 3.30 after DPO and 2.37 after RLVR, and the RLVR step alone costs 19.1 $[16.3,21.8]$ points of $\passk{32}$ against the DPO model. In OLMo~3.1 32B, SFT costs most (12.1 $[9.9,14.4]$ points), DPO recovers most of it, and the RLVR step costs 2.8 $[1.1,4.3]$ (Appendix~\ref{sec:big32}). RL-Zero, trained with RL from the 7B base, narrows less; at $T{=}1$ it shows no detectable loss of $\passk{32}$ ($-1.8$ $[-4.5,+0.8]$; Appendix~\ref{sec:stages}).
 Severe conditions also become rarer among the sampled top answers, but even base models consider them less often than the patient-blind guesser (Appendix~\ref{sec:collapse}), so we assess them on the stated list.
@@ -125,7 +125,7 @@ Chance & uniform guesser & 0.020 & 0.48 & 23.7 & 0.48 & & \\
 \end{table}
 
 \subsection{Stated lists move closer to the reference}\label{sec:stated}
-Post-training moves the stated list the other way (Figure~\ref{fig:stated}a, Table~\ref{tab:stated}). For every Qwen model and OLMo~3.1 32B, the post-trained model's single list is closer to the reference than its base model's (TV $-0.043$ to $-0.088$ for Qwen, $-0.045$ for OLMo~3.1 32B), while its samples move away. Three controls make this more than the side effect of higher accuracy or longer lists. With the true pathology removed from both list and reference, the post-trained list is still closer ($-0.018$ to $-0.056$; for Qwen3-8B at $T{=}0.7$ the corrected $p$ is 0.05). By DDXPlus's own set F1 it improves by 0.040--0.083. A fixed patient-blind list, the top five of the average reference differential, scores TV 0.794; every model's list beats it except OLMo~3 7B's.
+Post-training moves the stated list the other way (Figure~\ref{fig:stated}a, Table~\ref{tab:stated}). For every Qwen model and OLMo~3.1 32B, the post-trained model's single list is closer to the reference than its base model's (TV $-0.043$ to $-0.088$ for Qwen, $-0.045$ for OLMo~3.1 32B), while its samples move away. Three controls make this more than the side effect of higher accuracy or longer lists. With the true pathology removed from both list and reference, the post-trained list is still closer ($-0.018$ to $-0.056$; for Qwen3-8B at $T{=}0.7$ the corrected $p$ is 0.05). By DDXPlus's own set F1 it improves by 0.040--0.083. A fixed patient-blind list, the top five of the average reference differential, scores TV 0.794; every model's list beats it except OLMo~3 7B's. With three worked examples in every prompt, the Qwen gains persist or grow (TV $-0.057$ to $-0.087$; $-0.055$ to $-0.073$ without the true pathology), but OLMo~3.1 32B's list keeps only its higher reference mass ($+0.047$), with TV, TV without the true pathology and DDF1 no longer significant (Appendix~\ref{sec:fewshot}).
 OLMo~3 7B is the exception: its five-item Instruct lists are no closer to the reference than its base model's, with or without the true pathology, and are worse than the patient-blind list. Asked for a probability on every condition, its stated distribution does move closer ($-0.032$; Appendix~\ref{sec:fullprompt}), while the Qwen pairs reproduce their five-item results.
 The average hides losses that matter clinically. Post-trained lists name severe conditions that the reference weights at least 0.1 more often for Qwen ($+9.0$ to $+13.8$ points), but for each pair 4--8 of the 17 severe conditions are named less often wherever the reference gives them any weight, among them acute pulmonary edema (Qwen2.5-32B 0.63 $\rightarrow$ 0.44, OLMo~3 7B 0.56 $\rightarrow$ 0.31), NSTEMI/STEMI (OLMo~3.1 32B 0.49 $\rightarrow$ 0.36), stable angina (Qwen2.5-7B 0.25 $\rightarrow$ 0.08) and pulmonary embolism (OLMo~3.1 32B 0.39 $\rightarrow$ 0.31) (Appendix~\ref{sec:statedchecks}). Whether lists name more unwarranted severe conditions (reference weight below 0.1) varies by model, from 0.22 fewer per list (OLMo~3.1 32B) to 0.35 more (OLMo~3 7B).
 Drawing each top answer from the sample's own stated list raises $\passk{32}$ for every model (Table~\ref{tab:sampled}); post-trained lists reach higher than their base model's lists in five of seven comparisons (not Qwen3-8B at $T{=}1$ or OLMo~3 7B). In absolute terms every model stays far from the reference: one list names 0.26--0.42 of its mass, against 0.74 for the reference's own top five.
@@ -223,7 +223,7 @@ On Phenopacket Store every model is near the floor ($\passk{32}$ 2.5--7.0\%), bu
 \citet{jang2026cannotsample} show that instruction-tuned models cannot sample from distributions they can describe. We measure the same split in differential diagnosis, against a reference differential with a known true pathology, in two open pipelines at 7--32B: post-training improves the list a model states on average while narrowing the answers it samples. Evaluations that read the differential from samples (pass@$k$ at large $k$, sample diversity, self-consistency, agreement-based uncertainty) therefore report a loss that a clinician reading one answer would not see, and lose value as tools on post-trained models. For error detection, combining agreement with the stated probability on a small labeled set is better than relying on either. The stated list is no free replacement: it improves only on average and drops specific dangerous conditions, every model stays far from the reference, and neither readout tracks how ambiguous a case is. Which post-training stage narrows the samples most is a property of the recipe. Appendix~\ref{sec:training} adds GRPO experiments on DDXPlus showing that RL from a base model need not narrow the samples as much as general post-training.
 
 \paragraph{Limitations.}
-DDXPlus is synthetic and closed-set: its reference differential is a rule-based engine's posterior, its vignettes are questionnaires without exam or test results, its test set is class-balanced, and the prompt lists all 49 conditions, so TV and coverage are distances to a \emph{reference} posterior, not to clinical truth, and nothing here was judged by clinicians. Base models received a zero-shot chat prompt and often give invalid answers (27--47\% for OLMo); we count these as wrong, which makes large-$k$ losses conservative but may handicap base-model lists. We study open 7--32B models from two families, not reasoning modes or frontier models, one RL-Zero checkpoint (7B, LM-judge reward on chat prompts), and the 32B models only at $T{=}0.7$. The combination of signals is validated only within DDXPlus. Phenopacket accuracy is near the floor, its grader is rule-based and not validated against clinicians, and its cases may be in pretraining data.
+DDXPlus is synthetic and closed-set: its reference differential is a rule-based engine's posterior, its vignettes are questionnaires without exam or test results, its test set is class-balanced, and the prompt lists all 49 conditions, so TV and coverage are distances to a \emph{reference} posterior, not to clinical truth, and nothing here was judged by clinicians. The main analyses give base models a zero-shot chat prompt, on which they often give invalid answers (27--47\% for OLMo) that we count as wrong; a three-example re-run of the five final pairs removes these and confirms the results except OLMo~3.1 32B's list gain, but uses one temperature and one set of examples (Appendix~\ref{sec:fewshot}). We study open 7--32B models from two families, not reasoning modes or frontier models, one RL-Zero checkpoint (7B, LM-judge reward on chat prompts), and the 32B models only at $T{=}0.7$. The combination of signals is validated only within DDXPlus. Phenopacket accuracy is near the floor, its grader is rule-based and not validated against clinicians, and its cases may be in pretraining data.
 
 \label{pg:mainend}
 \paragraph{Statement on AI Use.}
@@ -457,9 +457,9 @@ $T$ & Stage & pass@1 & pass@32 & Distinct & Entropy & Cov@32 & Severe C@32 \\
 
 \subsection{Replication at 32B}\label{sec:big32}
 We repeat the DDXPlus comparisons at $T{=}0.7$ with Qwen2.5-32B and its Instruct model, and with every released stage of OLMo~3.1 32B, whose base is OLMo-3-1125-32B; there is no 32B RL-Zero checkpoint (Table~\ref{tab:big32}).
-The sampled differential collapses at 32B too, by about half as much. Post-training costs 4.9 $[2.8,7.1]$ points at $\passk{32}$ for Qwen2.5-32B and 4.0 $[2.0,5.9]$ for OLMo~3.1 32B, halves the number of distinct answers (3.78 $\rightarrow$ 1.68 and 4.32 $\rightarrow$ 2.15), and lowers severe-tier consideration by 6.1 and 8.4 points. For Qwen the loss holds on the 421 cases where every base sample is valid ($-4.8$ $[-7.8,-1.7]$); the OLMo 32B base gives invalid answers on 27\% of samples.
+The sampled differential collapses at 32B too, by about half as much. Post-training costs 4.9 $[2.8,7.1]$ points at $\passk{32}$ for Qwen2.5-32B and 4.0 $[2.0,5.9]$ for OLMo~3.1 32B, halves the number of distinct answers (3.78 $\rightarrow$ 1.68 and 4.32 $\rightarrow$ 2.15), and lowers severe-tier consideration by 6.1 and 8.4 points. For Qwen the loss holds on the 421 cases where every base sample is valid ($-4.8$ $[-7.8,-1.7]$); the OLMo 32B base gives invalid answers on 27\% of samples. With few-shot prompts, which nearly remove invalid answers, both losses are three to five times larger (\S\ref{sec:fewshot}).
 The stage attribution differs from 7B. In OLMo~3.1 32B the largest narrowing is SFT ($\passk{32}$ $-12.1$ $[-14.4,-9.9]$, distinct answers $-1.39$, severe tier $-11.9$); DPO recovers most of it ($+10.9$ against SFT), and the final RL step is small ($-2.8$ $[-4.3,-1.1]$ at $k{=}32$, $-0.14$ distinct answers). OLMo~3.1 32B and OLMo~3 7B were post-trained with different recipes, so the stage that narrows the samples most is a property of the pipeline, not of SFT, DPO or RL as such.
-The stated readout improves in both 32B families (\S\ref{sec:stated}), and voting stops paying off: majority voting over 32 samples gains the base models 7.0 and 8.4 points and the Instruct models 1.9 and 0.9 (the latter n.s.).
+Under this prompt the stated readout improves in both 32B families (\S\ref{sec:stated}; with few-shot prompts only Qwen2.5-32B's does robustly, \S\ref{sec:fewshot}), and voting stops paying off: majority voting over 32 samples gains the base models 7.0 and 8.4 points and the Instruct models 1.9 and 0.9 (the latter n.s.).
 
 \begin{table}[t]
 \centering\small
@@ -548,6 +548,65 @@ OLMo-3.1-32B-Instruct & 0.99 & \textbf{0.701} & \textbf{0.644} & \textbf{0.774} 
 \end{adjustbox}
 \caption{Robustness of the stated-list result (DDXPlus, $T{=}0.7$, 980 cases, valid samples). Complete lists: share naming five on-list conditions with valid probabilities. TV of one list on complete lists only, and on samples whose top answer is right or wrong. Excess TV: TV minus the expected TV of the matching oracle (the reference's top five for one list; as many reference draws as the model has valid samples for the samples). Severe named, ref.\ $<0.1$: share of named severe conditions that the reference gives less than 0.1 (over-naming). pass@32 list-sampled: top answers drawn from each sample's stated list. Bold: better model of each pair. Excess TV is averaged over samples against each case's floor, so it is not exactly the difference of the mean TV and the mean floor. A uniform guesser scores about 0.48 at pass@32.}
 \label{tab:robust}
+\end{table}
+
+\subsection{Few-shot elicitation}\label{sec:fewshot}
+The main analyses give every model the same zero-shot chat prompt, which base models were not trained to follow; they give invalid answers on up to 47\% of samples, which we count as wrong. We therefore re-ran the five final base/post-trained pairs at $T{=}0.7$ with three worked examples in the prompt: three fixed DDXPlus training patients with different true pathologies, each followed by the top five conditions of its reference differential, with probabilities, in the JSON format the instructions ask for. Base models see the instructions and examples as a plain document and complete the next one (generation stops at the end of the list); post-trained models see the same instructions and examples as earlier chat turns. Invalid samples fall below 0.5\% for every model (Table~\ref{tab:fewshot}).
+
+The examples help base models most. Their pass@1 rises from 0.178 to 0.306 for OLMo-3-1025-7B, from 0.326 to 0.528 for OLMo-3-1125-32B and from 0.500 to 0.647 for Qwen2.5-32B, and their pass@32 reaches 0.76--0.90, while their stated lists barely change (TV 0.712--0.787, against 0.726--0.794 zero-shot). The losses in the samples therefore grow (Table~\ref{tab:fewshotdiff}): post-training costs 15.2--29.9 points of pass@32 in every pair, including both 32B pairs, whose zero-shot losses did not survive correction, and every post-trained model's Cov@32 (0.21--0.25) is below every base model's (0.33--0.45) and below a uniform guesser's.
+
+For the three Qwen pairs the stated-list improvement persists and mostly grows: TV $-0.057$ to $-0.087$, $-0.055$ to $-0.073$ with the true pathology removed, and DDF1 $+0.051$ to $+0.081$, all surviving correction. OLMo~3 7B remains the exception (TV $+0.021$, n.s.; $+0.024$ without the true pathology). For OLMo~3.1 32B the improvement shrinks: the post-trained list still places more reference mass on the conditions it names ($+0.047$), but its TV ($-0.022$), TV without the true pathology ($-0.006$) and DDF1 ($+0.009$) no longer survive correction. At 32B the stated-list result is therefore robust for Qwen2.5-32B but depends on the prompt for OLMo~3.1 32B. Post-trained lists still name 5--10 of the 17 severe conditions less often than their base model's.
+
+The consequences replicate in all five pairs. Majority voting over 32 samples gains base models 6.2--10.9 points and post-trained models 0.2--1.1. The three most frequent of 32 sampled answers beat the top three of one stated list by 8.2--22.0 points for base models, while for post-trained models the list is ahead by 0.2--16.7. Agreement with four more samples is the better error signal for every base model (AUROC 0.79--0.84, against 0.67--0.73 for the stated probability), and the stated probability for every post-trained model (0.69--0.77, against 0.56--0.68).
+This check uses one temperature and one set of examples, and the examples show the reference's own lists, which may help every model match the reference.
+
+\begin{table}[t]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lrrrrrrrrrrrr}
+\toprule
+ & Invalid & & & & \multicolumn{2}{c}{TV, one list} & & TV & Vote@32 & Top-3 list & \multicolumn{2}{c}{AUROC} \\
+Model & (\%) & pass@1 & pass@32 & Cov@32 & all & w/o true & DDF1 & samples & gain & $-$ samples & stated & agree@5 \\
+\midrule
+Qwen3-8B-Base & 0.1 & 0.403 & \textbf{0.809} & \textbf{0.383} & 0.768 & 0.860 & 0.245 & \textbf{0.732} & $+8.4$ & $-16.0$ & 0.722 & 0.828 \\
+Qwen3-8B & 0.0 & \textbf{0.601} & 0.639 & 0.221 & \textbf{0.682} & \textbf{0.805} & \textbf{0.327} & 0.786 & $+0.2$ & $+14.5$ & 0.693 & 0.563 \\
+\midrule
+Qwen2.5-7B (base) & 0.4 & 0.398 & \textbf{0.761} & \textbf{0.333} & 0.784 & 0.879 & 0.238 & \textbf{0.756} & $+6.2$ & $-15.6$ & 0.734 & 0.792 \\
+Qwen2.5-7B-Instruct & 0.0 & \textbf{0.450} & 0.535 & 0.220 & \textbf{0.702} & \textbf{0.806} & \textbf{0.309} & 0.798 & $+0.6$ & $+16.7$ & 0.757 & 0.594 \\
+\midrule
+Qwen2.5-32B (base) & 0.1 & 0.647 & \textbf{0.896} & \textbf{0.343} & 0.712 & 0.847 & 0.298 & \textbf{0.715} & $+7.1$ & $-8.2$ & 0.726 & 0.838 \\
+Qwen2.5-32B-Instruct & 0.0 & \textbf{0.663} & 0.744 & 0.252 & \textbf{0.654} & \textbf{0.775} & \textbf{0.349} & 0.758 & $+0.6$ & $+10.1$ & 0.718 & 0.647 \\
+\midrule
+OLMo-3-1025-7B (base) & 0.2 & 0.306 & \textbf{0.857} & \textbf{0.454} & \textbf{0.787} & \textbf{0.859} & \textbf{0.245} & \textbf{0.712} & $+10.9$ & $-22.0$ & 0.674 & 0.823 \\
+OLMo-3-7B-Instruct & 0.1 & \textbf{0.338} & 0.558 & 0.213 & 0.808 & 0.884 & 0.238 & 0.830 & $+0.7$ & $+0.2$ & 0.733 & 0.668 \\
+\midrule
+OLMo-3-1125-32B (base) & 0.4 & 0.528 & \textbf{0.888} & \textbf{0.397} & 0.719 & 0.818 & 0.302 & \textbf{0.699} & $+8.9$ & $-13.4$ & 0.670 & 0.826 \\
+OLMo-3.1-32B-Instruct & 0.0 & \textbf{0.575} & 0.697 & 0.249 & \textbf{0.697} & \textbf{0.812} & \textbf{0.311} & 0.772 & $+1.1$ & $+3.7$ & 0.772 & 0.684 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\caption{Few-shot elicitation on DDXPlus ($T{=}0.7$, 980 cases, 32 samples; three worked examples in the prompt for every model, \S\ref{sec:fewshot}). Invalid: samples naming no listed condition. TV: distance to the reference differential, for one stated list (with the true pathology removed from both in ``w/o true'') and for the sampled top answers. Vote@32 gain and top-3 list minus top-3 of the samples are in accuracy points. AUROC: for the single-call answer being correct, of its stated probability and of agreement with the next 4 samples. Bold: better of the pair.}
+\label{tab:fewshot}
+\end{table}
+
+\begin{table}[t]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lllllll}
+\toprule
+ & pass@32 & TV & \multicolumn{2}{c}{TV, one list} & & Reference mass \\
+Pair (base $\rightarrow$ post) & (points) & samples & all & w/o true & DDF1 & of one list \\
+\midrule
+Qwen3-8B & $-12.4$ / $-17.0$ & $+0.043$ / $+0.054$ & $-0.043$ / $-0.087$ & $-0.018$$^{\dagger}$ / $-0.055$ & $+0.042$ / $+0.081$ & $+0.062$ / $+0.113$ \\
+Qwen2.5-7B & $-9.7$ / $-22.7$ & $+0.028$$^{\dagger}$ / $+0.042$ & $-0.062$ / $-0.082$ & $-0.041$ / $-0.073$ & $+0.062$ / $+0.072$ & $+0.073$ / $+0.124$ \\
+Qwen2.5-32B & $-4.9$$^{\dagger}$ / $-15.2$ & $+0.033$ / $+0.044$ & $-0.053$ / $-0.057$ & $-0.043$ / $-0.072$ & $+0.051$ / $+0.051$ & $+0.067$ / $+0.084$ \\
+OLMo~3 7B & $-28.3$ / $-29.9$ & $+0.090$ / $+0.118$ & $+0.029$$^{\dagger}$ / $+0.021$$^{\dagger}$ & $+0.034$ / $+0.024$ & $-0.006$$^{\dagger}$ / $-0.007$$^{\dagger}$ & $-0.010$$^{\dagger}$ / $-0.002$$^{\dagger}$ \\
+OLMo~3.1 32B & $-4.0$$^{\dagger}$ / $-19.1$ & $+0.020$$^{\dagger}$ / $+0.074$ & $-0.045$ / $-0.022$$^{\dagger}$ & $-0.023$ / $-0.006$$^{\dagger}$ & $+0.040$ / $+0.009$$^{\dagger}$ & $+0.056$ / $+0.047$ \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\caption{Base $\rightarrow$ post-trained differences under the zero-shot prompt / the few-shot prompt (DDXPlus, $T{=}0.7$). $^{\dagger}$: not significant under the condition-clustered bootstrap with Holm correction (over 112 tests for the zero-shot and 70 for the few-shot pairs; Appendix~\ref{app:clustered}).}
+\label{tab:fewshotdiff}
 \end{table}
 
 \subsection{Which signal to use: combination and held-out audit}\label{sec:audit}
