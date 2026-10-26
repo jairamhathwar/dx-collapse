@@ -37,6 +37,9 @@ Model & (\%) & pass@1 & pass@32 & Distinct & Cov@32 & all & w/o true & DDF1 & sa
 \label{tab:third}
 \end{table}"""
 # aggregation table
+R2={}
+for fn in ['r3/review2_zs.json','r3/review2_fs.json','r3/review2_third.json']:
+    R2.update({k.split('/runs/')[-1]:v for k,v in json.load(open(fn))['models'].items()})
 zs=json.load(open(F+'aggregate_zs.json')); fs=json.load(open(F+'aggregate_fs.json')); th=json.load(open(T+'aggregate.json'))
 FP='/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07'
 spec=[('zs',zs,'pair_q3','qwen3-8b-base','qwen3-8b','Qwen3-8B'),('zs',zs,'pair25_t07','qwen25-7b-base','qwen25-7b-it','Qwen2.5-7B'),
@@ -58,7 +61,8 @@ for g,R,d,b,p,name in spec:
     def ci(x,fmt='{:+.3f}'):
         sig = x['cluster_ci'][0]>0 or x['cluster_ci'][1]<0
         return f"${fmt.format(x['diff'])}$"+('' if sig else '$^{\\dagger}$')
-    cells=[f"{mb[f'agg@{m}:tv']:.3f}" for m in (1,5,32)]+[f"{mp[f'agg@{m}:tv']:.3f}" for m in (1,5,32)]+[ci(tv),ci(sv)]
+    kb=f"{d}/{b}".split('/runs/')[-1]; kp=f"{d}/{p}".split('/runs/')[-1]
+    cells=[f"{R2[kb]['tv_list']:.3f}"]+[f"{mb[f'agg@{m}:tv']:.3f}" for m in (5,32)]+[f"{R2[kp]['tv_list']:.3f}"]+[f"{mp[f'agg@{m}:tv']:.3f}" for m in (5,32)]+[ci(tv),ci(sv)]
     L.append(name+' & '+' & '.join(cells)+' \\\\')
 T2=r"""\begin{table}[t]
 \centering

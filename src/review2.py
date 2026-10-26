@@ -33,6 +33,13 @@ from stated_vs_sampled import stated_dist, tv
 
 METRICS = ["pass1", "pass32", "distinct", "cov32", "tv_samples", "tv_list", "mass_list", "sev_named",
            "tv_list_nogold", "tv_samples_nogold", "ddf1", "overname_count", "auroc_stated", "auroc_agree32"]
+EXTRA = ["within_list"]  # reported with intervals but outside the Holm family: TV - (1 - mass), misallocation within the list
+
+
+def boot_p(b):
+    """two-sided bootstrap p-value with the add-one correction, so it never reaches 0"""
+    b = np.asarray(b)
+    return float(min(1.0, 2 * (1 + min(np.sum(b <= 0), np.sum(b >= 0))) / (len(b) + 1)))
 
 
 def pass_at_k(n, c, k):
@@ -89,6 +96,7 @@ def load_model(path, cases, refs, severity, match, tau):
                 oc.append(sum(1 for k in d if severity.get(k, 9) <= 2 and ref.get(k, 0) < tau))
             r.update({"tv_list": np.mean(tl), "mass_list": np.mean(ms), "sev_named": np.mean(sv) if sv else None,
                       "tv_list_nogold": np.mean(tng) if tng else None, "ddf1": np.mean(f1), "overname_count": np.mean(oc)})
+            r["within_list"] = r["tv_list"] - (1 - r["mass_list"])
             d0, A = valid[0]
             others = [t for _, t in valid[1:]]
             r["A_correct"] = float(A == gold)
@@ -103,7 +111,7 @@ def case_metric(r, m):
     return r.get(m)
 
 
-def pair_diffs(B, P, cids, rng, n_boot):
+def pair_diffs(B, P, cids, rng, n_boot, n_boot_case=2000):
     """returns {metric: dict(diff, case_ci, cluster_ci, p_cluster)} for post - base"""
     clusters = defaultdict(list)
     for i, c in enumerate(cids):
@@ -112,7 +120,7 @@ def pair_diffs(B, P, cids, rng, n_boot):
     cl_arr = [np.array(clusters[k]) for k in cl_keys]
     draw_clusters = lambda: np.concatenate([cl_arr[k] for k in rng.choice(len(cl_arr), len(cl_arr))])
     out = {}
-    for m in METRICS:
+    for m in METRICS + EXTRA:
         if m.startswith("auroc"):
             sig = "stated_p" if m == "auroc_stated" else "agree32"
             ok = [i for i, c in enumerate(cids) if B[c].get(sig) is not None and P[c].get(sig) is not None]
@@ -123,7 +131,7 @@ def pair_diffs(B, P, cids, rng, n_boot):
             f = lambda idx: auroc(spp[idx], yp[idx]) - auroc(sb[idx], yb[idx])
             full = np.arange(len(ok))
             point = f(full)
-            boots_case = [f(rng.integers(0, len(ok), len(ok))) for _ in range(n_boot)]
+            boots_case = [f(rng.integers(0, len(ok), len(ok))) for _ in range(n_boot_case)]
             boots_cl = []
             for _ in range(n_boot):
                 idx = posarr[draw_clusters()]
@@ -131,12 +139,12 @@ def pair_diffs(B, P, cids, rng, n_boot):
         else:
             v = np.array([(P[c][m] - B[c][m]) if (P[c].get(m) is not None and B[c].get(m) is not None) else np.nan for c in cids], float)
             point = float(np.nanmean(v))
-            boots_case = [np.nanmean(v[rng.integers(0, len(v), len(v))]) for _ in range(n_boot)]
+            boots_case = [np.nanmean(v[rng.integers(0, len(v), len(v))]) for _ in range(n_boot_case)]
             boots_cl = []
             for _ in range(n_boot):
                 boots_cl.append(np.nanmean(v[draw_clusters()]))
         bc, bl = np.array(boots_case), np.array(boots_cl)
-        p_cl = float(min(1.0, 2 * min(np.mean(bl <= 0), np.mean(bl >= 0))))
+        p_cl = boot_p(bl)
         out[m] = {"diff": float(point), "case_ci": [float(x) for x in np.nanpercentile(bc, [2.5, 97.5])],
                   "cluster_ci": [float(x) for x in np.nanpercentile(bl, [2.5, 97.5])], "p_cluster": p_cl}
     return out
@@ -150,7 +158,9 @@ def main():
     ap.add_argument("--pairs", required=True, help='space-separated "dir:base>post"')
     ap.add_argument("--out", required=True)
     ap.add_argument("--tau", type=float, default=0.1)
-    ap.add_argument("--n-boot", type=int, default=1000)
+    ap.add_argument("--n-boot", type=int, default=10000, help="cluster-bootstrap resamples (p-values resolve to 2/(n+1))")
+    ap.add_argument("--n-boot-case", type=int, default=2000)
+    ap.add_argument("--n-perm", type=int, default=2000)
     a = ap.parse_args()
     raw = json.load(open(a.conditions_json))
     severity = {c["cond-name-eng"]: int(c["severity"]) for c in raw.values()}
@@ -212,11 +222,56 @@ def main():
                 inc = [np.mean([k in L for L in M[c]["lists"]]) for c in cids if refs[c].get(k, 0) > 0 and M[c].get("lists")]
                 vals[tag] = float(np.mean(inc)) if inc else None
             per[k] = vals
+        # per-condition test: clustered bootstrap over true pathologies, BH-FDR across conditions, and a
+        # case-level swap null for the number of conditions named less often
+        sev_keys = [k for k in conds if severity[k] <= 2]
+        inc = {}
+        for k in sev_keys:
+            el = [c for c in cids if refs[c].get(k, 0) > 0 and B[c].get("lists") and P[c].get("lists")]
+            if not el:
+                continue
+            inc[k] = (el, np.array([np.mean([k in L for L in B[c]["lists"]]) for c in el]),
+                      np.array([np.mean([k in L for L in P[c]["lists"]]) for c in el]))
+        for k, (el, bv, pv) in inc.items():
+            groups = defaultdict(list)
+            for i, c in enumerate(el):
+                groups[B[c]["gold"]].append(i)
+            garr = [np.array(g) for g in groups.values()]
+            dv = pv - bv
+            boots = [dv[np.concatenate([garr[j] for j in rng.choice(len(garr), len(garr))])].mean() for _ in range(a.n_boot)]
+            per[k].update({"n": len(el), "diff": float(dv.mean()), "cluster_ci": [float(x) for x in np.percentile(boots, [2.5, 97.5])],
+                           "p": boot_p(boots)})
+        ks = list(inc)
+        ps = np.array([per[k]["p"] for k in ks]); order = np.argsort(ps); q = np.empty(len(ps)); run = 1.0
+        for r_, i in reversed(list(enumerate(order))):
+            run = min(run, ps[i] * len(ps) / (r_ + 1)); q[i] = run
+        for k, qq in zip(ks, q):
+            per[k]["q_bh"] = float(qq)
+        obs_lower = sum(per[k]["diff"] < 0 for k in ks)
+        cid_index = {c: i for i, c in enumerate(cids)}
+        idx = {k: np.array([cid_index[c] for c in inc[k][0]]) for k in ks}
+        null = []
+        for _ in range(a.n_perm):
+            flip = rng.random(len(cids)) < 0.5
+            cnt = 0
+            for k in ks:
+                _, bv, pv = inc[k]
+                f = flip[idx[k]]
+                cnt += np.mean(np.where(f, bv - pv, pv - bv)) < 0
+            null.append(cnt)
+        null = np.array(null)
+        report.setdefault("severe_test", {})[f"{d}:{bt}>{pt}"] = {
+            "n_conditions": len(ks), "lower": int(obs_lower), "higher": int(len(ks) - obs_lower),
+            "sig_lower_q05": int(sum(per[k]["diff"] < 0 and per[k]["q_bh"] < 0.05 for k in ks)),
+            "sig_higher_q05": int(sum(per[k]["diff"] > 0 and per[k]["q_bh"] < 0.05 for k in ks)),
+            "null_lower_mean": float(null.mean()), "null_lower_p_ge_obs": float((1 + np.sum(null >= obs_lower)) / (len(null) + 1))}
+        print("  severe test:", json.dumps(report["severe_test"][f"{d}:{bt}>{pt}"]), flush=True)
         report["severe_per_condition"][f"{d}:{bt}>{pt}"] = per
-        diffs = pair_diffs(B, P, cids, rng, a.n_boot)
+        diffs = pair_diffs(B, P, cids, rng, a.n_boot, a.n_boot_case)
         report["pairs"][f"{d}:{bt}>{pt}"] = diffs
         for m, v in diffs.items():
-            tests.append((f"{d}:{bt}>{pt}", m, v["p_cluster"]))
+            if m in METRICS:
+                tests.append((f"{d}:{bt}>{pt}", m, v["p_cluster"]))
         print(f"{d}:{bt}>{pt}", json.dumps({m: [round(v['diff'], 4), [round(x, 4) for x in v['cluster_ci']], round(v['p_cluster'], 4)] for m, v in diffs.items()}), flush=True)
         dec = sum(1 for v in per.values() if v["base"] is not None and v["post"] is not None and v["post"] < v["base"])
         print(f"  severe conditions with lower inclusion after post-training: {dec}/{sum(1 for v in per.values() if v['base'] is not None)}", flush=True)

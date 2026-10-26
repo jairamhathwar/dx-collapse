@@ -1,13 +1,14 @@
 """Figure: base -> post-trained change in the stated vs sampled readouts (vector PDF).
 
-    python fig_stated_sampled.py --analysis $THESIS/runs/analysis --out $THESIS/code/paper/figures/fig_stated_sampled.pdf
+    python fig_stated_sampled.py --review2 review2_zs.json review2_third.json --aggregate aggregate_zs.json aggregate_third.json \
+        --cons-dir CONS --out paper/figures/fig_stated_sampled.pdf
 
 Panel a: total-variation distance to the reference differential (lower is better) of one stated list
-and of the sampled top-1 answers (from stated_vs_sampled.py, runs/analysis/svs/*.json).
-Panel b: AUROC for the single-call answer being correct, of its stated probability and of agreement
-across 31 further samples (from consequences.py, runs/analysis/cons/*.json).
+(per-case mean over valid lists) and of the sampled top answers (review2.py), plus the mean of the base
+model's first five stated lists (aggregate_lists.py, grey diamond).
+Panel b: AUROC for the single-call answer being correct, of its stated probability and of agreement across
+31 further samples (consequences.py).
 Each arrow runs from the base model (hollow marker) to its post-trained model (filled marker).
-OLMo rows: base -> final Instruct (OLMo 3 7B; OLMo 3.1 32B).
 """
 import argparse
 import json
@@ -18,16 +19,19 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 STATED, SAMPLED = "#2a78d6", "#eb6834"   # categorical slots 1 and 2 of the reference palette
-INK, MUTED = "#0b0b0b", "#52514e"
-ROWS = [  # label, svs/cons file, base tag, post tag
-    ("Qwen3-8B, $T{=}0.7$", "pair_q3", "qwen3-8b-base", "qwen3-8b"),
-    ("Qwen3-8B, $T{=}1$", "ddx_qwen3_t1", "qwen3-8b-base", "qwen3-8b"),
-    ("Qwen2.5-7B, $T{=}0.7$", "pair25_t07", "qwen25-7b-base", "qwen25-7b-it"),
-    ("Qwen2.5-7B, $T{=}1$", "pair25_t1", "qwen25-7b-base", "qwen25-7b-it"),
-    ("Qwen2.5-32B, $T{=}0.7$", "big32_q", "qwen25-32b-base", "qwen25-32b-it"),
-    ("OLMo-3-7B, $T{=}0.7$", "ddx_olmo", "olmo3-base", "olmo3-instruct"),
-    ("OLMo-3-7B, $T{=}1$", "ddx_olmo_t1", "olmo3-base", "olmo3-instruct"),
-    ("OLMo-3.1-32B, $T{=}0.7$", "big32_o", "olmo31-32b-base", "olmo31-32b-instruct"),
+INK, MUTED, AGG = "#0b0b0b", "#52514e", "#52514e"
+F, T = "fewshot_t07", "think_t07"  # keys are normalized to the part after /runs/
+ROWS = [  # label, review2/aggregate dir key, base tag, post tag, cons file, cons-dir key for tags
+    ("Qwen3-8B, $T{=}0.7$", "pair_q3", "qwen3-8b-base", "qwen3-8b", "pair_q3"),
+    ("Qwen3-8B, $T{=}1$", "ddx_qwen3_t1", "qwen3-8b-base", "qwen3-8b", "ddx_qwen3_t1"),
+    ("Qwen2.5-7B, $T{=}0.7$", "pair25_t07", "qwen25-7b-base", "qwen25-7b-it", "pair25_t07"),
+    ("Qwen2.5-7B, $T{=}1$", "pair25_t1", "qwen25-7b-base", "qwen25-7b-it", "pair25_t1"),
+    ("Qwen2.5-32B, $T{=}0.7$", "big32_ddx", "qwen25-32b-base", "qwen25-32b-it", "big32_q"),
+    ("OLMo-3-7B, $T{=}0.7$", "ddx_olmo", "olmo3-base", "olmo3-instruct", "ddx_olmo"),
+    ("OLMo-3-7B, $T{=}1$", "ddx_olmo_t1", "olmo3-base", "olmo3-instruct", "ddx_olmo_t1"),
+    ("OLMo-3.1-32B, $T{=}0.7$", "big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct", "big32_o"),
+    ("Mistral-7B, few-shot", F, "mistral7b-base", "mistral7b-it", "cons_fewshot_t07"),
+    ("Qwen3-8B thinking, $T{=}0.7$", T, "qwen3-8b-base", "qwen3-8b-think", "cons_think_t07"),
 ]
 
 plt.rcParams.update({
@@ -46,21 +50,33 @@ def arrow(ax, y, x0, x1, color, marker):
     ax.plot([x1], [y], marker=marker, ms=6, mfc=color, mec="white", mew=0.8, ls="none", zorder=3)
 
 
+def merged(paths, key):
+    out = {}
+    for p in paths:
+        out.update({k.split("/runs/")[-1]: v for k, v in json.load(open(p))[key].items()})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--analysis", required=True)
+    ap.add_argument("--review2", nargs="+", required=True)
+    ap.add_argument("--aggregate", nargs="+", required=True)
+    ap.add_argument("--cons-dir", required=True)
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
-    A = Path(a.analysis)
+    R = merged(a.review2, "models")
+    G = merged(a.aggregate, "models")
+    C = Path(a.cons_dir)
 
-    fig, axes = plt.subplots(1, 2, figsize=(6.4, 3.1), sharey=True, gridspec_kw={"wspace": 0.08})
+    fig, axes = plt.subplots(1, 2, figsize=(6.4, 3.6), sharey=True, gridspec_kw={"wspace": 0.08})
     off = 0.17
-    for i, (label, d, base, post) in enumerate(ROWS):
+    for i, (label, d, base, post, cf) in enumerate(ROWS):
         y = len(ROWS) - 1 - i
-        svs = json.load(open(A / "svs" / f"{d}.json"))["models"]
-        cons = json.load(open(A / "cons" / f"{d}.json"))["models"]
-        arrow(axes[0], y + off, svs[base]["tv_list"], svs[post]["tv_list"], STATED, "o")
-        arrow(axes[0], y - off, svs[base]["tv_sampled"], svs[post]["tv_sampled"], SAMPLED, "s")
+        rb, rp = R[f"{d}/{base}"], R[f"{d}/{post}"]
+        cons = json.load(open(C / f"{cf}.json"))["models"]
+        arrow(axes[0], y + off, rb["tv_list"], rp["tv_list"], STATED, "o")
+        axes[0].plot([G[f"{d}/{base}"]["agg@5:tv"]], [y + off], marker="D", ms=4.5, mfc="white", mec=AGG, mew=1.0, ls="none", zorder=4)
+        arrow(axes[0], y - off, rb["tv_samples"], rp["tv_samples"], SAMPLED, "s")
         arrow(axes[1], y + off, cons[base]["auroc_stated_p"], cons[post]["auroc_stated_p"], STATED, "o")
         arrow(axes[1], y - off, cons[base]["auroc_consist@32"], cons[post]["auroc_consist@32"], SAMPLED, "s")
 
@@ -70,24 +86,25 @@ def main():
     axes[0].set_title("(a) Distance to the reference differential", loc="left")
     axes[1].set_xlabel("AUROC, single-call answer correct (higher is better)")
     axes[1].set_title("(b) Error signal", loc="left")
-    axes[0].set_xlim(0.66, 0.87)
+    axes[0].set_xlim(0.64, 0.87)
     axes[1].set_xlim(0.50, 0.89)
     for ax in axes:
         ax.tick_params(axis="y", length=0)
         ax.grid(axis="x", color="#e6e5e1", lw=0.5)
         ax.set_axisbelow(True)
         ax.set_ylim(-0.6, len(ROWS) - 0.4)
-        for b in [2, 4, 5, 7]:  # family/size groups, counted from the top row
+        for b in [2, 4, 5, 7, 8, 9]:  # family/size groups, counted from the top row
             ax.axhline(len(ROWS) - b - 0.5, color="#d0cfca", lw=0.5)
 
     from matplotlib.lines import Line2D
     handles = [
         Line2D([], [], color=STATED, marker="o", ms=5, lw=1.4, label="Stated: one list (a), its stated probability (b)"),
-        Line2D([], [], color=SAMPLED, marker="s", ms=5, lw=1.4, label="Sampled: top-1 answers (a), agreement of 31 samples (b)"),
+        Line2D([], [], color=SAMPLED, marker="s", ms=5, lw=1.4, label="Sampled: top answers (a), agreement of 31 samples (b)"),
         Line2D([], [], color=MUTED, marker="o", ms=5, mfc="white", lw=0, label="base model"),
         Line2D([], [], color=MUTED, marker="o", ms=5, lw=0, label="post-trained model"),
+        Line2D([], [], color=AGG, marker="D", ms=4.5, mfc="white", lw=0, label="base model, mean of five lists (a)"),
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.19))
+    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, -0.10))
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(a.out)
     fig.savefig(str(a.out).replace(".pdf", ".png"), dpi=200)
