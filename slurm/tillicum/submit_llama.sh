@@ -116,5 +116,28 @@ case "${1:-}" in
     SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fewshot-base $S --model Qwen/Qwen2.5-7B --out runs/fewshot_smoke/qwen25-7b-base.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fewshot-it $S --model Qwen/Qwen2.5-7B-Instruct --out runs/fewshot_smoke/qwen25-7b-it.jsonl $SM $FS $STD ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke"; exit 1 ;;
+  mistral)  # third family: Mistral-7B v0.3 base + Instruct; zero-shot at both temperatures and few-shot at T=0.7
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    TPL="--chat-template code/templates/mistral_v03_instruct.jinja"  # the base model ships without a chat template
+    run meas_ddx mistral7b-base mistralai/Mistral-7B-v0.3 $DDX $STD $TPL
+    run meas_ddx_t1 mistral7b-base mistralai/Mistral-7B-v0.3 $DDX $STD $T1 $TPL
+    run fewshot_t07 mistral7b-base mistralai/Mistral-7B-v0.3 $DDX $FS --completion --max-tokens 512 --max-model-len 6144
+    run meas_ddx mistral7b-it mistralai/Mistral-7B-Instruct-v0.3 $DDX $STD
+    run meas_ddx_t1 mistral7b-it mistralai/Mistral-7B-Instruct-v0.3 $DDX $STD $T1
+    run fewshot_t07 mistral7b-it mistralai/Mistral-7B-Instruct-v0.3 $DDX $FS $STD ;;
+  mistral-smoke)  # 8 cases x 4 samples per mode
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    TPL="--chat-template code/templates/mistral_v03_instruct.jinja"
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mistral-base $S --model mistralai/Mistral-7B-v0.3 --out runs/mistral_smoke/base_zs.jsonl $SM $STD $TPL
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mistral-base-fs $S --model mistralai/Mistral-7B-v0.3 --out runs/mistral_smoke/base_fs.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mistral-it $S --model mistralai/Mistral-7B-Instruct-v0.3 --out runs/mistral_smoke/it_zs.jsonl $SM $STD
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mistral-it-fs $S --model mistralai/Mistral-7B-Instruct-v0.3 --out runs/mistral_smoke/it_fs.jsonl $SM $FS $STD ;;
+  think)  # Qwen3-8B with thinking enabled, default prompt, T=0.7
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    run4 think_t07 qwen3-8b-think Qwen/Qwen3-8B 05:00:00 $DDX4 --thinking --max-tokens 8192 --max-model-len 10240 ;;
+  think-smoke)  # 20 cases x 4 samples, to measure trace length
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 20"
+    sbatch -p gpu-h200 --time=01:00:00 --job-name=smoke-think $S --model Qwen/Qwen3-8B --out runs/think_smoke/qwen3-8b-think.jsonl $SM --thinking --max-tokens 8192 --max-model-len 10240 ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke"; exit 1 ;;
 esac
