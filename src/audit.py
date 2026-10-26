@@ -66,7 +66,7 @@ def model_summary(rows, rng, sizes=(50, 100, 200), n_draw=500):
     out["full_pick"] = "stated" if full_pick_stated else "agree5"
     out["audit"] = {}
     for n in sizes:
-        agree, loss = [], []
+        agree, loss, agree_ho, loss_ho = [], [], [], []
         for _ in range(n_draw):
             i = rng.choice(len(sub), size=min(n, len(sub)), replace=False)
             s_, a_ = auroc(sp[i], y[i]), auroc(a5[i], y[i])
@@ -75,7 +75,15 @@ def model_summary(rows, rng, sizes=(50, 100, 200), n_draw=500):
             pick_stated = s_ > a_
             agree.append(pick_stated == full_pick_stated)
             loss.append(0.0 if pick_stated == full_pick_stated else best - worst)
-        out["audit"][n] = {"match_rate": float(np.mean(agree)), "mean_auroc_loss": float(np.mean(loss))}
+            # held out: judge the pick on the cases not used for the audit
+            rest = np.setdiff1d(np.arange(len(sub)), i)
+            sr, ar = auroc(sp[rest], y[rest]), auroc(a5[rest], y[rest])
+            agree_ho.append(pick_stated == (sr > ar))
+            loss_ho.append(max(sr, ar) - (sr if pick_stated else ar))
+        out["audit"][n] = {"match_rate": float(np.mean(agree)), "mean_auroc_loss": float(np.mean(loss)),
+                           "heldout_match_rate": float(np.mean(agree_ho)), "heldout_mean_auroc_loss": float(np.mean(loss_ho))}
+    out["gap5"] = out["auroc_stated"] - out["auroc_agree5"]
+    out["always_agree_loss"] = max(0.0, out["gap5"])
     return out
 
 
@@ -114,6 +122,21 @@ def main():
         xv = np.array([res[k][x] for k in keys])
         summary[f"rho_gap5_{name}"] = spearman(gap5, xv)
         summary[f"rho_gap32_{name}"] = spearman(gap32, xv)
+    post = [k for k in keys if "base" not in k.split("/")[-1] and "1.7b" not in k]
+    summary["always_agree_correct_share"] = float(np.mean([res[k]["full_pick"] == "agree5" for k in keys]))
+    summary["always_agree_mean_auroc_loss"] = float(np.mean([res[k]["always_agree_loss"] for k in keys]))
+    summary["post_n"] = len(post)
+    summary["post_always_agree_correct_share"] = float(np.mean([res[k]["full_pick"] == "agree5" for k in post]))
+    summary["post_always_agree_mean_auroc_loss"] = float(np.mean([res[k]["always_agree_loss"] for k in post]))
+    for n in (50, 100, 200):
+        summary[f"audit{n}_heldout_match_mean"] = float(np.mean([res[k]["audit"][n]["heldout_match_rate"] for k in keys]))
+        summary[f"audit{n}_heldout_loss_mean"] = float(np.mean([res[k]["audit"][n]["heldout_mean_auroc_loss"] for k in keys]))
+        summary[f"post_audit{n}_heldout_match_mean"] = float(np.mean([res[k]["audit"][n]["heldout_match_rate"] for k in post]))
+        summary[f"post_audit{n}_heldout_loss_mean"] = float(np.mean([res[k]["audit"][n]["heldout_mean_auroc_loss"] for k in post]))
+    # match rate by size of the true gap
+    for lo, hi in [(0, 0.02), (0.02, 0.05), (0.05, 1)]:
+        sel = [k for k in keys if lo <= abs(res[k]["gap5"]) < hi]
+        summary[f"audit100_match_gap_{lo}-{hi}"] = [len(sel), float(np.mean([res[k]["audit"][100]["match_rate"] for k in sel])) if sel else None]
     for n in (50, 100, 200):
         summary[f"audit{n}_match_mean"] = float(np.mean([res[k]["audit"][n]["match_rate"] for k in keys]))
         summary[f"audit{n}_match_min"] = float(np.min([res[k]["audit"][n]["match_rate"] for k in keys]))
