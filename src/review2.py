@@ -33,7 +33,9 @@ from stated_vs_sampled import stated_dist, tv
 
 METRICS = ["pass1", "pass32", "distinct", "cov32", "tv_samples", "tv_list", "mass_list", "sev_named",
            "tv_list_nogold", "tv_samples_nogold", "ddf1", "overname_count", "auroc_stated", "auroc_agree32"]
-EXTRA = ["within_list"]  # reported with intervals but outside the Holm family: TV - (1 - mass), misallocation within the list
+EXTRA = ["within_list", "cond_tv", "rec1", "rec3", "rec5"]  # reported with intervals, Holm-corrected as a separate family:
+# within_list = TV - (1 - mass); cond_tv = TV between the list and the reference restricted to the named conditions and
+# renormalized (scale-free allocation error); rec_k = the true pathology is among the list's k most probable conditions
 
 
 def boot_p(b):
@@ -79,7 +81,7 @@ def load_model(path, cases, refs, severity, match, tau):
             ref_ng = renorm_without(ref, gold)
             emp_ng = renorm_without(emp, gold)
             r["tv_samples_nogold"] = tv(emp_ng, ref_ng) if (ref_ng and emp_ng) else None
-            tl, ms, sv, tng, f1, oc = [], [], [], [], [], []
+            tl, ms, sv, tng, f1, oc, ctv, rk = [], [], [], [], [], [], [], {1: [], 3: [], 5: []}
             sev_elig = [k for k, p in ref.items() if p >= tau and severity.get(k, 9) <= 2]
             for d, _ in valid:
                 tl.append(tv(d, ref))
@@ -94,9 +96,18 @@ def load_model(path, cases, refs, severity, match, tau):
                 prec = len(support & set(d)) / len(d)
                 f1.append(0.0 if rec_ + prec == 0 else 2 * rec_ * prec / (rec_ + prec))
                 oc.append(sum(1 for k in d if severity.get(k, 9) <= 2 and ref.get(k, 0) < tau))
+                mL = sum(ref.get(k, 0) for k in d)
+                if mL > 0:
+                    ctv.append(tv(d, {k: ref[k] / mL for k in d if k in ref}))
+                order = sorted(d, key=lambda k: -d[k])
+                for kk in rk:
+                    rk[kk].append(float(gold in order[:kk]))
             r.update({"tv_list": np.mean(tl), "mass_list": np.mean(ms), "sev_named": np.mean(sv) if sv else None,
                       "tv_list_nogold": np.mean(tng) if tng else None, "ddf1": np.mean(f1), "overname_count": np.mean(oc)})
             r["within_list"] = r["tv_list"] - (1 - r["mass_list"])
+            r["cond_tv"] = float(np.mean(ctv)) if ctv else None
+            for kk in rk:
+                r[f"rec{kk}"] = float(np.mean(rk[kk]))
             d0, A = valid[0]
             others = [t for _, t in valid[1:]]
             r["A_correct"] = float(A == gold)
@@ -211,7 +222,7 @@ def main():
         cids = sorted(set(B) & set(P))
         for tag, M in [(bt, B), (pt, P)]:
             report["models"][f"{d}/{tag}"] = {m: float(np.nanmean([M[c][m] for c in cids if M[c].get(m) is not None]))
-                                              for m in METRICS if not m.startswith("auroc")}
+                                              for m in METRICS + EXTRA if not m.startswith("auroc")}
         # severe inclusion per condition, threshold-free (reference gives it any probability)
         per = {}
         for k in conds:
@@ -250,21 +261,27 @@ def main():
         obs_lower = sum(per[k]["diff"] < 0 for k in ks)
         cid_index = {c: i for i, c in enumerate(cids)}
         idx = {k: np.array([cid_index[c] for c in inc[k][0]]) for k in ks}
-        null = []
+        null, null_mean = [], []
+        obs_mean = float(np.mean([per[k]["diff"] for k in ks]))
         for _ in range(a.n_perm):
             flip = rng.random(len(cids)) < 0.5
-            cnt = 0
+            cnt, tot = 0, 0.0
             for k in ks:
                 _, bv, pv = inc[k]
                 f = flip[idx[k]]
-                cnt += np.mean(np.where(f, bv - pv, pv - bv)) < 0
+                dm = np.mean(np.where(f, bv - pv, pv - bv))
+                cnt += dm < 0
+                tot += dm
             null.append(cnt)
-        null = np.array(null)
+            null_mean.append(tot / len(ks))
+        null, null_mean = np.array(null), np.array(null_mean)
         report.setdefault("severe_test", {})[f"{d}:{bt}>{pt}"] = {
             "n_conditions": len(ks), "lower": int(obs_lower), "higher": int(len(ks) - obs_lower),
             "sig_lower_q05": int(sum(per[k]["diff"] < 0 and per[k]["q_bh"] < 0.05 for k in ks)),
             "sig_higher_q05": int(sum(per[k]["diff"] > 0 and per[k]["q_bh"] < 0.05 for k in ks)),
-            "null_lower_mean": float(null.mean()), "null_lower_p_ge_obs": float((1 + np.sum(null >= obs_lower)) / (len(null) + 1))}
+            "null_lower_mean": float(null.mean()), "null_lower_p_ge_obs": float((1 + np.sum(null >= obs_lower)) / (len(null) + 1)),
+            "mean_shift": obs_mean, "mean_shift_p": float(min(1.0, 2 * (1 + min(np.sum(null_mean <= obs_mean), np.sum(null_mean >= obs_mean))) / (len(null_mean) + 1))),
+            "worst": sorted(((per[k]["diff"], k) for k in ks))[:3]}
         print("  severe test:", json.dumps(report["severe_test"][f"{d}:{bt}>{pt}"]), flush=True)
         report["severe_per_condition"][f"{d}:{bt}>{pt}"] = per
         diffs = pair_diffs(B, P, cids, rng, a.n_boot, a.n_boot_case)
@@ -284,6 +301,12 @@ def main():
     for (pair, m, p), q in zip(tests, adj):
         report["pairs"][pair][m]["p_holm"] = q
     report["n_tests"] = m_
+    ext = [(pr, m, v["p_cluster"]) for pr, d_ in report["pairs"].items() for m, v in d_.items() if m in EXTRA]
+    order = sorted(range(len(ext)), key=lambda i: ext[i][2]); running = 0.0
+    for rank_, i in enumerate(order):
+        running = max(running, min(1.0, (len(ext) - rank_) * ext[i][2]))
+        report["pairs"][ext[i][0]][ext[i][1]]["p_holm_extra"] = running
+    report["n_tests_extra"] = len(ext)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     json.dump(report, open(a.out, "w"), indent=1)
 
