@@ -2,7 +2,8 @@
 % until then this uses the PMLR jmlr class that CHIL proceedings are published in.
 % Long-form version (thesis): main.tex. Shared: refs.bib, figures/.
 \documentclass[wcp]{jmlr}
-\usepackage{booktabs,multirow,adjustbox}
+\usepackage{booktabs,multirow,adjustbox,array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 \newcommand{\passk}[1]{\mathrm{pass@}#1}
 \jmlrvolume{}
@@ -200,11 +201,11 @@ An AI assistant (Claude, Anthropic) was used to write and run analysis code, to 
 \section{Claims and the evidence for them}\label{app:claims}
 Table~\ref{tab:claims} lists each claim with its primary evidence, the checks under which it holds and those under which it weakens or fails. Primary evidence comes from the 112 headline tests (\S\ref{sec:setup}); everything else is a secondary check, and Table~\ref{tab:controlmatrix} gives the same information control by control.
 
-\begin{table}[h]
+\begin{table}[p]
 \centering\footnotesize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{p{3.3cm}p{4.3cm}p{3.4cm}p{3.6cm}}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{L{3.2cm}L{4.4cm}L{3.4cm}L{3.6cm}}
 \toprule
 Claim & Primary evidence & Holds under & Weaker or fails under \\
 \midrule
@@ -224,6 +225,7 @@ Claim & Primary evidence & Holds under & Weaker or fails under \\
 \caption{The claims of the paper and the evidence for them. Ranges are post-trained minus base unless stated; ``n.s.'': the condition-clustered interval includes zero or the test does not survive correction.}
 \label{tab:claims}
 \end{table}
+\clearpage
 
 \sloppy
 \section{Prompts, vignettes and grading}\label{app:prompts}
@@ -576,11 +578,11 @@ OLMo-3.1-32B-Instruct & 0.99 & \textbf{0.701} & \textbf{0.644} & \textbf{0.774} 
 \section{Controls: prompt, temperature, decoding, severity labels and a third family}\label{app:controls}
 This section collects the controls for the main comparison. Table~\ref{tab:controlmatrix} shows, for each control, whether each main claim holds; the subsections give the numbers. Real-case evidence is in Appendix~\ref{app:medrare}.
 
-\begin{table}[t]
-\centering\footnotesize
+\begin{table}[p]
+\centering\scriptsize
 \setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{p{2.6cm}p{2.0cm}p{2.0cm}p{1.9cm}p{2.2cm}p{2.4cm}p{2.0cm}}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{L{2.5cm}L{1.9cm}L{2.1cm}L{2.0cm}L{2.1cm}L{2.5cm}L{2.0cm}}
 \toprule
 Control & (a) View kept, variation removed & (b) Samples collapse & (c) First-answer gain is sampling noise & (d) Stated list improves (Qwen) & (e, f) Severe conditions; must-not-miss prompt & (g) Voting and agreement weaken \\
 \midrule
