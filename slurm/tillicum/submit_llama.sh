@@ -230,7 +230,7 @@ case "${1:-}" in
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mc-olmo-it $S --model allenai/Olmo-3-7B-Instruct --out runs/mc_smoke/olmo3-instruct/samples.jsonl $SM $STD ;;
   medcase-judge)  # judge every distinct (case, name) with two judges (agreement, and strict grading = both say yes)
     J=code/slurm/tillicum/judge.sbatch
-    TAGS=qwen3-8b-base,qwen3-8b,qwen25-7b-base,qwen25-7b-it,qwen25-32b-base,qwen25-32b-it,olmo3-base,olmo3-instruct,olmo31-32b-base,olmo31-32b-instruct
+    TAGS=qwen3-8b-base,qwen3-8b,qwen25-7b-base,qwen25-7b-it,qwen25-32b-base,qwen25-32b-it,olmo3-base,olmo3-instruct  # OLMo-3.1-32B base cancelled (cost)
     JA="--cases $THESIS/data/medcase/cases_test.jsonl --runs $THESIS/runs/medcase_t07 --tags $TAGS"
     # DEP (optional): a Slurm dependency, e.g. afterok:<sampling job ids>
     sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge-mc $J $JA --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/medcase_t07/judge_mistral24b.jsonl
