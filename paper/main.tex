@@ -771,6 +771,57 @@ Mistral-7B-Instruct & 87 & 3.7 + 2.7 & 0.613 & 0.562 & 0.352 & 0.329 & 0.473 & 0
 \label{tab:mnm}
 \end{table}
 
+\subsection{Must-not-miss conditions defined outside DDXPlus}\label{sec:extmnm}
+The severity label used above is the dataset's own. We therefore re-ran every severe-condition analysis with two published sets of conditions that must not be missed, mapped onto DDXPlus's 49 (Table~\ref{tab:extmnm}): a harm-based set, the DDXPlus conditions among the 15 diseases that cause about half of serious misdiagnosis-related harms in the USA~\citep{newmantoker2024burden} (NSTEMI/STEMI, pulmonary embolism, pneumonia and pulmonary neoplasm, of which DDXPlus labels only the first two severe), and the life-threatening causes of acute chest pain in the 2021 AHA/ACC guideline~\citep{gulati2021chestpain} (acute coronary syndrome as NSTEMI/STEMI and unstable angina, pulmonary embolism, esophageal rupture as Boerhaave, and pneumothorax). Their union has seven conditions. Neither set involves a judgment of these vignettes, and both were fixed before the analysis.
+On average the result is stronger than with DDXPlus's labels. Zero-shot, post-trained lists name 9--24 points more of the warranted union conditions in seven of eight settings (OLMo~3.1 32B $-0.3$, n.s.), and with worked examples 7--22 points more for the three Qwen models and OLMo~3 7B (OLMo~3.1 32B $+6.5$ and Mistral $+4.0$, n.s.); the harm-based and chest-pain sets agree. The losses of specific conditions, however, are confined to OLMo, Mistral and the few-shot Qwen2.5 models. No Qwen model names any union condition significantly less often zero-shot, while OLMo~3 7B loses NSTEMI/STEMI and unstable angina at both temperatures, OLMo~3.1 32B loses NSTEMI/STEMI, pulmonary embolism and pneumothorax, and with worked examples Mistral loses four of the seven (pulmonary embolism 0.31 points), Qwen2.5-7B-Instruct two and Qwen2.5-32B-Instruct one (Boerhaave). When the true pathology is itself in the union set (140 cases), zero-shot post-trained lists contain it among their top five 10--26 points more often for four of five pairs (OLMo~3 7B $+9.9$, n.s.). Scored against the union set, the must-not-miss prompt names 15--26 points more of the warranted conditions than the standard prompt and 8--20 points more than two combined standard lists, a larger share of its gain than under DDXPlus's labels, at a cost of 0.7--1.5 more unwarranted union conditions per list.
+
+\begin{table}[t]
+\centering\small
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{4}{c}{Union set (7 conditions)} & Harm-based & Chest pain \\
+Pair & base & post & post $-$ base & sig.\ lost / gained & post $-$ base & post $-$ base \\
+\midrule
+Qwen3-8B, $T{=}0.7$ & 0.494 & 0.584 & $+0.089$ & 0 / 2 & $+0.053$ & $+0.115$ \\
+Qwen3-8B, $T{=}1$ & 0.425 & 0.585 & $+0.160$ & 0 / 4 & $+0.135$ & $+0.167$ \\
+Qwen2.5-7B, $T{=}0.7$ & 0.315 & 0.536 & $+0.221$ & 0 / 4 & $+0.267$ & $+0.149$ \\
+Qwen2.5-7B, $T{=}1$ & 0.303 & 0.539 & $+0.236$ & 0 / 4 & $+0.287$ & $+0.180$ \\
+Qwen2.5-32B, $T{=}0.7$ & 0.432 & 0.595 & $+0.162$ & 0 / 4 & $+0.164$ & $+0.104$ \\
+OLMo~3 7B, $T{=}0.7$ & 0.268 & 0.413 & $+0.144$ & 2 / 3 & $+0.133$ & $+0.101$ \\
+OLMo~3 7B, $T{=}1$ & 0.275 & 0.412 & $+0.136$ & 3 / 3 & $+0.135$ & $+0.102$ \\
+OLMo~3.1 32B, $T{=}0.7$ & 0.462 & 0.459 & $-0.003$$^{\dagger}$ & 3 / 0 & $-0.033$$^{\dagger}$ & $-0.020$$^{\dagger}$ \\
+\midrule
+Qwen3-8B, few-shot & 0.299 & 0.491 & $+0.191$ & 0 / 3 & $+0.183$ & $+0.093$ \\
+Qwen2.5-7B, few-shot & 0.239 & 0.455 & $+0.216$ & 2 / 3 & $+0.249$ & $+0.152$ \\
+Qwen2.5-32B, few-shot & 0.361 & 0.542 & $+0.180$ & 1 / 3 & $+0.210$ & $+0.096$ \\
+OLMo~3 7B, few-shot & 0.335 & 0.409 & $+0.074$ & 2 / 3 & $-0.015$$^{\dagger}$ & $+0.036$$^{\dagger}$ \\
+OLMo~3.1 32B, few-shot & 0.412 & 0.477 & $+0.065$$^{\dagger}$ & 2 / 1 & $+0.080$ & $-0.017$$^{\dagger}$ \\
+Mistral-7B, few-shot & 0.401 & 0.441 & $+0.040$$^{\dagger}$ & 4 / 1 & $+0.024$$^{\dagger}$ & $-0.071$ \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\medskip
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lccccccc}
+\toprule
+ & \multicolumn{4}{c}{Warranted must-not-miss conditions named (union set)} & \multicolumn{3}{c}{Unwarranted per list} \\
+Post-trained model & standard & two lists & must-not-miss & $-$ standard & standard & two lists & must-not-miss \\
+\midrule
+Qwen3-8B & 0.584 & 0.612 & 0.775 & $+0.192$ & 1.08 & 1.20 & 2.10 \\
+Qwen2.5-7B-Instruct & 0.536 & 0.600 & 0.714 & $+0.178$ & 0.94 & 1.14 & 2.33 \\
+Qwen2.5-32B-Instruct & 0.595 & 0.648 & 0.814 & $+0.219$ & 1.00 & 1.21 & 2.47 \\
+OLMo-3-7B-Instruct & 0.413 & 0.479 & 0.564 & $+0.151$ & 0.93 & 1.17 & 1.60 \\
+OLMo-3.1-32B-Instruct & 0.459 & 0.527 & 0.715 & $+0.256$ & 0.58 & 0.77 & 1.77 \\
+Mistral-7B-Instruct & 0.358 & 0.417 & 0.615 & $+0.257$ & 0.69 & 0.87 & 1.65 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\caption{Must-not-miss conditions defined outside DDXPlus (DDXPlus, 980 cases). \emph{Harm-based}: the DDXPlus conditions among the 15 diseases behind about half of serious misdiagnosis-related harms in the USA~\citep{newmantoker2024burden} (NSTEMI/STEMI, pulmonary embolism, pneumonia, pulmonary neoplasm). \emph{Chest pain}: the life-threatening causes of acute chest pain in the 2021 AHA/ACC guideline~\citep{gulati2021chestpain} (NSTEMI/STEMI, unstable angina, pulmonary embolism, Boerhaave, spontaneous pneumothorax). \emph{Union}: either set. Top: share of the set's conditions with reference probability $\geq 0.1$ that one list names, and the number of the union's conditions named significantly less / more often (Benjamini--Hochberg over the 7 conditions). Bottom: the must-not-miss prompt (\S\ref{sec:decoding}) scored against the union set; \emph{two lists}: the union of two standard lists, a length-matched comparison; unwarranted: the set's conditions named that the reference weights below 0.1. $^{\dagger}$: the condition-clustered 95\% interval includes zero.}
+\label{tab:extmnm}
+\end{table}
+
 \subsection{A third family: Mistral-7B v0.3}\label{sec:mistral}
 We repeat the comparison with Mistral-7B-v0.3 and Mistral-7B-Instruct-v0.3, a family also studied by \citet{jang2026cannotsample}. With the zero-shot prompt the base model does not answer: 52\% of its samples at $T{=}0.7$ and 76\% at $T{=}1$ are invalid (it continues the document instead), and its valid answers mostly repeat the first listed condition, so its single-call accuracy is 6\% and the zero-shot pair is not informative. With the few-shot prompt of \S\ref{sec:fewshot} the base model answers validly (0.4\% invalid), and the pair reproduces the other families (Table~\ref{tab:third}). Post-training raises pass@1 by 14.0 points and lowers pass@32 by 14.5, cuts distinct answers from 5.0 to 1.3 and Cov@32 by 0.138, and moves the samples away from the reference (TV $+0.058$). Voting gains the base model 5.6 points and the Instruct model 0.8; the three most frequent of 32 samples beat one list by 12.6 points for the base model, while for the Instruct model the list is ahead by 7.0; agreement is the better error signal for the base model (AUROC 0.826 against 0.671) and the stated probability for the Instruct model (0.747 against 0.613). The stated list improves modestly (TV $-0.036$ and DDF1 $+0.046$, surviving clustering and Holm correction over 42 tests; $-0.023$ with the true pathology removed, which does not), the smallest significant gain of the three families, and 11 of the 17 severe conditions are named less often. Mistral-Instruct also names 0.4 conditions per list that are not among the 49.
 
@@ -1141,6 +1192,7 @@ System prompt: \texttt{You are an experienced emergency and primary care physici
 DDXPlus is synthetic: its reference differential is the posterior of a rule-based engine, and the simulated pathology is not always ranked first in it (it is for ``more than 70\%'' of patients~\citep[\S3.5]{fansi2022ddxplus}), so we treat TV and coverage as distance to a \emph{reference} posterior rather than to clinical truth.
 Base models more often give invalid answers. We count these as errors, which makes the large-$k$ losses conservative but inflates post-trained gains at small $k$; conditioning on valid samples removes a quarter to a third of the $T{=}1$ pass@1 gain (\S\ref{sec:robust}). A re-run of the five final pairs with three worked examples in every prompt nearly removes invalid answers and confirms the results except OLMo~3.1 32B's stated-list gain (\S\ref{sec:fewshot}); it uses one temperature and one set of example patients, with lists from the reference or from Qwen2.5-32B-Instruct. Sampled hotter, Qwen2.5-7B-Instruct recovers much of its base model's pass@32 but Qwen3-8B does not (\S\ref{sec:controls}); the temperature control covers two 7--8B models.
 Our base/post-trained comparisons cover two open families at 7--32B, plus Mistral-7B with few-shot prompts only; prompt robustness of the sampled readout is tested on one pair, and the collapse at large $k$ largely disappears when the model is asked to reason first (\S\ref{sec:robust}) or uses its thinking mode (\S\ref{sec:thinking}). The OLMo base models give invalid answers on 27--47\% of samples, so their format-controlled comparisons are weaker than Qwen's (below 0.5\% with few-shot prompts). We evaluate one RL-Zero checkpoint, at 7B, trained with an LM-judge reward on chat prompts rather than a diagnosis reward, and the 32B models only at $T{=}0.7$.
+Severity is DDXPlus's own label; two published must-not-miss lists mapped onto its 49 conditions give the same average result but locate the specific losses in OLMo and Mistral (\S\ref{sec:extmnm}).
 Phenopacket cases are drawn from published literature and may be in pretraining data, which we partly address with era splits.
 The stated readout renormalizes each list's probabilities over the conditions it names, and the single-call answer is a model's first valid sample. A full-distribution prompt gives the same picture (\S\ref{sec:fullprompt}), but other elicitations may differ. Which readout is the better error signal is model-dependent; the audit of \S\ref{sec:audit} makes it checkable with 100 labeled cases but does not remove the dependence, and we validate it only within DDXPlus. The test set is class-balanced (20 cases per condition), so accuracies do not reflect real prevalence, and the prompt lists all 49 conditions, so DDXPlus is a closed-set task.
 We do not evaluate clinical utility with clinicians.

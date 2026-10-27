@@ -30,6 +30,12 @@ from disease_normalizer import norm_text
 from parsing import parse_dx
 from review2 import boot_p
 
+def sample_files(d):
+    """the merged samples.jsonl if present, else the shards samples.s*.jsonl"""
+    d = Path(d)
+    return [d / "samples.jsonl"] if (d / "samples.jsonl").exists() else sorted(d.glob("samples.s*.jsonl"))
+
+
 METRICS = ["valid", "pass1", "pass32", "distinct", "rec1", "rec5"]
 
 
@@ -50,7 +56,7 @@ def holm(ps):
 
 def load(path, J):
     rows = {}
-    for rec in map(json.loads, open(path)):
+    for rec in (json.loads(l) for f in sample_files(path) for l in open(f)):
         cid, samples = rec["case_id"], []
         for s in rec["samples"]:
             dx = parse_dx(s["text"])
@@ -118,7 +124,7 @@ def main():
 
     def get(tag):
         if tag not in cache:
-            rows = load(Path(a.runs) / tag / "samples.jsonl", J)
+            rows = load(Path(a.runs) / tag, J)
             per, sig = {}, {}
             for cid, s in rows.items():
                 per[cid], sg = case_row(s)

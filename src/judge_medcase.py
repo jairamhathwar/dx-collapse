@@ -14,6 +14,12 @@ from pathlib import Path
 from disease_normalizer import norm_text
 from parsing import parse_dx
 
+def sample_files(d):
+    """the merged samples.jsonl if present, else the shards samples.s*.jsonl"""
+    d = Path(d)
+    return [d / "samples.jsonl"] if (d / "samples.jsonl").exists() else sorted(d.glob("samples.s*.jsonl"))
+
+
 PROMPT = ("You are grading a diagnosis against the confirmed final diagnosis of a published case report.\n"
           "Final diagnosis: {gold}\nCandidate diagnosis: {cand}\n"
           "Does the candidate name the same disease as the final diagnosis? Count it as the same if it is a synonym, "
@@ -37,7 +43,7 @@ def main():
     cases = {c["case_id"]: c for c in map(json.loads, open(a.cases))}
     pairs = {}
     for tag in a.tags.split(","):
-        for rec in map(json.loads, open(Path(a.runs) / tag / "samples.jsonl")):
+        for rec in (json.loads(l) for f in sample_files(Path(a.runs) / tag) for l in open(f)):
             for s in rec["samples"]:
                 for d in parse_dx(s["text"]):
                     k = norm_text(d["diagnosis"])

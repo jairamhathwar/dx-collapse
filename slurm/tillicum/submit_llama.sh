@@ -232,8 +232,11 @@ case "${1:-}" in
     J=code/slurm/tillicum/judge.sbatch
     TAGS=qwen3-8b-base,qwen3-8b,qwen25-7b-base,qwen25-7b-it,qwen25-32b-base,qwen25-32b-it,olmo3-base,olmo3-instruct,olmo31-32b-base,olmo31-32b-instruct
     JA="--cases $THESIS/data/medcase/cases_test.jsonl --runs $THESIS/runs/medcase_t07 --tags $TAGS"
-    sbatch --time=03:00:00 --job-name=judge-mc $J $JA --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/medcase_t07/judge_mistral24b.jsonl
-    sbatch --time=03:00:00 --job-name=judge2-mc $J $JA --model Qwen/Qwen2.5-32B-Instruct --out $THESIS/runs/medcase_t07/judge2_qwen32b.jsonl ;;
+    # DEP (optional): a Slurm dependency, e.g. afterok:<sampling job ids>
+    sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge-mc $J $JA --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/medcase_t07/judge_mistral24b.jsonl
+    sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge2-mc $J $JA --model Qwen/Qwen2.5-32B-Instruct --out $THESIS/runs/medcase_t07/judge2_qwen32b.jsonl ;;
+  medcase-an)  # scoring after both judges (DEP: afterok:<judge job ids>)
+    sbatch ${DEP:+--dependency=$DEP} code/slurm/tillicum/medcase_an.sbatch ;;
   medcase-judge-smoke)
     J=code/slurm/tillicum/judge.sbatch
     sbatch --time=00:30:00 --job-name=judge-mc-smoke $J --cases $THESIS/data/medcase/cases_test.jsonl --runs $THESIS/runs/mc_smoke \
@@ -270,5 +273,5 @@ case "${1:-}" in
       tag=${spec%%:*}; model=${spec#*:}
       sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mnm-$tag $S --model $model --out runs/r7_smoke/mnm_$tag.jsonl $SM $STD --k 4 --prompt-variant mustnotmiss
     done ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|frontier|mnm|r7-smoke"; exit 1 ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|medcase-an|frontier|mnm|r7-smoke"; exit 1 ;;
 esac

@@ -38,11 +38,11 @@ Much current practice uses the second. Pass@$k$, self-consistency voting~\citep{
 The two readouts agree for a model that samples from the distribution it states. Instruction-tuned models do not: they verbalize distributions they fail to sample from~\citep{meister2025distributional,zhang2025verbalized,jang2026cannotsample}, and one aligned answer can cover what many base-model samples spread out~\citep{lake2025overton}. We ask what this means for differential diagnosis, where every case has a reference differential and a true diagnosis, and what it does to the tools that read the differential from samples. This is a replication and extension in a clinical setting, not a new phenomenon.
 
 The design holds the pretrained weights fixed and varies only the post-training: base/instruct pairs for Qwen2.5-7B, Qwen3-8B, Qwen2.5-32B and Mistral-7B; every released stage (SFT, DPO, RL) of OLMo~3 7B~\citep{olmo2025olmo3} and OLMo~3.1 32B, plus a 7B checkpoint trained with RL directly from the base; three medical models fine-tuned from Qwen2.5-7B-Instruct; and Qwen3-8B with its thinking mode on. Each final pair is also run with worked examples in the prompt, so that base models answer in the requested format.
-Our measurements:
+Our measurements (Appendix~\ref{app:claims} maps each to its evidence and checks):
 \begin{itemize}
 \item \textbf{Post-training keeps the base model's view and removes its variation.} A post-trained list tracks its own base model's averaged list for the same patient and barely changes between calls (\S\ref{sec:stated}).
 \item \textbf{Sampled answers collapse} in every family (13--30 points of pass@32 at each model's best prompt), while under greedy decoding with matched prompts post-training raises top-1 significantly in at most two of six pairs; the stage that narrows most depends on the recipe (\S\ref{sec:sampled}).
-\item \textbf{The stated list improves robustly only for Qwen}, by naming the true pathology and the reference's conditions more often; severe conditions are named more often on average, but specific ones are lost (\S\ref{sec:stated}).
+\item \textbf{The stated list improves robustly only for Qwen}, by naming the true pathology and the reference's conditions more often; severe conditions, also by two published must-not-miss lists, are named more often on average, but specific ones are lost (\S\ref{sec:stated}).
 \item \textbf{Sampling-based methods lose value}: voting stops helping and agreement weakens; combining it with the stated probability helps post-trained models modestly, and thinking mode restores agreement (\S\ref{sec:consequences}). On real rare-disease cases the voting and agreement shifts replicate, but agreement stays the better signal (\S\ref{sec:medrare}).
 \end{itemize}
 
@@ -73,7 +73,7 @@ The \emph{stated} readout is one sample's list, with its probabilities renormali
 The \emph{single-call answer} is the top answer of a model's first valid sample.
 
 \paragraph{Statistics.}
-DDXPlus has 20 cases per true pathology, so intervals are 95\% percentile intervals from a bootstrap that resamples the 49 pathologies with all their cases (10,000 resamples) unless stated; p-values use the add-one correction, and the headline base-vs-post differences are Holm-corrected over 112 tests, other families separately (Appendix~\ref{app:clustered}). Case-level intervals in the appendix are up to three times narrower, and some appendix tables come from an earlier scorer whose values differ by up to 0.004. AUROCs use average ranks for ties. With five to six pipelines, results describe these checkpoints rather than post-training in general.
+DDXPlus has 20 cases per true pathology, so intervals are 95\% percentile intervals from a bootstrap that resamples the 49 pathologies with all their cases (10,000 resamples) unless stated; p-values use the add-one correction. The 112 headline tests (14 metrics fixed in advance, eight zero-shot settings) are primary and Holm-corrected together; every control, stage, few-shot and per-condition analysis is secondary, corrected within its own family (Appendix~\ref{app:clustered}), and read as a check on them. Case-level intervals in the appendix are up to three times narrower, and some appendix tables come from an earlier scorer whose values differ by up to 0.004. AUROCs use average ranks for ties. With five to six pipelines, results describe these checkpoints rather than post-training in general.
 
 %=====================================================================
 \section{Results}
@@ -125,7 +125,7 @@ What is a post-trained list? For each patient we compare each post-trained list 
 Whether this improves the list depends on the model (Table~\ref{tab:stated}). For every Qwen model and OLMo~3.1 32B, the post-trained list contains the true pathology among its top five 12--24 points more often (e.g. Qwen3-8B 0.67 $\rightarrow$ 0.80), is closer to the reference (TV $-0.043$ to $-0.088$; $-0.018$ to $-0.056$ without the true pathology, Qwen3-8B at $T{=}0.7$ not surviving correction), names more reference mass, and allocates probability among the named conditions more like the reference (conditional TV $-0.025$ to $-0.078$). OLMo~3 7B's lists do not improve (recall@5 0.47 $\rightarrow$ 0.49), and without the true pathology they are farther ($+0.034$ at $T{=}0.7$). The same gains hold on complete five-item lists only (recall@5 $+0.12$ to $+0.16$). With worked examples the recall and TV gains persist for Qwen3-8B and Qwen2.5-7B but recall does not for Qwen2.5-32B, OLMo~3.1 32B keeps only a higher reference mass, and Mistral gains with either set of examples (TV $-0.036$ and $-0.059$): the stated-list gain is consistent for the smaller Qwen models, holds for Mistral with worked examples, and is weak or absent for OLMo. When the true pathology is itself severe (340 cases), post-trained lists contain it among their top five 9--18 points more often zero-shot, as for other pathologies. Averaging calls closes most of the gap: the mean of five base-model lists is about as close to the reference as one post-trained list (Qwen3-8B 0.699 against 0.700, OLMo~3.1 32B 0.691 against 0.701; diamonds in Figure~\ref{fig:stated}a). With five lists on both sides, post-training is closer in four of eleven direct-answer settings (all Qwen), not detectably different in four and farther in three (OLMo; Appendix~\ref{sec:aggregate}). Qwen3-8B with thinking on goes further: one of its lists (TV 0.670) beats five averaged base lists.
 
 \paragraph{Severe conditions.}
-Post-trained lists name the severe conditions that the reference weights at least 0.1 more often in every zero-shot setting (Qwen $+9.0$ to $+13.8$ points, OLMo~3 7B $+6.0$ and $+8.7$, the first not surviving correction; OLMo~3.1 32B $+2.2$, n.s.), and the mean inclusion over all 17 severe conditions rises significantly in seven of eight. Yet one list names only 0.32--0.47 of the warranted ones, against 0.975 for the reference's top five, and specific conditions are lost (Table~\ref{tab:severetest}): acute pulmonary edema is the largest loss in four of the five final pairs (e.g. Qwen2.5-32B 0.63 $\rightarrow$ 0.44, OLMo~3 7B 0.56 $\rightarrow$ 0.31). With worked examples the mean inclusion falls for Qwen2.5-32B and OLMo~3 7B, and five averaged post-trained lists name fewer warranted severe conditions than five averaged base lists in six of eleven settings (by 0.06--0.14). The Qwen models shift toward acute coronary syndromes and pulmonary embolism, which emergency medicine rules out first, but these vignettes lack the ECG and biomarkers that separate the coronary syndromes, so the shifts track the reference engine rather than clinical correctness. Asked explicitly for up to three dangerous conditions to rule out, post-trained lists name 6--15 points more of the warranted severe conditions and name acute pulmonary edema more often for five of six models, at a cost of 1--2 more severe conditions per list that the reference does not warrant, some of them plausible rule-outs such as pulmonary embolism (Table~\ref{tab:mnm}); against two combined standard lists, which name one to two fewer conditions, 0.02--0.11 of the gain remains.
+Post-trained lists name the severe conditions that the reference weights at least 0.1 more often in every zero-shot setting (Qwen $+9.0$ to $+13.8$ points, OLMo~3 7B $+6.0$ and $+8.7$, the first not surviving correction; OLMo~3.1 32B $+2.2$, n.s.), and the mean inclusion over all 17 severe conditions rises significantly in seven of eight. Yet one list names only 0.32--0.47 of the warranted ones, against 0.975 for the reference's top five, and specific conditions are lost (Table~\ref{tab:severetest}): acute pulmonary edema is the largest loss in four of the five final pairs (e.g. Qwen2.5-32B 0.63 $\rightarrow$ 0.44, OLMo~3 7B 0.56 $\rightarrow$ 0.31). With worked examples the mean inclusion falls for Qwen2.5-32B and OLMo~3 7B, and five averaged post-trained lists name fewer warranted severe conditions than five averaged base lists in six of eleven settings (by 0.06--0.14). The Qwen models shift toward acute coronary syndromes and pulmonary embolism, which emergency medicine rules out first, but these vignettes lack the ECG and biomarkers that separate the coronary syndromes, so the shifts track the reference engine rather than clinical correctness. With must-not-miss conditions taken instead from diagnostic-harm data and the chest-pain guideline~\citep{newmantoker2024burden,gulati2021chestpain}, post-trained lists name 9--24 points more of them in seven of eight zero-shot settings, and only OLMo, Mistral and the few-shot Qwen2.5 models lose specific ones (Appendix~\ref{sec:extmnm}). Asked explicitly for up to three dangerous conditions to rule out, post-trained lists name 6--15 points more of the warranted severe conditions and name acute pulmonary edema more often for five of six models, at a cost of 1--2 more severe conditions per list that the reference does not warrant, some of them plausible rule-outs such as pulmonary embolism (Table~\ref{tab:mnm}); against two combined standard lists, which name one to two fewer conditions, 0.02--0.11 of the gain remains.
 
 \begin{figure}[t]
 \centering
@@ -186,7 +186,7 @@ Across 56 model--setting combinations evaluated on held-out cases (Appendix~\ref
 \citet{jang2026cannotsample} show that instruction-tuned models cannot sample from distributions they can describe. In differential diagnosis, against a reference with a known true pathology, we find the same split and a simpler account of it: direct-answer post-training keeps the base model's view of each patient and removes most of its variation between calls. The sampled answers therefore collapse, and evaluations that read the differential from samples (pass@$k$ at large $k$, diversity, self-consistency, agreement-based uncertainty) report a loss that a clinician reading one answer would not see; combining agreement with the stated probability is a modest improvement for post-trained models, and agreement remains the better signal for base models and reasoning modes. For Qwen, one post-trained call names the true pathology and the reference's conditions more often than one sampled base call, but no more often than a few averaged base calls, and its first-answer advantage largely disappears against a greedily decoded base model with a matched prompt, as the sharpening account predicts~\citep{huang2024sharpening}, so it is no evidence that post-training adds diagnostic knowledge. Asking for must-not-miss conditions raises severe coverage, partly through longer lists. Every model stays far from the reference, neither readout tracks how ambiguous a case is (Table~\ref{tab:ambiguity}), and losses of specific severe conditions, notably acute pulmonary edema, need checking model by model. Thinking mode restores pass@32 and agreement, though not breadth, and hotter sampling does so for Qwen2.5-7B-Instruct.
 
 \paragraph{Limitations.}
-DDXPlus is synthetic and closed-set: its reference differential is a rule-based engine's posterior over questionnaire answers without exam or test results, sometimes clinically implausible (Appendix~\ref{app:prompts}), its test set is class-balanced, and the prompt lists all 49 conditions, so our metrics measure agreement with that engine, not clinical correctness, and no clinician reviewed lists or references. Severity is the dataset's label, and the prompt asks for the most likely conditions, not must-not-miss ones. The few-shot controls use one set of example patients, and the temperature controls cover the 7--8B models only. We study open 7--32B models from three families, one reasoning mode and no frontier models. Phenopacket accuracy is near the floor and its grader is not validated against clinicians.
+DDXPlus is synthetic and closed-set: its reference differential is a rule-based engine's posterior over questionnaire answers without exam or test results, sometimes clinically implausible (Appendix~\ref{app:prompts}), its test set is class-balanced, and the prompt lists all 49 conditions, so our metrics measure agreement with that engine, not clinical correctness, and no clinician reviewed lists or references. Severity is the dataset's label or a published list mapped onto its 49 conditions, and the prompt asks for the most likely conditions, not must-not-miss ones. The few-shot controls use one set of example patients, and the temperature controls cover the 7--8B models only. We study open 7--32B models from three families, one reasoning mode and no frontier models. Phenopacket accuracy is near the floor and its grader is not validated against clinicians.
 
 \label{pg:mainend}
 
@@ -196,6 +196,35 @@ An AI assistant (Claude, Anthropic) was used to write and run analysis code, to 
 \bibliography{refs}
 
 \appendix
+
+\section{Claims and the evidence for them}\label{app:claims}
+Table~\ref{tab:claims} lists each claim with its primary evidence, the checks under which it holds and those under which it weakens or fails. Primary evidence comes from the 112 headline tests (\S\ref{sec:setup}); everything else is a secondary check, and Table~\ref{tab:controlmatrix} gives the same information control by control.
+
+\begin{table}[h]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{3.3cm}p{4.3cm}p{3.4cm}p{3.6cm}}
+\toprule
+Claim & Primary evidence & Holds under & Weaker or fails under \\
+\midrule
+(a) Post-training keeps the base model's view of each patient and removes its variation between calls (\S\ref{sec:stated}) & A post-trained list is closer to its own base model's mean list for the same patient than to the means for other patients with the same diagnosis, in all 15 settings (TV $-0.028$ to $-0.076$); post-trained lists vary 0.10--0.33 between calls, base lists 0.37--0.69 (Table~\ref{tab:packing}) & worked examples; thinking mode; against other families' base models ($-0.03$ to $-0.14$) & within a family; OLMo~3 7B drifts from its base model's view \\
+(b) Sampled answers collapse (\S\ref{sec:sampled}) & pass@32 $-9.7$ to $-14.6$ points at 7--8B zero-shot; 1.3--2.4 distinct answers against 3.8--4.9 (Table~\ref{tab:sampled}) & worked examples of either kind (13--30 points in all six pairs); Mistral; OLMo stages; 32B with worked examples & 32B zero-shot (n.s.); Qwen2.5-7B-Instruct at $T{=}1.3$; thinking mode; RL-Zero at $T{=}1$ \\
+(c) Post-training's first-answer gain is mostly sampling noise (\S\ref{sec:sampled}) & Decoded greedily, post-training raises top-1 significantly in at most two of six pairs under either matched prompt (Table~\ref{tab:greedy}) & both matched pairings; both 32B pairs & Qwen3-8B ($+10.7$ and $+13.7$); Mistral with shared examples ($+10.8$) \\
+(d) One stated list improves robustly only for Qwen (\S\ref{sec:stated}) & Recall@5 $+12$ to $+24$ points, TV $-0.043$ to $-0.088$, conditional TV $-0.025$ to $-0.078$ (Table~\ref{tab:stated}, Table~\ref{tab:clustered}) & complete lists; correct and wrong top answers; true pathology removed; worked examples for Qwen3-8B and Qwen2.5-7B; thinking mode & OLMo~3 7B (no gain); OLMo~3.1 32B and Qwen2.5-32B recall with worked examples; five averaged base lists match one post-trained list \\
+(e) Severe conditions are named more often on average, but specific ones are lost (\S\ref{sec:stated}) & Named more often in every zero-shot setting ($+2.2$ to $+13.8$ points, six of eight surviving correction); 2--7 of 17 conditions per pair named significantly less often (Table~\ref{tab:severetest}) & published must-not-miss sets ($+9$ to $+24$ points in seven of eight settings) & worked examples (mean falls for Qwen2.5-32B and OLMo~3 7B); averaged lists; with published sets only OLMo, Mistral and few-shot Qwen2.5 lose specific conditions \\
+(f) Asking for must-not-miss conditions raises coverage, partly by lengthening the list (\S\ref{sec:stated}) & $+6$ to $+15$ points of warranted severe conditions named, 0.02--0.11 beyond two combined standard lists (Table~\ref{tab:mnm}) & published must-not-miss sets ($+15$ to $+26$ points; 8--20 beyond two lists) & costs one to two more unwarranted severe conditions per list \\
+(g) Voting stops helping and agreement weakens as an error signal (\S\ref{sec:consequences}) & Voting $+3.4$ to $+8.4$ points for base models, at most $+1.9$ for post-trained ones; agreement's AUROC falls in every family (Table~\ref{tab:consequences}) & worked examples; Mistral; rare-disease cases%MEDCASEG
+ & models that reason first; thinking mode; Qwen2.5-7B-Instruct at $T{=}1.3$; agreement drop n.s.\ for OLMo \\
+(h) The better error signal depends on model and prompt; combining helps post-trained models modestly (\S\ref{sec:consequences}) & Held-out audit over 56 model--setting combinations: logistic combination $+0.030$ $[0.013,0.044]$ over 31-sample agreement for post-trained models, rank average $+0.019$ (n.s.) (\S\ref{sec:audit}) & worked examples (stated probability better for three post-trained models) & base models and thinking mode (agreement alone as good or better); rare-disease cases (agreement better)%MEDCASEH
+ \\
+%MEDCASECLAIM
+\bottomrule
+\end{tabular}
+\caption{The claims of the paper and the evidence for them. Ranges are post-trained minus base unless stated; ``n.s.'': the condition-clustered interval includes zero or the test does not survive correction.}
+\label{tab:claims}
+\end{table}
+
 \sloppy
 \section{Prompts, vignettes and grading}\label{app:prompts}
 \sloppy
@@ -448,7 +477,7 @@ OLMo-3-1125-32B (base) & 0.326 & \textbf{0.796} & \textbf{4.32} & \textbf{0.347}
 \end{table}
 
 
-\section{The stated readout: elicitation, robustness and audit}\label{app:stated}
+\section{The stated readout: elicitation and robustness}\label{app:stated}
 \subsection{Robustness of the stated readout to elicitation}\label{sec:fullprompt}
 The stated readout above uses a five-item list. We repeat the Qwen pairs and OLMo~3 7B's base and Instruct models at $T{=}0.7$ with a prompt that asks for a probability on every one of the 49 conditions, summing to one, and take each sample's top answer to be its highest-probability condition (Table~\ref{tab:fullprompt}).
 The results match the short list. After post-training the stated distribution is closer to the reference (TV $-0.052$ for Qwen3-8B, $-0.067$ for Qwen2.5-7B-Instruct, $-0.032$ for OLMo-3-7B-Instruct) while the samples move away ($+0.012$ to $+0.038$).
@@ -543,6 +572,38 @@ OLMo-3.1-32B-Instruct & 0.99 & \textbf{0.701} & \textbf{0.644} & \textbf{0.774} 
 \caption{Robustness of the stated-list result (DDXPlus, $T{=}0.7$, 980 cases, valid samples). Complete lists: share naming five on-list conditions with valid probabilities. TV of one list on complete lists only, and on samples whose top answer is right or wrong. Excess TV: TV minus the expected TV of the matching oracle (the reference's top five for one list; as many reference draws as the model has valid samples for the samples). Severe named, ref.\ $<0.1$: share of named severe conditions that the reference gives less than 0.1 (over-naming). pass@32 list-sampled: top answers drawn from each sample's stated list. Bold: better model of each pair. Excess TV is averaged over samples against each case's floor, so it is not exactly the difference of the mean TV and the mean floor. A uniform guesser scores about 0.48 at pass@32.}
 \label{tab:robust}
 \end{table}
+
+\section{Controls: prompt, temperature, decoding, severity labels and a third family}\label{app:controls}
+This section collects the controls for the main comparison. Table~\ref{tab:controlmatrix} shows, for each control, whether each main claim holds; the subsections give the numbers. Real-case evidence is in Appendix~\ref{app:medrare}.
+
+\begin{table}[t]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{p{2.6cm}p{2.0cm}p{2.0cm}p{1.9cm}p{2.2cm}p{2.4cm}p{2.0cm}}
+\toprule
+Control & (a) View kept, variation removed & (b) Samples collapse & (c) First-answer gain is sampling noise & (d) Stated list improves (Qwen) & (e, f) Severe conditions; must-not-miss prompt & (g) Voting and agreement weaken \\
+\midrule
+Worked examples, reference lists (\S\ref{sec:fewshot}) & holds & holds, larger (15--30 pts) & -- & holds for Qwen3-8B, Qwen2.5-7B; weaker at 32B & partly: mean falls for Qwen2.5-32B, OLMo~3 7B & holds \\
+Worked examples from another model (\S\ref{sec:controls}) & -- & holds (13--30 pts) & -- & holds for Qwen and Mistral, not OLMo & no excess losses (count test) & holds \\
+Matched temperature (\S\ref{sec:controls}) & -- & Qwen3-8B holds; Qwen2.5-7B-Instruct matches at $T{=}1.3$ & -- & holds & -- & same split as (b) \\
+Greedy decoding, matched prompts (\S\ref{sec:decoding}) & -- & -- & holds in 4 of 6 pairs; not Qwen3-8B, nor Mistral with shared examples & holds for Qwen; OLMo~3 7B farther & -- & -- \\
+Temperature frontier (\S\ref{sec:decoding}) & -- & holds for Qwen3-8B, OLMo~3 7B; curves meet for Qwen2.5-7B & -- & list unchanged across $T$ & -- & agreement below base at every $T$ \\
+Must-not-miss prompt (\S\ref{sec:decoding}) & -- & -- & -- & -- & coverage $+6$--15 pts, partly by length & -- \\
+Published must-not-miss sets (\S\ref{sec:extmnm}) & -- & -- & -- & -- & mean up in 7 of 8; specific losses only OLMo, Mistral, few-shot Qwen2.5 & -- \\
+Format, accuracy, floor, complete lists (\S\ref{sec:statedchecks}) & -- & -- & -- & holds & -- & -- \\
+Other families' base models (Table~\ref{tab:packing}) & holds across families; blurs within & -- & -- & -- & -- & -- \\
+32B pairs (\S\ref{sec:big32}) & holds & n.s.\ zero-shot; holds with examples & holds (both pairs) & holds for Qwen; partly OLMo & holds for Qwen; OLMo n.s. & partly: agreement drop n.s.\ for OLMo \\
+Mistral-7B, third family (\S\ref{sec:mistral}) & holds & holds & fails with shared examples & holds, smallest gain & no mean gain; 3 of 17 lost significantly & holds \\
+Thinking mode (\S\ref{sec:thinking}) & holds & fails: pass@32 restored, still narrow & -- & holds, closest list & -- & fails: agreement better again \\
+Rare-disease cases (\S\ref{sec:phenoreadouts}) & -- & -- & -- & -- & -- & holds; agreement stays the better signal \\
+%MEDCASEROW
+\bottomrule
+\end{tabular}
+\caption{Which claims each control supports. ``Holds'': the control reproduces the claim; ``partly'': in some pairs or settings; ``fails'': it reverses or disappears; --: not tested. Claims are lettered as in Table~\ref{tab:claims}, which lists the evidence claim by claim; (h) is tested only in \S\ref{sec:audit}.}
+\label{tab:controlmatrix}
+\end{table}
+
 
 \subsection{Few-shot elicitation}\label{sec:fewshot}
 The main analyses give every model the same zero-shot chat prompt, which base models were not trained to follow; they give invalid answers on up to 47\% of samples, which we count as wrong. We therefore re-ran the five final base/post-trained pairs at $T{=}0.7$ with three worked examples in the prompt: three fixed DDXPlus training patients with different true pathologies, each followed by the top five conditions of its reference differential, with probabilities, in the JSON format the instructions ask for. Base models see the instructions and examples as a plain document and complete the next one (generation stops at the end of the list); post-trained models see the same instructions and examples as earlier chat turns. Invalid samples fall below 0.5\% for every model (Table~\ref{tab:fewshot}).
@@ -765,9 +826,61 @@ Mistral-7B-Instruct & 87 & 3.7 + 2.7 & 0.613 & 0.562 & 0.352 & 0.329 & 0.473 & 0
 \label{tab:mnm}
 \end{table}
 
+\subsection{Must-not-miss conditions defined outside DDXPlus}\label{sec:extmnm}
+The severity label used above is the dataset's own. We therefore re-ran every severe-condition analysis with two published sets of conditions that must not be missed, mapped onto DDXPlus's 49 (Table~\ref{tab:extmnm}): a harm-based set, the DDXPlus conditions among the 15 diseases that cause about half of serious misdiagnosis-related harms in the USA~\citep{newmantoker2024burden} (NSTEMI/STEMI, pulmonary embolism, pneumonia and pulmonary neoplasm, of which DDXPlus labels only the first two severe), and the life-threatening causes of acute chest pain in the 2021 AHA/ACC guideline~\citep{gulati2021chestpain} (acute coronary syndrome as NSTEMI/STEMI and unstable angina, pulmonary embolism, esophageal rupture as Boerhaave, and pneumothorax). Their union has seven conditions. Neither set involves a judgment of these vignettes, and both were fixed before the analysis.
+On average the result is stronger than with DDXPlus's labels. Zero-shot, post-trained lists name 9--24 points more of the warranted union conditions in seven of eight settings (OLMo~3.1 32B $-0.3$, n.s.), and with worked examples 7--22 points more for the three Qwen models and OLMo~3 7B (OLMo~3.1 32B $+6.5$ and Mistral $+4.0$, n.s.); the harm-based and chest-pain sets agree. The losses of specific conditions, however, are confined to OLMo, Mistral and the few-shot Qwen2.5 models. No Qwen model names any union condition significantly less often zero-shot, while OLMo~3 7B loses NSTEMI/STEMI and unstable angina at both temperatures, OLMo~3.1 32B loses NSTEMI/STEMI, pulmonary embolism and pneumothorax, and with worked examples Mistral loses four of the seven (pulmonary embolism 0.31 points), Qwen2.5-7B-Instruct two and Qwen2.5-32B-Instruct one (Boerhaave). When the true pathology is itself in the union set (140 cases), zero-shot post-trained lists contain it among their top five 10--26 points more often for four of five pairs (OLMo~3 7B $+9.9$, n.s.). Scored against the union set, the must-not-miss prompt names 15--26 points more of the warranted conditions than the standard prompt and 8--20 points more than two combined standard lists, a larger share of its gain than under DDXPlus's labels, at a cost of 0.7--1.5 more unwarranted union conditions per list.
+
+\begin{table}[t]
+\centering\small
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{4}{c}{Union set (7 conditions)} & Harm-based & Chest pain \\
+Pair & base & post & post $-$ base & sig.\ lost / gained & post $-$ base & post $-$ base \\
+\midrule
+Qwen3-8B, $T{=}0.7$ & 0.494 & 0.584 & $+0.089$ & 0 / 2 & $+0.053$ & $+0.115$ \\
+Qwen3-8B, $T{=}1$ & 0.425 & 0.585 & $+0.160$ & 0 / 4 & $+0.135$ & $+0.167$ \\
+Qwen2.5-7B, $T{=}0.7$ & 0.315 & 0.536 & $+0.221$ & 0 / 4 & $+0.267$ & $+0.149$ \\
+Qwen2.5-7B, $T{=}1$ & 0.303 & 0.539 & $+0.236$ & 0 / 4 & $+0.287$ & $+0.180$ \\
+Qwen2.5-32B, $T{=}0.7$ & 0.432 & 0.595 & $+0.162$ & 0 / 4 & $+0.164$ & $+0.104$ \\
+OLMo~3 7B, $T{=}0.7$ & 0.268 & 0.413 & $+0.144$ & 2 / 3 & $+0.133$ & $+0.101$ \\
+OLMo~3 7B, $T{=}1$ & 0.275 & 0.412 & $+0.136$ & 3 / 3 & $+0.135$ & $+0.102$ \\
+OLMo~3.1 32B, $T{=}0.7$ & 0.462 & 0.459 & $-0.003$$^{\dagger}$ & 3 / 0 & $-0.033$$^{\dagger}$ & $-0.020$$^{\dagger}$ \\
+\midrule
+Qwen3-8B, few-shot & 0.299 & 0.491 & $+0.191$ & 0 / 3 & $+0.183$ & $+0.093$ \\
+Qwen2.5-7B, few-shot & 0.239 & 0.455 & $+0.216$ & 2 / 3 & $+0.249$ & $+0.152$ \\
+Qwen2.5-32B, few-shot & 0.361 & 0.542 & $+0.180$ & 1 / 3 & $+0.210$ & $+0.096$ \\
+OLMo~3 7B, few-shot & 0.335 & 0.409 & $+0.074$ & 2 / 3 & $-0.015$$^{\dagger}$ & $+0.036$$^{\dagger}$ \\
+OLMo~3.1 32B, few-shot & 0.412 & 0.477 & $+0.065$$^{\dagger}$ & 2 / 1 & $+0.080$ & $-0.017$$^{\dagger}$ \\
+Mistral-7B, few-shot & 0.401 & 0.441 & $+0.040$$^{\dagger}$ & 4 / 1 & $+0.024$$^{\dagger}$ & $-0.071$ \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\medskip
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lccccccc}
+\toprule
+ & \multicolumn{4}{c}{Warranted must-not-miss conditions named (union set)} & \multicolumn{3}{c}{Unwarranted per list} \\
+Post-trained model & standard & two lists & must-not-miss & $-$ standard & standard & two lists & must-not-miss \\
+\midrule
+Qwen3-8B & 0.584 & 0.612 & 0.775 & $+0.192$ & 1.08 & 1.20 & 2.10 \\
+Qwen2.5-7B-Instruct & 0.536 & 0.600 & 0.714 & $+0.178$ & 0.94 & 1.14 & 2.33 \\
+Qwen2.5-32B-Instruct & 0.595 & 0.648 & 0.814 & $+0.219$ & 1.00 & 1.21 & 2.47 \\
+OLMo-3-7B-Instruct & 0.413 & 0.479 & 0.564 & $+0.151$ & 0.93 & 1.17 & 1.60 \\
+OLMo-3.1-32B-Instruct & 0.459 & 0.527 & 0.715 & $+0.256$ & 0.58 & 0.77 & 1.77 \\
+Mistral-7B-Instruct & 0.358 & 0.417 & 0.615 & $+0.257$ & 0.69 & 0.87 & 1.65 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\caption{Must-not-miss conditions defined outside DDXPlus (DDXPlus, 980 cases). \emph{Harm-based}: the DDXPlus conditions among the 15 diseases behind about half of serious misdiagnosis-related harms in the USA~\citep{newmantoker2024burden} (NSTEMI/STEMI, pulmonary embolism, pneumonia, pulmonary neoplasm). \emph{Chest pain}: the life-threatening causes of acute chest pain in the 2021 AHA/ACC guideline~\citep{gulati2021chestpain} (NSTEMI/STEMI, unstable angina, pulmonary embolism, Boerhaave, spontaneous pneumothorax). \emph{Union}: either set. Top: share of the set's conditions with reference probability $\geq 0.1$ that one list names, and the number of the union's conditions named significantly less / more often (Benjamini--Hochberg over the 7 conditions). Bottom: the must-not-miss prompt (\S\ref{sec:decoding}) scored against the union set; \emph{two lists}: the union of two standard lists, a length-matched comparison; unwarranted: the set's conditions named that the reference weights below 0.1. $^{\dagger}$: the condition-clustered 95\% interval includes zero.}
+\label{tab:extmnm}
+\end{table}
+
 \subsection{A third family: Mistral-7B v0.3}\label{sec:mistral}
 We repeat the comparison with Mistral-7B-v0.3 and Mistral-7B-Instruct-v0.3, a family also studied by \citet{jang2026cannotsample}. With the zero-shot prompt the base model does not answer: 52\% of its samples at $T{=}0.7$ and 76\% at $T{=}1$ are invalid (it continues the document instead), and its valid answers mostly repeat the first listed condition, so its single-call accuracy is 6\% and the zero-shot pair is not informative. With the few-shot prompt of \S\ref{sec:fewshot} the base model answers validly (0.4\% invalid), and the pair reproduces the other families (Table~\ref{tab:third}). Post-training raises pass@1 by 14.0 points and lowers pass@32 by 14.5, cuts distinct answers from 5.0 to 1.3 and Cov@32 by 0.138, and moves the samples away from the reference (TV $+0.058$). Voting gains the base model 5.6 points and the Instruct model 0.8; the three most frequent of 32 samples beat one list by 12.6 points for the base model, while for the Instruct model the list is ahead by 7.0; agreement is the better error signal for the base model (AUROC 0.826 against 0.671) and the stated probability for the Instruct model (0.747 against 0.613). The stated list improves modestly (TV $-0.036$ and DDF1 $+0.046$, surviving clustering and Holm correction over 42 tests; $-0.023$ with the true pathology removed, which does not), the smallest significant gain of the three families, and 11 of the 17 severe conditions are named less often. Mistral-Instruct also names 0.4 conditions per list that are not among the 49.
 
+\section{Thinking mode, aggregation and the error signal}\label{app:consequences}
 \subsection{Thinking mode}\label{sec:thinking}
 Qwen3-8B can reason in a thinking block before it answers; the main runs turn this off. With thinking on (zero-shot prompt, $T{=}0.7$, up to 8,192 tokens; traces average about 1,500 tokens and all end before the limit), the same weights behave differently (Table~\ref{tab:third}). Accuracy rises at both ends: pass@1 is 0.671 against 0.559 without thinking, and pass@32 is 0.815, above the non-thinking model (0.607) and level with the base model (0.732 zero-shot, $+8.4$ $[1.7,15.3]$ points, not surviving Holm correction over 42 tests; 0.809 with worked examples). The samples are still narrow (1.76 distinct answers against 3.77 for the base model; Cov@32 0.283 against 0.323) but no farther from the reference than the base model's (TV 0.745 against 0.750). The stated list is the closest of any 7--8B model (TV 0.670, against 0.700 without thinking). The shift in error signals reverses: agreement across 31 samples is again the better signal (AUROC 0.732 against 0.638; difference 0.094 $[0.027,0.170]$), as for base models, and voting gains 1.5 points (n.s.). The narrowing of the samples and the advantage of the stated probability are therefore properties of answering directly, which a reasoning mode largely undoes, consistent with the chain-of-thought prompt of \S\ref{sec:robust}.
 
