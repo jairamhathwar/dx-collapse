@@ -7,9 +7,10 @@ There is no reference differential, so only readouts that need the true diagnosi
 the judge says it names the final diagnosis (judge_medcase.py). Per model, over the 32 samples of each case:
   valid            share of samples with a parsable list
   pass1, pass32    unbiased pass@k of the top answer (invalid samples count as wrong, as on DDXPlus)
-  distinct         distinct top answers among valid samples (correct answers merged into one; others by normalized text)
+  distinct         distinct top answers among valid samples, grouped by normalized text (correct or not)
   rec1, rec5       one stated list: share of valid lists whose first item / any of the first five items is correct
-  vote32 - single  majority top answer over valid samples vs the first valid sample's top answer
+  vote32 - single  majority top answer over valid samples (grouped by normalized text) vs the first valid sample's top answer
+  aurc, acc@50/80  selective prediction for the single-call answer ranked by each signal
   AUROC for the first valid sample's top answer being correct, of its stated probability (renormalized over the
   list) and of agreement among the other valid samples (agree5: next 4, agree32: all)
 Pairs: post-trained minus base, paired case bootstrap; Holm over all pair tests. By publication year: pass1, pass32
@@ -71,7 +72,8 @@ def load(path, J, K=None):
             if any(p is None or not (0 <= p <= 1) for p in ps) or sum(ps) <= 0:
                 ps = [1.0] * len(dx)
             # list order as given (the prompt asks for most likely first)
-            key = "GOLD" if ok[0] else "txt:" + norm_text(dx[0]["diagnosis"])
+            # every answer is grouped by its normalized text, correct or not (no grouping by correctness)
+            key = "txt:" + norm_text(dx[0]["diagnosis"])
             items = [K.get((cid, norm_text(d["diagnosis"])), 0) for d in dx] if K is not None else None
             samples.append({"key": key, "ok": ok, "p": ps[0] / sum(ps), "items": items})
         rows[cid] = samples
@@ -94,7 +96,10 @@ def case_row(samples, n_alt=0):
         r["alt_list"] = float(np.mean([len(alts & set(s["items"][:5])) / n_alt for s in v]))
         r["alt_samples"] = len(alts & {s["items"][0] for s in v}) / n_alt
     A = keys[0]
-    sig = {"single": float(v[0]["ok"][0]), "vote32": float(Counter(keys).most_common(1)[0][0] == "GOLD"),
+    key_ok = {}
+    for s_ in v:
+        key_ok.setdefault(s_["key"], s_["ok"][0])
+    sig = {"single": float(v[0]["ok"][0]), "vote32": float(key_ok[Counter(keys).most_common(1)[0][0]]),
            "stated_p": v[0]["p"],
            "agree5": float(np.mean([k == A for k in keys[1:5]])) if len(keys) > 1 else None,
            "agree32": float(np.mean([k == A for k in keys[1:]])) if len(keys) > 1 else None}
@@ -154,6 +159,15 @@ def main():
             for _ in range(2000):
                 i = rng.integers(0, len(sub), len(sub))
                 dd.append(auroc(S[i], y[i]) - auroc(A32[i], y[i]))
+            # selective prediction: accuracy of the single-call answer when keeping the most confident share of cases
+            for s in ["stated_p", "agree32"]:
+                sc = np.array([sig[c][s] for c in sub])
+                order = np.argsort(-sc + 1e-9 * rng.random(len(sc)))
+                acc = np.cumsum(y[order]) / np.arange(1, len(y) + 1)
+                m[f"aurc_{s}"] = float(np.mean(1 - acc))
+                for cov in (0.5, 0.8):
+                    m[f"acc@{int(cov * 100)}_{s}"] = float(acc[int(cov * len(acc)) - 1])
+            m["acc@100"] = float(y.mean())
             m["d_auroc_stated-agree32"] = [m["auroc_stated_p"] - m["auroc_agree32"], *map(float, np.nanpercentile(dd, [2.5, 97.5]))]
             if K:
                 cc = [c for c in per if per[c].get("alt_list") is not None]
