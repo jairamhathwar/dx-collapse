@@ -45,6 +45,18 @@ DDX_PLAIN_INSTRUCTIONS = (
     "Finish with a JSON array in exactly this format:\n"
     '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
 )
+# Must-not-miss elicitation (clinical review control): the most likely conditions, then dangerous ones to rule out.
+DDX_MNM_INSTRUCTIONS = (
+    "Based on the patient's answers above, give your differential diagnosis.\n"
+    "Choose ONLY from this list of possible conditions:\n{conditions}\n\n"
+    "List the {n} most likely conditions from the list, most likely first, with your probability that each is "
+    "the correct diagnosis. Then add up to 3 dangerous conditions from the list that must be ruled out even "
+    "though they are less likely (do not repeat conditions already listed), each with your probability. "
+    "Use the condition names exactly as written in the list.\n"
+    "End your answer with a JSON array in exactly this format, the most likely conditions first:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>, "must_not_miss": false}}, ..., '
+    '{{"diagnosis": "<name>", "probability": <number between 0 and 1>, "must_not_miss": true}}, ...]'
+)
 DDX_COT_PREFIX = ("First reason step by step about the patient's findings and which conditions they support "
                   "or argue against. Then give your answer.\n")
 # Full-distribution elicitation: a probability for every listed condition (stated-readout robustness).
@@ -120,6 +132,9 @@ def build_ddx_messages(case, n_dx, conditions, variant="default"):
     if variant == "full":
         return [{"role": "system", "content": DDX_SYSTEM},
                 {"role": "user", "content": case["vignette"] + "\n\n" + DDX_FULL_INSTRUCTIONS.format(conditions=cond)}]
+    if variant == "mustnotmiss":
+        return [{"role": "system", "content": DDX_SYSTEM},
+                {"role": "user", "content": case["vignette"] + "\n\n" + DDX_MNM_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
     body = DDX_INSTRUCTIONS.format(conditions=cond, n=n_dx)
     if variant == "cot":
         body = DDX_COT_PREFIX + body
@@ -168,7 +183,7 @@ def main():
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
-    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot"], default="default",
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss"], default="default",
                     help="ddxplus prompt-robustness variant")
     ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
     ap.add_argument("--fewshot-answers", help="fewshot: JSON {case_id: answer} replacing the reference-derived example lists")

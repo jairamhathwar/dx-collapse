@@ -171,5 +171,53 @@ case "${1:-}" in
     SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fsrf-base $S --model Qwen/Qwen2.5-7B --out runs/fewshot_rf_smoke/qwen25-7b-base.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fsrf-it $S --model Qwen/Qwen2.5-7B-Instruct --out runs/fewshot_rf_smoke/qwen25-7b-it.jsonl $SM $FS $STD ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke"; exit 1 ;;
+  greedy)  # one greedy answer per case: post-trained models zero-shot, base models with the few-shot prompt
+    G="--k 1 --temperature 0.0 --top-p 1.0"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --shard -1 --num-shards 4"
+    for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct mistral7b-it:mistralai/Mistral-7B-Instruct-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run greedy $tag $model $DDX $STD $G
+    done
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen25-7b-base:Qwen/Qwen2.5-7B olmo3-base:allenai/Olmo-3-1025-7B mistral7b-base:mistralai/Mistral-7B-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run greedy $tag $model $DDX $FS --completion --max-tokens 512 --max-model-len 6144 $G
+    done
+    run4 greedy qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 02:00:00 $DDX4 $STD $G
+    run4 greedy olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 02:00:00 $DDX4 $STD $G
+    run4 greedy qwen25-32b-base Qwen/Qwen2.5-32B 02:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144 $G
+    run4 greedy olmo31-32b-base allenai/Olmo-3-1125-32B 02:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144 $G ;;
+  frontier)  # few-shot temperature frontier for the three 7-8B pairs, top-p fixed at 1
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    for t in 0.4 0.7 1.0 1.3; do
+      d=frontier_t${t/./}
+      for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen25-7b-base:Qwen/Qwen2.5-7B olmo3-base:allenai/Olmo-3-1025-7B; do
+        tag=${spec%%:*}; model=${spec#*:}
+        run $d $tag $model $DDX $FS --completion --max-tokens 512 --max-model-len 6144 --temperature $t --top-p 1.0
+      done
+      for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct; do
+        tag=${spec%%:*}; model=${spec#*:}
+        run $d $tag $model $DDX $FS $STD --temperature $t --top-p 1.0
+      done
+    done ;;
+  mnm)  # must-not-miss prompt, six final post-trained models, T=0.7
+    MNM="--prompt-variant mustnotmiss"
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct mistral7b-it:mistralai/Mistral-7B-Instruct-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run mnm_t07 $tag $model $DDX $STD $MNM
+    done
+    run4 mnm_t07 qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 04:00:00 $DDX4 $STD $MNM
+    run4 mnm_t07 olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $DDX4 $STD $MNM ;;
+  r7-smoke)  # greedy (base few-shot + post), frontier extremes, must-not-miss
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --shard 0 --num-shards 1 --limit 8"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-greedy-it $S --model Qwen/Qwen2.5-7B-Instruct --out runs/r7_smoke/greedy_it.jsonl $SM $STD --k 1 --temperature 0.0 --top-p 1.0
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-greedy-base $S --model allenai/Olmo-3-1025-7B --out runs/r7_smoke/greedy_olmo_base.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144 --k 1 --temperature 0.0 --top-p 1.0
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-frontier $S --model allenai/Olmo-3-7B-Instruct --out runs/r7_smoke/frontier_olmo_it_t13.jsonl $SM $FS $STD --k 4 --temperature 1.3 --top-p 1.0
+    for spec in qwen3-8b:Qwen/Qwen3-8B olmo3-instruct:allenai/Olmo-3-7B-Instruct mistral7b-it:mistralai/Mistral-7B-Instruct-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mnm-$tag $S --model $model --out runs/r7_smoke/mnm_$tag.jsonl $SM $STD --k 4 --prompt-variant mustnotmiss
+    done ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|frontier|mnm|r7-smoke"; exit 1 ;;
 esac
