@@ -15,7 +15,7 @@ R=$THESIS/runs/medcase_t07; A=$THESIS/analysis/medcase
 mkdir -p $A
 cd $THESIS/code/src
 P="qwen3-8b-base>qwen3-8b qwen25-7b-base>qwen25-7b-it qwen25-32b-base>qwen25-32b-it olmo3-base>olmo3-instruct"
-C="--cases $THESIS/data/medcase/cases_test.jsonl --runs $R --judge $R/judge_mistral24b.jsonl --judge2 $R/judge2_qwen32b.jsonl --pairs"
+C="--cases $THESIS/data/medcase/cases_test.jsonl --runs $R --judge $R/judge_mistral24b.jsonl --judge2 $R/judge2_phi4.jsonl --pairs"
 python medcase_analysis.py $C "$P" --out $A/medcase.json > $A/medcase.log 2>&1
 python medcase_analysis.py $C "$P" --strict --out $A/medcase_strict.json > $A/medcase_strict.log 2>&1
 tail -n 20 $A/*.log | cut -c1-1500

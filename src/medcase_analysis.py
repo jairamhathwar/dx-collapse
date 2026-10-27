@@ -14,6 +14,9 @@ the judge says it names the final diagnosis (judge_medcase.py). Per model, over 
   list) and of agreement among the other valid samples (agree5: next 4, agree32: all)
 Pairs: post-trained minus base, paired case bootstrap; Holm over all pair tests. By publication year: pass1, pass32
 and rec5 for cases published up to 2022 and from 2023.
+--authors-ddx/--ddx-judge (extract_medcase_ddx.py, judge_medcase.py --ddx): coverage of the case authors' own
+alternatives (cases with at least one): alt_list, the share named by one stated list (mean over valid lists), and
+alt_samples, the share named by any top answer of the valid samples.
 --judge2: agreement (Cohen's kappa) between the two judges on the pairs both graded; with --strict a name is correct
 only if both judges say so.
 """
@@ -54,7 +57,7 @@ def holm(ps):
     return out
 
 
-def load(path, J):
+def load(path, J, K=None):
     rows = {}
     for rec in (json.loads(l) for f in sample_files(path) for l in open(f)):
         cid, samples = rec["case_id"], []
@@ -69,12 +72,13 @@ def load(path, J):
                 ps = [1.0] * len(dx)
             # list order as given (the prompt asks for most likely first)
             key = "GOLD" if ok[0] else "txt:" + norm_text(dx[0]["diagnosis"])
-            samples.append({"key": key, "ok": ok, "p": ps[0] / sum(ps)})
+            items = [K.get((cid, norm_text(d["diagnosis"])), 0) for d in dx] if K is not None else None
+            samples.append({"key": key, "ok": ok, "p": ps[0] / sum(ps), "items": items})
         rows[cid] = samples
     return rows
 
 
-def case_row(samples):
+def case_row(samples, n_alt=0):
     v = [s for s in samples if s]
     n, c = len(samples), sum(1 for s in v if s["ok"][0])
     r = {"valid": len(v) / n, "pass1": pass_at_k(n, c, 1), "pass32": pass_at_k(n, c, min(32, n))}
@@ -85,6 +89,10 @@ def case_row(samples):
     r["distinct"] = float(len(set(keys)))
     r["rec1"] = float(np.mean([s["ok"][0] for s in v]))
     r["rec5"] = float(np.mean([any(s["ok"][:5]) for s in v]))
+    if n_alt and v[0]["items"] is not None:
+        alts = set(range(2, n_alt + 2))
+        r["alt_list"] = float(np.mean([len(alts & set(s["items"][:5])) / n_alt for s in v]))
+        r["alt_samples"] = len(alts & {s["items"][0] for s in v}) / n_alt
     A = keys[0]
     sig = {"single": float(v[0]["ok"][0]), "vote32": float(Counter(keys).most_common(1)[0][0] == "GOLD"),
            "stated_p": v[0]["p"],
@@ -103,9 +111,13 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--n-boot", type=int, default=10000)
     ap.add_argument("--strict", action="store_true", help="a name is correct only if both judges say so")
+    ap.add_argument("--authors-ddx")
+    ap.add_argument("--ddx-judge")
     a = ap.parse_args()
     cases = {c["case_id"]: c for c in map(json.loads, open(a.cases))}
     J = {(r["case_id"], r["key"]): r["match"] for r in map(json.loads, open(a.judge))}
+    K = {(r["case_id"], r["key"]): r["item"] for r in map(json.loads, open(a.ddx_judge))} if a.ddx_judge else None
+    NALT = {r["case_id"]: r["n_alternatives"] for r in map(json.loads, open(a.authors_ddx))} if a.authors_ddx else {}
     rng = np.random.default_rng(0)
     report = {"n_judged": len(J), "judge_match_rate": float(np.mean(list(J.values()))), "models": {}, "pairs": {}}
     if a.judge2:
@@ -124,13 +136,13 @@ def main():
 
     def get(tag):
         if tag not in cache:
-            rows = load(Path(a.runs) / tag, J)
+            rows = load(Path(a.runs) / tag, J, K)
             per, sig = {}, {}
             for cid, s in rows.items():
-                per[cid], sg = case_row(s)
+                per[cid], sg = case_row(s, NALT.get(cid, 0))
                 if sg:
                     sig[cid] = sg
-            m = {k: float(np.mean([r[k] for r in per.values() if r[k] is not None])) for k in METRICS}
+            m = {k: float(np.mean([r[k] for r in per.values() if r.get(k) is not None])) for k in METRICS + (["alt_list", "alt_samples"] if K else [])}
             for k in ["single", "vote32"]:
                 m[k] = float(np.mean([sig[c][k] for c in per if c in sig] + [0.0] * sum(1 for c in per if c not in sig)))
             sub = [c for c in sig if sig[c]["agree32"] is not None]
@@ -143,6 +155,12 @@ def main():
                 i = rng.integers(0, len(sub), len(sub))
                 dd.append(auroc(S[i], y[i]) - auroc(A32[i], y[i]))
             m["d_auroc_stated-agree32"] = [m["auroc_stated_p"] - m["auroc_agree32"], *map(float, np.nanpercentile(dd, [2.5, 97.5]))]
+            if K:
+                cc = [c for c in per if per[c].get("alt_list") is not None]
+                v = np.array([per[c]["alt_list"] - per[c]["alt_samples"] for c in cc])
+                b = v[rng.integers(0, len(v), size=(2000, len(v)))].mean(1)
+                m["n_alt_cases"] = len(cc)
+                m["d_alt_list-samples"] = [float(v.mean()), *map(float, np.percentile(b, [2.5, 97.5]))]
             for lo, hi, nm in [(0, 2022, "le2022"), (2023, 9999, "ge2023")]:
                 cc = [c for c in per if cases[c]["year"] and lo <= cases[c]["year"] <= hi]
                 m[f"n_{nm}"] = len(cc)
@@ -159,7 +177,7 @@ def main():
         bt, pt = item.split(">")
         (PB, SB), (PP, SP) = get(bt), get(pt)
         out = {}
-        for k in METRICS + ["vote32-single"]:
+        for k in METRICS + (["alt_list", "alt_samples"] if K else []) + ["vote32-single"]:
             if k == "vote32-single":  # within the post-trained model, as on DDXPlus
                 cids = [c for c in SP]
                 v = np.array([SP[c]["vote32"] - SP[c]["single"] for c in cids])

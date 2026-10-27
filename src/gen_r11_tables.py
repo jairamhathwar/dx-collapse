@@ -54,7 +54,7 @@ Pair & pass@1 & pass@32 & Distinct & recall@1 & recall@5 & Vote@32 $-$ single (p
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\caption{Published case reports (MedCaseReasoning test split, 897 PMC case reports, zero-shot, 32 samples, $T{=}0.7$). A name is correct if the judge (Mistral-Small-24B-Instruct) says it names the report's final diagnosis; \emph{strict}: if Qwen2.5-32B-Instruct agrees""" +
+\caption{Published case reports (MedCaseReasoning test split, 897 PMC case reports, zero-shot, 32 samples, $T{=}0.7$). A name is correct if the judge (Mistral-Small-24B-Instruct) says it names the report's final diagnosis; \emph{strict}: if Phi-4 agrees as well""" +
       (f" (the judges agree on {100 * ag['agree']:.1f}\\% of {ag['n']:,} judged names, Cohen's $\\kappa$ {ag['kappa']:.2f})" if ag else "") +
       r""". Invalid samples count as wrong for pass@$k$; the list and agreement columns use valid samples. Distinct: distinct top answers among valid samples, with all correct answers merged and others compared as normalized text. Accuracy and recall differences in points. $^{\dagger}$: not significant (paired case bootstrap, 10,000 resamples, Holm over the 28 pair tests; for the AUROC difference, the 95\% interval includes zero).}
 \label{tab:medcase}

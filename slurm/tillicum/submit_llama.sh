@@ -234,7 +234,7 @@ case "${1:-}" in
     JA="--cases $THESIS/data/medcase/cases_test.jsonl --runs $THESIS/runs/medcase_t07 --tags $TAGS"
     # DEP (optional): a Slurm dependency, e.g. afterok:<sampling job ids>
     sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge-mc $J $JA --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/medcase_t07/judge_mistral24b.jsonl
-    sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge2-mc $J $JA --model Qwen/Qwen2.5-32B-Instruct --out $THESIS/runs/medcase_t07/judge2_qwen32b.jsonl ;;
+    sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge2-mc $J $JA --model microsoft/phi-4 --out $THESIS/runs/medcase_t07/judge2_phi4.jsonl ;;
   medcase-an)  # scoring after both judges (DEP: afterok:<judge job ids>)
     sbatch ${DEP:+--dependency=$DEP} code/slurm/tillicum/medcase_an.sbatch ;;
   medcase-judge-smoke)
