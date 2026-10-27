@@ -522,3 +522,20 @@ Base model for AlphaMed, HuatuoGPT-o1 and m1 was verified from each `config.json
   - Complete five-item lists only: recall@5 +0.12 to +0.16, mass, DDF1 and TV gains unchanged for Qwen and OLMo 3.1 32B; OLMo 3 7B n.s.
   - Audit with 32-sample agreement: post-trained (39) agreement 0.742, rank average 0.761 (+0.019 [−0.007, 0.040]), logistic 0.772 (+0.030 [0.013, 0.044]), stated 0.671; base (17) agreement 0.821 > rank average 0.780, logistic 0.827.
 - **Paper**: abstract and main text scoped (greedy "pairs" and prompt asymmetry; must-not-miss partly length; combining helps post-trained models modestly; severe true diagnoses recognized; robust stated-list gain for the smaller Qwen models and Mistral with worked examples); packing cross-family sentence; complete-list and severe-true sentences; sharpening, SCPO, Cover@τ, template collapse, CISC and self-consistent-error citations (all verified); audit-error fixes; tab:clustered regenerated from the 50k run; Table 3 moved to the appendix to keep the main body and AI statement on page 10 (42 pages).
+
+## Matched-prompt greedy (2026-10-27)
+- **Runs (Tillicum, `submit_llama.sh greedy-matched`, jobs 392114–392125, about 1.0 GPU-hour with the smoke test)**: `runs/greedy_fs/` six post-trained models with the base models' few-shot examples (reference top five), chat; `runs/greedy_rf/` six base models with the reference-free examples (Qwen2.5-32B-Instruct answers), completion. Temperature 0, one answer per case, 980 cases, valid 99.6–100%. Smoke test: clean lists; Mistral base copies the example probabilities (0.4/0.3/0.15/0.1/0.05).
+- **Scoring (Klone job 42472858, `slurm/r9_an.sh`, `~/thesis_overflow/analysis/r9/greedy_matched.json`)**, top-1 post minus base, condition-clustered 95% CI:
+
+| pair | same examples (greedy base vs greedy_fs post) | reference-free base vs zero-shot post | original (ref. examples base vs zero-shot post) |
+|---|---|---|---|
+| Qwen3-8B | +13.7 [6.2, 21.7] | +10.7 [1.1, 20.5] | +8.7 n.s. |
+| Qwen2.5-7B | +1.9 n.s. | +7.6 n.s. | +5.7 n.s. |
+| Qwen2.5-32B | −4.8 n.s. | −8.0 [−15.5, −0.7] | −10.6 sig. |
+| OLMo-3-7B | −5.8 n.s. | −14.5 [−25.4, −3.8] | −14.5 sig. |
+| OLMo-3.1-32B | −5.7 n.s. | −0.1 n.s. | −7.2 n.s. |
+| Mistral-7B | +10.8 [3.9, 18.5] | −2.9 n.s. | −5.1 n.s. |
+
+  - Same examples: post-trained higher in 2 pairs (both significant), base higher in 3 (none significant). Reference-free base: base ≥ post in 4 of 6 (2 significant), post significantly higher only for Qwen3-8B.
+  - Stated list TV, same examples: post closer to reference for the three Qwen pairs (−0.05 to −0.11), farther for OLMo-3-7B (+0.06), n.s. for OLMo-3.1-32B and Mistral; reference-free base gives the same pattern. Recall@5 and severe named rise significantly for the two small Qwen models in both comparisons (and Qwen2.5-32B severe named), otherwise n.s. except OLMo-3-7B recall@5 −17.2 with reference-free base.
+  - Implication: the abstract's "as accurate in four of six pairs" holds only for the reference-free base comparison; with identical examples it is three of six (none significant) and post-training wins significantly for Qwen3-8B and Mistral. Under either matched prompt, post-training significantly raises greedy top-1 in at most two pairs, against +12.6 to +27.5 points at one sampled call.

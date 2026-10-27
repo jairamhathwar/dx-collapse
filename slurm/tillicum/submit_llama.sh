@@ -187,6 +187,29 @@ case "${1:-}" in
     run4 greedy olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 02:00:00 $DDX4 $STD $G
     run4 greedy qwen25-32b-base Qwen/Qwen2.5-32B 02:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144 $G
     run4 greedy olmo31-32b-base allenai/Olmo-3-1125-32B 02:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144 $G ;;
+  greedy-matched)  # matched-prompt greedy: post-trained models with the base models' few-shot examples (vs greedy/ base),
+                   # base models with the reference-free examples (vs greedy/ post-trained zero-shot)
+    G="--k 1 --temperature 0.0 --top-p 1.0"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    RF="$FS --fewshot-answers data/ddxplus/fewshot_answers_q32.json"
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --shard -1 --num-shards 4"
+    for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct mistral7b-it:mistralai/Mistral-7B-Instruct-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run greedy_fs $tag $model $DDX $FS $STD $G
+    done
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen25-7b-base:Qwen/Qwen2.5-7B olmo3-base:allenai/Olmo-3-1025-7B mistral7b-base:mistralai/Mistral-7B-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run greedy_rf $tag $model $DDX $RF --completion --max-tokens 512 --max-model-len 6144 $G
+    done
+    run4 greedy_fs qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 02:00:00 $DDX4 $FS $STD $G
+    run4 greedy_fs olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 02:00:00 $DDX4 $FS $STD $G
+    run4 greedy_rf qwen25-32b-base Qwen/Qwen2.5-32B 02:00:00 $DDX4 $RF --completion --max-tokens 512 --max-model-len 6144 $G
+    run4 greedy_rf olmo31-32b-base allenai/Olmo-3-1125-32B 02:00:00 $DDX4 $RF --completion --max-tokens 512 --max-model-len 6144 $G ;;
+  greedy-matched-smoke)  # 8 cases: the most verbose post-trained model with examples, one base model with reference-free examples
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --shard 0 --num-shards 1 --limit 8 --k 1 --temperature 0.0 --top-p 1.0"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-gfs-olmo $S --model allenai/Olmo-3-7B-Instruct --out runs/gm_smoke/fs_olmo_it.jsonl $SM $FS $STD
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-grf-mistral $S --model mistralai/Mistral-7B-v0.3 --out runs/gm_smoke/rf_mistral_base.jsonl $SM $FS --fewshot-answers data/ddxplus/fewshot_answers_q32.json --completion --max-tokens 512 --max-model-len 6144 ;;
   frontier)  # few-shot temperature frontier for the three 7-8B pairs, top-p fixed at 1
     FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
     for t in 0.4 0.7 1.0 1.3; do
@@ -219,5 +242,5 @@ case "${1:-}" in
       tag=${spec%%:*}; model=${spec#*:}
       sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mnm-$tag $S --model $model --out runs/r7_smoke/mnm_$tag.jsonl $SM $STD --k 4 --prompt-variant mustnotmiss
     done ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|frontier|mnm|r7-smoke"; exit 1 ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|frontier|mnm|r7-smoke"; exit 1 ;;
 esac

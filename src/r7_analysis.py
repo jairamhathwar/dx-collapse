@@ -140,7 +140,7 @@ def main():
     ap.add_argument("--runs", required=True)
     ap.add_argument("--cases", required=True)
     ap.add_argument("--conditions-json", required=True)
-    ap.add_argument("--pairs", required=True, help='greedy: "dir:base>post"; mnm: "mnm_dir/tag>other_dir/tag" (paths under --runs)')
+    ap.add_argument("--pairs", required=True, help='greedy: "dir:base>post" or "base_dir/tag>post_dir/tag"; mnm: "mnm_dir/tag>other_dir/tag" (paths under --runs)')
     ap.add_argument("--out", required=True)
     ap.add_argument("--tau", type=float, default=0.1)
     ap.add_argument("--n-boot", type=int, default=10000)
@@ -176,9 +176,13 @@ def main():
 
     for item in a.pairs.split():
         if a.mode == "greedy":
-            d, pr = item.split(":")
-            bt, pt = pr.split(">")
-            B, P = get(f"{d}/{bt}", False), get(f"{d}/{pt}", False)
+            if ":" in item:  # same directory
+                d, pr = item.split(":")
+                bt, pt = pr.split(">")
+                bt, pt = f"{d}/{bt}", f"{d}/{pt}"
+            else:  # "base_dir/tag>post_dir/tag", e.g. matched-prompt runs in different directories
+                bt, pt = item.split(">")
+            B, P = get(bt, False), get(pt, False)
             keys = ["top1", "rec3", "rec5", "tv_list", "cond_tv", "sev_named"]
         else:
             m_, o_ = item.split(">")
