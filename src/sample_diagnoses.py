@@ -26,6 +26,16 @@ INSTRUCTIONS = (
 )
 MAX_EXCLUDED = 10
 
+# Published case reports (MedCaseReasoning): open-ended differential, graded later by a judge model.
+CASE_SYSTEM = "You are an experienced physician and diagnostician."
+CASE_INSTRUCTIONS = (
+    "Based on the case above, give your differential diagnosis.\n"
+    "List the {n} most likely specific diagnoses, most likely first, with your probability that each is the "
+    "correct diagnosis.\n"
+    "End your answer with a JSON array in exactly this format:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
+)
+
 DDX_SYSTEM = "You are an experienced emergency and primary care physician."
 DDX_INSTRUCTIONS = (
     "Based on the patient's answers above, give your differential diagnosis.\n"
@@ -179,7 +189,7 @@ def main():
     ap.add_argument("--enforce-eager", action="store_true", help="skip torch.compile/CUDA graphs")
     ap.add_argument("--dtype", default="auto", help="vLLM dtype; use bfloat16 for checkpoints stored in float32 "
                     "(vLLM's auto would load those as float16)")
-    ap.add_argument("--task", choices=["phenopacket", "ddxplus"], default="phenopacket")
+    ap.add_argument("--task", choices=["phenopacket", "ddxplus", "casereport"], default="phenopacket")
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
@@ -240,6 +250,9 @@ def main():
             msgs = [build_fewshot_messages(c, a.n_dx, conditions, shots) for c in batch]
         elif a.task == "ddxplus":
             msgs = [build_ddx_messages(c, a.n_dx, conditions, a.prompt_variant) for c in batch]
+        elif a.task == "casereport":
+            msgs = [[{"role": "system", "content": CASE_SYSTEM},
+                     {"role": "user", "content": c["vignette"] + "\n\n" + CASE_INSTRUCTIONS.format(n=a.n_dx)}] for c in batch]
         else:
             msgs = [[{"role": "system", "content": SYSTEM},
                      {"role": "user", "content": build_prompt(c, a.n_dx, random.Random(c["case_id"]))}]

@@ -13,6 +13,7 @@ share of lists naming it wherever the reference gives it any weight. Pairs compa
 of the same or another model (whole list vs that run's list), condition-clustered bootstrap.
 """
 import argparse
+import gzip
 import json
 import re
 from collections import defaultdict
@@ -92,7 +93,8 @@ def case_metrics(lists, ref, gold, severity, tau, full=None):
 
 def load(path, cases, refs, severity, match, tau, mnm):
     rows = {}
-    for rec in map(json.loads, open(path)):
+    fh = gzip.open(path, "rt") if str(path).endswith(".gz") else open(path)
+    for rec in map(json.loads, fh):
         cid = rec["case_id"]
         lists, full = [], []
         for s in rec["samples"]:
@@ -159,7 +161,8 @@ def main():
 
     def get(path, mnm):
         if path not in cache:
-            cache[path] = load(Path(a.runs) / path / "samples.jsonl", cases, refs, severity, match, a.tau, mnm)
+            f = Path(a.runs) / path / "samples.jsonl"
+            cache[path] = load(f if f.exists() else f.with_suffix(".jsonl.gz"), cases, refs, severity, match, a.tau, mnm)
             rows = cache[path]
             keys = ["top1", "rec3", "rec5", "tv_list", "cond_tv", "sev_named", "sev_named_full", "unwarranted", "unwarranted_full", "len", "len_full"]
             m = {k: float(np.mean([r[k] for r in rows.values() if r.get(k) is not None])) for k in keys

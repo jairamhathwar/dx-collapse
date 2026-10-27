@@ -210,6 +210,34 @@ case "${1:-}" in
     FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-gfs-olmo $S --model allenai/Olmo-3-7B-Instruct --out runs/gm_smoke/fs_olmo_it.jsonl $SM $FS $STD
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-grf-mistral $S --model mistralai/Mistral-7B-v0.3 --out runs/gm_smoke/rf_mistral_base.jsonl $SM $FS --fewshot-answers data/ddxplus/fewshot_answers_q32.json --completion --max-tokens 512 --max-model-len 6144 ;;
+  medcase)  # published case reports (MedCaseReasoning test, 897 cases), zero-shot, T=0.7, five Qwen/OLMo pairs
+    MC="--task casereport --cases data/medcase/cases_test.jsonl --k 32 --shard -1 --num-shards 2"
+    MC4="--task casereport --cases data/medcase/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B qwen25-7b-base:Qwen/Qwen2.5-7B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct \
+                olmo3-instruct:allenai/Olmo-3-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run medcase_t07 $tag $model $MC $STD
+    done
+    run medcase_t07 olmo3-base allenai/Olmo-3-1025-7B $MC $STD --chat-template code/templates/olmo3_sft.jinja
+    run4 medcase_t07 qwen25-32b-base Qwen/Qwen2.5-32B 04:00:00 $MC4 $STD
+    run4 medcase_t07 qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 04:00:00 $MC4 $STD
+    run4 medcase_t07 olmo31-32b-base allenai/Olmo-3-1125-32B 06:00:00 $MC4 $STD --chat-template code/templates/olmo31_32b_sft.jinja
+    run4 medcase_t07 olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $MC4 $STD ;;
+  medcase-smoke)  # 8 cases x 4 samples: a base model and the most verbose post-trained model
+    SM="--task casereport --cases data/medcase/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mc-olmo-base $S --model allenai/Olmo-3-1025-7B --out runs/mc_smoke/olmo3-base/samples.jsonl $SM $STD --chat-template code/templates/olmo3_sft.jinja
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mc-qwen-base $S --model Qwen/Qwen2.5-7B --out runs/mc_smoke/qwen25-7b-base/samples.jsonl $SM $STD
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mc-olmo-it $S --model allenai/Olmo-3-7B-Instruct --out runs/mc_smoke/olmo3-instruct/samples.jsonl $SM $STD ;;
+  medcase-judge)  # judge every distinct (case, name) with two judges (agreement, and strict grading = both say yes)
+    J=code/slurm/tillicum/judge.sbatch
+    TAGS=qwen3-8b-base,qwen3-8b,qwen25-7b-base,qwen25-7b-it,qwen25-32b-base,qwen25-32b-it,olmo3-base,olmo3-instruct,olmo31-32b-base,olmo31-32b-instruct
+    JA="--cases $THESIS/data/medcase/cases_test.jsonl --runs $THESIS/runs/medcase_t07 --tags $TAGS"
+    sbatch --time=03:00:00 --job-name=judge-mc $J $JA --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/medcase_t07/judge_mistral24b.jsonl
+    sbatch --time=03:00:00 --job-name=judge2-mc $J $JA --model Qwen/Qwen2.5-32B-Instruct --out $THESIS/runs/medcase_t07/judge2_qwen32b.jsonl ;;
+  medcase-judge-smoke)
+    J=code/slurm/tillicum/judge.sbatch
+    sbatch --time=00:30:00 --job-name=judge-mc-smoke $J --cases $THESIS/data/medcase/cases_test.jsonl --runs $THESIS/runs/mc_smoke \
+      --tags olmo3-base,qwen25-7b-base,olmo3-instruct --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/mc_smoke/judge.jsonl ;;
   frontier)  # few-shot temperature frontier for the three 7-8B pairs, top-p fixed at 1
     FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
     for t in 0.4 0.7 1.0 1.3; do
@@ -242,5 +270,5 @@ case "${1:-}" in
       tag=${spec%%:*}; model=${spec#*:}
       sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mnm-$tag $S --model $model --out runs/r7_smoke/mnm_$tag.jsonl $SM $STD --k 4 --prompt-variant mustnotmiss
     done ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|frontier|mnm|r7-smoke"; exit 1 ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|frontier|mnm|r7-smoke"; exit 1 ;;
 esac
