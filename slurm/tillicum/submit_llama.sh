@@ -234,7 +234,9 @@ case "${1:-}" in
     JA="--cases $THESIS/data/medcase/cases_test.jsonl --runs $THESIS/runs/medcase_t07 --tags $TAGS"
     # DEP (optional): a Slurm dependency, e.g. afterok:<sampling job ids>
     sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge-mc $J $JA --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/medcase_t07/judge_mistral24b.jsonl
-    sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge2-mc $J $JA --model microsoft/phi-4 --out $THESIS/runs/medcase_t07/judge2_phi4.jsonl ;;
+    sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge2-mc $J $JA --model microsoft/phi-4 --out $THESIS/runs/medcase_t07/judge2_phi4.jsonl
+    # names against the case authors' own differential (item 1 = final diagnosis, then the authors' alternatives)
+    sbatch ${DEP:+--dependency=$DEP} --time=03:00:00 --job-name=judge-ddx-mc $J $JA --ddx $THESIS/runs/medcase_t07/authors_ddx.jsonl --model mistralai/Mistral-Small-24B-Instruct-2501 --out $THESIS/runs/medcase_t07/judge_ddx_mistral24b.jsonl ;;
   medcase-an)  # scoring after both judges (DEP: afterok:<judge job ids>)
     sbatch ${DEP:+--dependency=$DEP} code/slurm/tillicum/medcase_an.sbatch ;;
   medcase-judge-smoke)
