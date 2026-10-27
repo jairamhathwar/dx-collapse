@@ -68,21 +68,30 @@ FEWSHOT_HEADER = ("Emergency and primary care patients' answers, each followed b
 FEWSHOT_Q = "### Patient\n{vignette}\n### Differential diagnosis\n"
 
 
-def fewshot_examples(train_path, k=3, seed=0):
+def fewshot_examples(train_path, k=3, seed=0, answers=None, export=None):
+    """answers: optional {case_id: answer text} replacing the reference-derived lists (reference-free control);
+    export: optional path to write the chosen training cases as JSONL (to elicit answers for them)."""
     rows = [json.loads(l) for l in open(train_path)]
     rng = random.Random(seed)
     rng.shuffle(rows)
-    out, golds = [], set()
+    out, golds, chosen = [], set(), []
     for r in rows:
         if r["gold"] in golds:
             continue
         z = sum(p for _, p in r["gt_differential"])
         top = sorted(((c, p / z) for c, p in r["gt_differential"]), key=lambda x: -x[1])[:5]
         ans = json.dumps([{"diagnosis": c, "probability": round(p, 2)} for c, p in top])
+        if answers is not None:
+            ans = answers[r["case_id"]]
         out.append((r["vignette"], ans))
+        chosen.append(r)
         golds.add(r["gold"])
         if len(out) == k:
-            return out
+            break
+    if export:
+        with open(export, "w") as fh:
+            for r in chosen:
+                fh.write(json.dumps(r) + "\n")
     return out
 
 
@@ -162,11 +171,17 @@ def main():
     ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot"], default="default",
                     help="ddxplus prompt-robustness variant")
     ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
+    ap.add_argument("--fewshot-answers", help="fewshot: JSON {case_id: answer} replacing the reference-derived example lists")
+    ap.add_argument("--fewshot-export", help="write the chosen few-shot training cases as JSONL and exit")
     ap.add_argument("--completion", action="store_true",
                     help="fewshot: plain completion prompt without a chat template (for base models)")
     a = ap.parse_args()
     conditions = json.load(open(a.conditions)) if a.task == "ddxplus" else None
-    shots = fewshot_examples(a.fewshot_train) if a.prompt_variant == "fewshot" else None
+    if a.fewshot_export:
+        fewshot_examples(a.fewshot_train, export=a.fewshot_export)
+        return
+    answers = json.load(open(a.fewshot_answers)) if a.fewshot_answers else None
+    shots = fewshot_examples(a.fewshot_train, answers=answers) if a.prompt_variant == "fewshot" else None
     # Slurm job arrays: shard = array index, and --out may contain "{shard}"
     if a.shard < 0:
         a.shard = int(os.environ["SLURM_ARRAY_TASK_ID"])

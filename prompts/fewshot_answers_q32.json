@@ -1,0 +1,5 @@
+{
+ "ddx_train_502580": "[{\"diagnosis\": \"Acute dystonic reactions\", \"probability\": 0.4}, {\"diagnosis\": \"Larygospasm\", \"probability\": 0.3}, {\"diagnosis\": \"Bronchospasm / acute asthma exacerbation\", \"probability\": 0.15}, {\"diagnosis\": \"Anaphylaxis\", \"probability\": 0.1}, {\"diagnosis\": \"Panic attack\", \"probability\": 0.05}]",
+ "ddx_train_908931": "[{\"diagnosis\": \"Possible NSTEMI / STEMI\", \"probability\": 0.45}, {\"diagnosis\": \"Unstable angina\", \"probability\": 0.3}, {\"diagnosis\": \"Pulmonary embolism\", \"probability\": 0.15}, {\"diagnosis\": \"Pericarditis\", \"probability\": 0.05}, {\"diagnosis\": \"Pneumonia\", \"probability\": 0.05}]",
+ "ddx_train_583067": "[{\"diagnosis\": \"Localized edema\", \"probability\": 0.3}, {\"diagnosis\": \"Inguinal hernia\", \"probability\": 0.25}, {\"diagnosis\": \"GERD\", \"probability\": 0.2}, {\"diagnosis\": \"Pulmonary embolism\", \"probability\": 0.15}, {\"diagnosis\": \"Sarcoidosis\", \"probability\": 0.1}]"
+}

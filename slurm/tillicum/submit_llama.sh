@@ -139,5 +139,37 @@ case "${1:-}" in
   think-smoke)  # 20 cases x 4 samples, to measure trace length
     SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 20"
     sbatch -p gpu-h200 --time=01:00:00 --job-name=smoke-think $S --model Qwen/Qwen3-8B --out runs/think_smoke/qwen3-8b-think.jsonl $SM --thinking --max-tokens 8192 --max-model-len 10240 ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke"; exit 1 ;;
+  matcht)  # review control: post-trained models at higher temperatures, to compare at matched sharpness
+    for t in 1.3 1.6; do
+      d=matchT_t${t/./}
+      run $d qwen3-8b Qwen/Qwen3-8B $DDX $STD --temperature $t --top-p 1.0
+      run $d qwen25-7b-it Qwen/Qwen2.5-7B-Instruct $DDX $STD --temperature $t --top-p 1.0
+    done ;;
+  matcht-smoke)
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
+    for t in 1.3 1.6; do
+      sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-matcht-q3-$t $S --model Qwen/Qwen3-8B --out runs/matcht_smoke/qwen3-8b-t$t.jsonl $SM $STD --temperature $t --top-p 1.0
+      sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-matcht-q25-$t $S --model Qwen/Qwen2.5-7B-Instruct --out runs/matcht_smoke/qwen25-7b-it-t$t.jsonl $SM $STD --temperature $t --top-p 1.0
+    done ;;
+  fewshot-rf)  # review control: few-shot examples whose lists come from Qwen2.5-32B-Instruct, not from the reference
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl --fewshot-answers data/ddxplus/fewshot_answers_q32.json"
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen25-7b-base:Qwen/Qwen2.5-7B olmo3-base:allenai/Olmo-3-1025-7B mistral7b-base:mistralai/Mistral-7B-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run fewshot_rf_t07 $tag $model $DDX $FS --completion --max-tokens 512 --max-model-len 6144
+    done
+    for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct mistral7b-it:mistralai/Mistral-7B-Instruct-v0.3; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run fewshot_rf_t07 $tag $model $DDX $FS $STD
+    done
+    run4 fewshot_rf_t07 qwen25-32b-base Qwen/Qwen2.5-32B 04:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144
+    run4 fewshot_rf_t07 olmo31-32b-base allenai/Olmo-3-1125-32B 04:00:00 $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144
+    run4 fewshot_rf_t07 qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 04:00:00 $DDX4 $FS $STD
+    run4 fewshot_rf_t07 olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $DDX4 $FS $STD ;;
+  fewshot-rf-smoke)
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl --fewshot-answers data/ddxplus/fewshot_answers_q32.json"
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fsrf-base $S --model Qwen/Qwen2.5-7B --out runs/fewshot_rf_smoke/qwen25-7b-base.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fsrf-it $S --model Qwen/Qwen2.5-7B-Instruct --out runs/fewshot_rf_smoke/qwen25-7b-it.jsonl $SM $FS $STD ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke"; exit 1 ;;
 esac
