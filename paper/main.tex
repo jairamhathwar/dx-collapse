@@ -20,10 +20,10 @@
 A language model's differential diagnosis can be read from the list it states in one answer or from the spread of its answers over repeated samples, the readout behind pass@$k$, self-consistency and sampling-based uncertainty. We compare the two readouts across base and post-trained versions of open 7--32B models from three families (Qwen, OLMo and Mistral) on DDXPlus, whose synthetic patients carry a reference differential, and on 897 published case reports.
 Post-training narrows the sampled differential in every family: post-trained models give 1.3--2.4 distinct answers per 32 samples, against 3.8--4.9, and with each model prompted at its best they lose 13--30 points of pass@32 (7--18 after subtracting what their samples reach against another patient's diagnosis).
 The stated list does not narrow. It stays close to the base model's averaged list for the same patient and varies little between calls, and for the smaller Qwen models it contains the true diagnosis more often.
-Conditions that published sources say must not be missed are named more often on average, but OLMo and Mistral lose specific ones.
+Severe conditions, also from published must-not-miss lists, are named more often on average, but specific ones are lost.
 Most of the first-answer gain of post-training disappears once base and post-trained models get the same prompt and decode greedily.
-Majority voting stops helping and agreement between samples weakens as an error signal, so sampling-based tools understate what one post-trained answer contains; thinking mode restores agreement.
-%MEDCASEABSTRACT
+On DDXPlus, majority voting stops helping and agreement between samples weakens as an error signal, so sampling-based tools understate what one post-trained answer contains; thinking mode restores agreement.
+On the case reports, post-trained samples likewise cover fewer of the alternatives the reports' authors considered while one stated list covers as many, but voting and agreement keep their value.
 Studies of diagnostic breadth should report which readout they use.
 \end{abstract}
 
@@ -1082,6 +1082,48 @@ Qwen3-8B & 3.1 & 5.2 & 0.1 & 0.3 & 2.0 & 2.6 \\
 \label{tab:era}
 \end{table}
 
+\subsection{Published case reports}\label{sec:medcase}
+MedCaseReasoning presentations stop before the authors' differential, so these cases test open-ended diagnosis from real presentations (prompts and grading in Appendix~\ref{app:prompts}). We sampled the four zero-shot Qwen and OLMo pairs; OLMo~3.1 32B was left out for cost and Mistral because its base model needs worked examples, which this dataset cannot supply without reference lists. The two judges agree on 97.6\% of 391,987 distinct names ($\kappa$ 0.77); Phi-4 accepts more names (6.3\% against 4.5\%), and the strict grading leaves every direction unchanged, though Qwen2.5-32B's pass@32 loss and OLMo~3 7B's recall gain lose significance. The authors' alternatives were extracted by a language model from the reasoning notes; some are broad (``bacterial'', ``viral''), which only makes them easier to match.
+Against this clinician-written reference the stated/sampled split replicates (Table~\ref{tab:medcase}): post-trained samples cover 3--14 points fewer of the authors' alternatives, one list covers them as before, and for Qwen3-8B and Qwen2.5-32B one list covers more of them than 32 samples, whereas base models' samples cover more than their lists (by 0.5--10.0 points, n.s.\ for Qwen2.5-32B). The consequences differ from DDXPlus: majority voting still adds 2.5--11.8 points for the post-trained models (7.4--7.9 for the base models), agreement is the better error signal for every model, and post-training lowers its AUROC only for Qwen3-8B (0.853 $\rightarrow$ 0.788) while raising it for the others. OLMo-3-7B-Instruct gives more distinct answers than its base model (22.5 against 13.1 among valid samples), whose answers are valid only 67\% of the time. Accuracy is not lower for cases published from 2023 (e.g.\ Qwen2.5-32B-Instruct pass@32 0.49 up to 2022 and 0.52 from 2023), so these results show no sign of memorized reports.
+
+\begin{table}[t]
+\centering\small
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{llccccccccccc}
+\toprule
+ & & & & & & Recall@5 & \multicolumn{2}{c}{Authors' alternatives} & Vote@32 & \multicolumn{3}{c}{AUROC, single-call answer correct} \\
+Pair & Model & Valid & pass@1 & pass@32 & Distinct & one list & one list & 32 samples & $-$ single & stated $p$ & agree@32 & stated $-$ agree \\
+\midrule
+Qwen3-8B & base & 0.878 & 0.139 & 0.433 & 11.95 & 0.301 & 0.303 & 0.326 & +7.4 & 0.558 & 0.853 & $-0.294$ \\
+ & post-trained & 1.000 & 0.180 & 0.308 & 6.05 & 0.352 & 0.296 & 0.186 & +2.5 & 0.678 & 0.788 & $-0.111$ \\
+Qwen2.5-7B & base & 0.986 & 0.134 & 0.438 & 14.61 & 0.263 & 0.290 & 0.378 & +7.9 & 0.565 & 0.839 & $-0.273$ \\
+ & post-trained & 1.000 & 0.154 & 0.407 & 12.55 & 0.293 & 0.285 & 0.289 & +5.7 & 0.623 & 0.849 & $-0.226$ \\
+Qwen2.5-32B & base & 0.985 & 0.206 & 0.530 & 12.19 & 0.371 & 0.322 & 0.326 & +7.5 & 0.666 & 0.870 & $-0.204$ \\
+ & post-trained & 1.000 & 0.251 & 0.495 & 9.80 & 0.429 & 0.320 & 0.245 & +4.3 & 0.650 & 0.893 & $-0.243$ \\
+OLMo~3 7B & base & 0.669 & 0.073 & 0.392 & 13.08 & 0.222 & 0.250 & 0.350 & +7.7 & 0.462 & 0.832 & $-0.371$ \\
+ & post-trained & 0.994 & 0.120 & 0.370 & 22.47 & 0.240 & 0.237 & 0.319 & +11.8 & 0.675 & 0.960 & $-0.284$ \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\medskip
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lcccccccccc}
+\toprule
+ & \multicolumn{6}{c}{Post-trained $-$ base (primary grading)} & List $-$ samples & Vote $-$ single & \multicolumn{2}{c}{Strict grading} \\
+Pair & pass@1 & pass@32 & Distinct & recall@5 & alt., list & alt., samples & (post, alt.) & (post) & pass@32 & recall@5 \\
+\midrule
+Qwen3-8B & $+4.1$ & $-12.5$ & $-5.90$ & $+5.1$ & $-0.7$$^{\dagger}$ & $-14.0$ & $+11.0$ & $+2.5$ & $-12.2$ & $+5.0$ \\
+Qwen2.5-7B & $+2.0$ & $-3.1$$^{\dagger}$ & $-2.06$ & $+3.0$ & $-0.5$$^{\dagger}$ & $-8.9$ & $-0.4$$^{\dagger}$ & $+5.7$ & $-3.2$$^{\dagger}$ & $+2.8$ \\
+Qwen2.5-32B & $+4.4$ & $-3.5$ & $-2.39$ & $+5.8$ & $-0.2$$^{\dagger}$ & $-8.1$ & $+7.5$ & $+4.3$ & $-3.0$$^{\dagger}$ & $+5.7$ \\
+OLMo~3 7B & $+4.7$ & $-2.2$$^{\dagger}$ & $+9.39$ & $+1.8$ & $-1.3$ & $-3.1$ & $-8.2$ & $+11.8$ & $-1.9$$^{\dagger}$ & $+1.8$$^{\dagger}$ \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\caption{Published case reports (MedCaseReasoning test split, 897 PMC case reports, zero-shot, 32 samples, $T{=}0.7$). A name is correct if the primary judge (Mistral-Small-24B-Instruct) says it names the report's final diagnosis; \emph{strict}: only if Phi-4 agrees as well (the judges agree on 97.6\% of 391,987 judged names, Cohen's $\kappa$ 0.77). \emph{Authors' alternatives}: share of the diagnoses other than the final one that the report's authors considered (extracted from its reasoning notes; 893 cases with at least one, 3.5 on average) that one list names, or that any of the 32 sampled top answers names; \emph{list $-$ samples}: the difference within the post-trained model. Invalid samples count as wrong for pass@$k$; the list and agreement columns use valid samples. Distinct: distinct top answers among valid samples, with correct answers merged and others compared as normalized text. Differences in points. $^{\dagger}$: not significant (paired case bootstrap, 10,000 resamples, Holm over the 36 pair tests; for the AUROC and list $-$ samples differences, the 95\% interval includes zero).}
+\label{tab:medcase}
+\end{table}
+
 \subsection{Stated and sampled readouts on real rare-disease cases}\label{sec:phenoreadouts}
 Phenopacket Store cases are real, but they have no reference differential and accuracy is near the floor, so we can test only the consequences of \S\ref{sec:consequences}, and we count an answer as correct if it is the diagnosis or a closely related Mondo class (exact matches give only 8--31 correct single-call answers per model). Top answers are grouped by Mondo class for voting and agreement (Table~\ref{tab:pheno}).
 The DDXPlus shifts reappear, but the top-three comparison does not flip as it does on DDXPlus. Majority voting over 32 samples helps the base models by 3.1--4.6 points but the final post-trained models by only 0.4--1.5 (Qwen3-8B $+0.4$, n.s.). Post-training weakens agreement as an error signal (Qwen3-8B 0.830 $\rightarrow$ 0.763, Qwen2.5-7B 0.845 $\rightarrow$ 0.745, OLMo~3 7B 0.814 $\rightarrow$ 0.726) and strengthens the stated probability (0.567 $\rightarrow$ 0.707, 0.598 $\rightarrow$ 0.717, 0.464 $\rightarrow$ 0.652). Agreement beats the stated probability by 0.25--0.35 AUROC for the base models and by only 0.03--0.07 for the post-trained ones, significantly only for Qwen3-8B ($-0.056$ $[-0.120,-0.002]$). On these open-ended cases the three most frequent of 32 sampled answers still contain a correct diagnosis more often than one list's top three, but the gap shrinks from 4.6--7.0 points for the base models to 2.7--3.6 for Qwen2.5-7B-Instruct and OLMo-3-7B-Instruct and to a tie for Qwen3-8B ($+0.4$ $[-0.8,+1.8]$). The medical models behave like their post-trained parent, with agreement the better signal for all of them.
@@ -1225,11 +1267,11 @@ Claim & Primary evidence & Holds under & Weaker or fails under \\
 (d) One stated list improves robustly only for the smaller Qwen models (\S\ref{sec:stated}) & Recall@5 $+12$ to $+24$ points, TV $-0.043$ to $-0.088$, conditional TV $-0.025$ to $-0.078$ (Table~\ref{tab:stated}, Table~\ref{tab:clustered}) & complete lists; correct and wrong top answers; true pathology removed; worked examples for Qwen3-8B and Qwen2.5-7B; thinking mode & OLMo~3 7B (no gain); OLMo~3.1 32B and Qwen2.5-32B recall with worked examples; five averaged base lists match one post-trained list \\
 (e) Severe conditions are named more often on average, but specific ones are lost (\S\ref{sec:stated}) & Named more often in every zero-shot setting ($+2.2$ to $+13.8$ points, six of eight surviving correction); 2--7 of 17 conditions per pair named significantly less often (Table~\ref{tab:severetest}) & published must-not-miss sets ($+9$ to $+24$ points in seven of eight settings) & worked examples (mean falls for Qwen2.5-32B and OLMo~3 7B); averaged lists; with published sets only OLMo, Mistral and few-shot Qwen2.5 lose specific conditions \\
 (f) Asking for must-not-miss conditions raises coverage, partly by lengthening the list (\S\ref{sec:stated}) & $+6$ to $+15$ points of warranted severe conditions named, 0.01--0.11 beyond two combined standard lists (Table~\ref{tab:mnm}) & published must-not-miss sets ($+15$ to $+26$ points; 8--20 beyond two lists) & costs one to two more unwarranted severe conditions per list \\
-(g) Voting stops helping and agreement weakens as an error signal (\S\ref{sec:consequences}) & Voting $+3.4$ to $+8.4$ points for base models, at most $+1.9$ for post-trained ones; agreement's AUROC falls in every family (Table~\ref{tab:consequences}) & worked examples; Mistral; rare-disease cases%MEDCASEG
- & models that reason first; thinking mode; Qwen2.5-7B-Instruct at $T{=}1.3$; agreement drop n.s.\ for OLMo \\
-(h) The better error signal depends on model and prompt; combining helps post-trained models modestly (\S\ref{sec:consequences}) & Held-out audit over 56 model--setting combinations: logistic combination $+0.030$ $[0.013,0.044]$ over 31-sample agreement for post-trained models, rank average $+0.019$ (n.s.) (\S\ref{sec:audit}) & worked examples (stated probability better for three post-trained models) & base models and thinking mode (agreement alone as good or better); rare-disease cases (agreement better)%MEDCASEH
+(g) Voting stops helping and agreement weakens as an error signal (\S\ref{sec:consequences}) & Voting $+3.4$ to $+8.4$ points for base models, at most $+1.9$ for post-trained ones; agreement's AUROC falls in every family (Table~\ref{tab:consequences}) & worked examples; Mistral; rare-disease cases
+ & case reports (voting still helps; agreement weakens only for Qwen3-8B); models that reason first; thinking mode; Qwen2.5-7B-Instruct at $T{=}1.3$; agreement drop n.s.\ for OLMo \\
+(h) The better error signal depends on model and prompt; combining helps post-trained models modestly (\S\ref{sec:consequences}) & Held-out audit over 56 model--setting combinations: logistic combination $+0.030$ $[0.013,0.044]$ over 31-sample agreement for post-trained models, rank average $+0.019$ (n.s.) (\S\ref{sec:audit}) & worked examples (stated probability better for three post-trained models) & base models and thinking mode (agreement alone as good or better); rare-disease cases and case reports (agreement better)
  \\
-%MEDCASECLAIM
+(i) On published case reports the sampled differential narrows against the authors' own alternatives while one stated list does not (\S\ref{sec:medrare}) & Samples cover 3--14 points fewer of the authors' alternatives in all four pairs; one list within 1.3 points; recall of the final diagnosis $+2$ to $+6$ (Table~\ref{tab:medcase}) & strict grading (judges agree on 97.6\%, $\kappa$ 0.77); cases published from 2023 & pass@32 loss significant only for Qwen3-8B and Qwen2.5-32B; OLMo-3-7B-Instruct's answers vary more \\
 \bottomrule
 \end{tabular}
 \caption{The claims of the paper and the evidence for them. Ranges are post-trained minus base unless stated; ``n.s.'': the condition-clustered interval includes zero or the test does not survive correction.}
@@ -1260,7 +1302,7 @@ Ties, list size, validity, prevalence (\S\ref{sec:further}) & -- & holds at natu
 Mistral-7B, third family (\S\ref{sec:mistral}) & holds & holds & fails with shared examples & holds, smallest gain & no mean gain; 3 of 17 lost significantly & holds \\
 Thinking mode (\S\ref{sec:thinking}) & holds & fails: pass@32 restored, still narrow & -- & holds, closest list & -- & fails: agreement better again \\
 Rare-disease cases (\S\ref{sec:phenoreadouts}) & -- & -- & -- & -- & -- & holds; agreement stays the better signal \\
-%MEDCASEROW
+Published case reports (\S\ref{sec:medcase}) & -- & holds for the authors' alternatives; pass@32 for 2 of 4 & -- & holds (recall $+2$ to $+6$; alternatives unchanged) & -- & fails: voting helps, agreement better \\
 \bottomrule
 \end{tabular}
 \caption{Which claims each control supports. ``Holds'': the control reproduces the claim; ``partly'': in some pairs or settings; ``fails'': it reverses or disappears; --: not tested. Claims are lettered as in Table~\ref{tab:claims}, which lists the evidence claim by claim; (h) is tested only in \S\ref{sec:audit}.}
