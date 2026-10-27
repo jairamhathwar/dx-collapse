@@ -1,0 +1,108 @@
+{
+ "models": {
+  "qwen3-8b-base": "/gscratch/scrubbed/jairamh/thesis/runs/pair_q3/qwen3-8b-base/samples.jsonl",
+  "qwen3-8b": "/gscratch/scrubbed/jairamh/thesis/runs/pair_q3/qwen3-8b/samples.jsonl",
+  "qwen25-7b-base": "/gscratch/scrubbed/jairamh/thesis/runs/pair25_t07/qwen25-7b-base/samples.jsonl",
+  "qwen25-7b-it": "/gscratch/scrubbed/jairamh/thesis/runs/pair25_t07/qwen25-7b-it/samples.jsonl",
+  "qwen25-32b-base": "/gscratch/scrubbed/jairamh/thesis/runs/big32_ddx/qwen25-32b-base/samples.jsonl",
+  "qwen25-32b-it": "/gscratch/scrubbed/jairamh/thesis/runs/big32_ddx/qwen25-32b-it/samples.jsonl",
+  "olmo3-base": "/gscratch/scrubbed/jairamh/thesis/runs/ddx_olmo/olmo3-base/samples.jsonl",
+  "olmo3-instruct": "/gscratch/scrubbed/jairamh/thesis/runs/ddx_olmo/olmo3-instruct/samples.jsonl",
+  "olmo31-32b-base": "/gscratch/scrubbed/jairamh/thesis/runs/big32_ddx/olmo31-32b-base/samples.jsonl",
+  "olmo31-32b-instruct": "/gscratch/scrubbed/jairamh/thesis/runs/big32_ddx/olmo31-32b-instruct/samples.jsonl",
+  "mistral7b-it": "/mmfs1/home/jairamh/thesis_overflow/runs/mistral_t07/mistral7b-it/samples.jsonl",
+  "fs:qwen3-8b-base": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/qwen3-8b-base/samples.jsonl",
+  "fs:qwen3-8b": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/qwen3-8b/samples.jsonl",
+  "fs:qwen25-7b-base": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/qwen25-7b-base/samples.jsonl",
+  "fs:qwen25-7b-it": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/qwen25-7b-it/samples.jsonl",
+  "fs:qwen25-32b-base": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/qwen25-32b-base/samples.jsonl",
+  "fs:qwen25-32b-it": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/qwen25-32b-it/samples.jsonl",
+  "fs:olmo3-base": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/olmo3-base/samples.jsonl",
+  "fs:olmo3-instruct": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/olmo3-instruct/samples.jsonl",
+  "fs:olmo31-32b-base": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/olmo31-32b-base/samples.jsonl",
+  "fs:olmo31-32b-instruct": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/olmo31-32b-instruct/samples.jsonl",
+  "fs:mistral7b-base": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/mistral7b-base/samples.jsonl",
+  "fs:mistral7b-it": "/mmfs1/home/jairamh/thesis_overflow/runs/fewshot_t07/mistral7b-it/samples.jsonl"
+ },
+ "families": {
+  "qwen3-8b-base": "qwen",
+  "qwen3-8b": "qwen",
+  "qwen25-7b-base": "qwen",
+  "qwen25-7b-it": "qwen",
+  "qwen25-32b-base": "qwen",
+  "qwen25-32b-it": "qwen",
+  "olmo3-base": "olmo",
+  "olmo3-instruct": "olmo",
+  "olmo31-32b-base": "olmo",
+  "olmo31-32b-instruct": "olmo",
+  "mistral7b-it": "mistral",
+  "fs:qwen3-8b-base": "qwen",
+  "fs:qwen3-8b": "qwen",
+  "fs:qwen25-7b-base": "qwen",
+  "fs:qwen25-7b-it": "qwen",
+  "fs:qwen25-32b-base": "qwen",
+  "fs:qwen25-32b-it": "qwen",
+  "fs:olmo3-base": "olmo",
+  "fs:olmo3-instruct": "olmo",
+  "fs:olmo31-32b-base": "olmo",
+  "fs:olmo31-32b-instruct": "olmo",
+  "fs:mistral7b-base": "mistral",
+  "fs:mistral7b-it": "mistral"
+ },
+ "pairs": [
+  [
+   "qwen3-8b-base",
+   "qwen3-8b"
+  ],
+  [
+   "qwen25-7b-base",
+   "qwen25-7b-it"
+  ],
+  [
+   "qwen25-32b-base",
+   "qwen25-32b-it"
+  ],
+  [
+   "olmo3-base",
+   "olmo3-instruct"
+  ],
+  [
+   "olmo31-32b-base",
+   "olmo31-32b-instruct"
+  ]
+ ],
+ "fewshot_pairs": [
+  [
+   "fs:qwen3-8b-base",
+   "fs:qwen3-8b"
+  ],
+  [
+   "fs:qwen25-7b-base",
+   "fs:qwen25-7b-it"
+  ],
+  [
+   "fs:qwen25-32b-base",
+   "fs:qwen25-32b-it"
+  ],
+  [
+   "fs:olmo3-base",
+   "fs:olmo3-instruct"
+  ],
+  [
+   "fs:olmo31-32b-base",
+   "fs:olmo31-32b-instruct"
+  ],
+  [
+   "fs:mistral7b-base",
+   "fs:mistral7b-it"
+  ]
+ ],
+ "defaults": [
+  "qwen3-8b",
+  "qwen25-7b-it",
+  "qwen25-32b-it",
+  "olmo3-instruct",
+  "olmo31-32b-instruct",
+  "mistral7b-it"
+ ]
+}

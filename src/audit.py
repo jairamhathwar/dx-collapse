@@ -61,11 +61,11 @@ def fit_logistic(X, y, l2=1e-2, iters=50):
     return w
 
 
-def model_summary(rows, rng, sizes=(50, 100, 200), n_draw=500):
+def model_summary(rows, rng, sizes=(50, 100, 200), n_draw=500, agree_key="consist@5"):
     sub = usable(rows)
     y = np.array([r["A_correct"] for r in sub])
     sp = np.array([r["stated_p"] for r in sub])
-    a5 = np.array([r["consist@5"] for r in sub])
+    a5 = np.array([r[agree_key] for r in sub])  # the agreement signal used by the audit and the combinations
     a32 = np.array([r["consist@32"] for r in sub])
     out = {
         "n": len(sub), "acc": float(y.mean()),
@@ -118,6 +118,7 @@ def main():
     ap.add_argument("--conditions-json", required=True)
     ap.add_argument("--spec", required=True, help='space-separated "dir:tag1,tag2" items; dir may end with @prob for --top-by-prob')
     ap.add_argument("--out", required=True)
+    ap.add_argument("--agree", choices=["5", "32"], default="5", help="agreement over the next 4 or all other samples")
     a = ap.parse_args()
     raw = json.load(open(a.conditions_json))
     match = Matcher(sorted(c["cond-name-eng"] for c in raw.values()))
@@ -133,7 +134,7 @@ def main():
             if not p.exists():
                 print("missing", p)
                 continue
-            res[f"{d}/{t}"] = model_summary(load(p, cases, match, by_prob), rng)
+            res[f"{d}/{t}"] = model_summary(load(p, cases, match, by_prob), rng, agree_key=f"consist@{a.agree}")
             v = res[f"{d}/{t}"]
             print(f"{d}/{t:24s} acc={v['acc']:.3f} stated={v['auroc_stated']:.3f} agree5={v['auroc_agree5']:.3f} "
                   f"agree32={v['auroc_agree32']:.3f} scr5={v['scr5']:.3f} scr32={v['scr32']:.3f} distinct={v['distinct']:.2f} "
@@ -157,7 +158,10 @@ def main():
         summary[f"audit{n}_heldout_loss_mean"] = float(np.mean([res[k]["audit"][n]["heldout_mean_auroc_loss"] for k in keys]))
         summary[f"post_audit{n}_heldout_match_mean"] = float(np.mean([res[k]["audit"][n]["heldout_match_rate"] for k in post]))
         summary[f"post_audit{n}_heldout_loss_mean"] = float(np.mean([res[k]["audit"][n]["heldout_mean_auroc_loss"] for k in post]))
+    base = [k for k in keys if k not in post]
+    summary["base_n"] = len(base)
     for strat in ["audit", "always_agree", "always_stated", "rank_avg", "logistic"]:
+        summary[f"base_heldout100_auroc_{strat}"] = float(np.mean([res[k]["audit"][100]["heldout_auroc"][strat] for k in base]))
         summary[f"heldout100_auroc_{strat}"] = float(np.mean([res[k]["audit"][100]["heldout_auroc"][strat] for k in keys]))
         summary[f"post_heldout100_auroc_{strat}"] = float(np.mean([res[k]["audit"][100]["heldout_auroc"][strat] for k in post]))
         summary[f"post_heldout100_wins_vs_audit_{strat}"] = int(sum(res[k]["audit"][100]["heldout_auroc"][strat] > res[k]["audit"][100]["heldout_auroc"]["audit"] for k in post))
