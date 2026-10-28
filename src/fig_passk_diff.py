@@ -54,7 +54,7 @@ def main():
     rng = np.random.default_rng(0)
     W = rng.multinomial(len(keys), [1 / len(keys)] * len(keys), size=2000).astype(float)
     plt.rcParams.update({"font.size": 7, "axes.linewidth": 0.6, "font.family": "serif"})
-    fig, ax = plt.subplots(figsize=(3.3, 2.15))
+    fig, ax = plt.subplots(figsize=(3.3, 1.8))
     ax.axhline(0, color="#555555", lw=0.7, zorder=1)
     res = {}
     for nm, d, b, p, col, mk in PAIRS:
@@ -75,7 +75,7 @@ def main():
         res[nm]["col"] = col
     # direct labels at k = 32, pushed apart to at least 3.6 points
     order = sorted(res, key=lambda n: res[n]["diff"][-1])
-    ys, gap = [], 3.6
+    ys, gap = [], 4.2
     for n in order:
         y = res[n]["diff"][-1]
         ys.append(max(y, ys[-1] + gap) if ys else y)
@@ -89,7 +89,7 @@ def main():
     ax.set_xticklabels([str(k) for k in KS])
     ax.set_xlim(0.85, 32 * 3.2)
     ax.set_xlabel("$k$ (samples per case)")
-    ax.set_ylabel("pass@$k$, post-trained $-$ base (points)")
+    ax.set_ylabel("pass@$k$: post $-$ base (points)")
     ax.grid(axis="y", color="#dddddd", lw=0.5, zorder=0)
     for s in ["top", "right"]:
         ax.spines[s].set_visible(False)
