@@ -48,11 +48,14 @@ COMPARISONS = {
     "robust": [(Q3, "qwen3-8b-base", "qwen3-8b"), (Q25, "qwen25-7b-base", "qwen25-7b-it"),
                ("big32_ddx", "qwen25-32b-base", "qwen25-32b-it"), ("ddx_olmo", "olmo3-base", "olmo3-instruct"),
                ("big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct")],
+    "freelen": [("@freelen_t07", a, b) for a, b in [("qwen3-8b-base", "qwen3-8b"), ("qwen25-7b-base", "qwen25-7b-it"),
+                                                  ("qwen25-32b-base", "qwen25-32b-it")]],
     "full": [("pv_full_t07", "qwen3-8b-base", "qwen3-8b"), ("pv_full_t07", "qwen25-7b-base", "qwen25-7b-it"),
              ("@pv_full_t07", "olmo3-base", "olmo3-instruct")],
 }
 TIERS = {"severe": (1, 2), "moderate": (3, 3), "mild": (4, 5)}
-DIFF = ["pass1", "pass32", "distinct", "entropy", "cov32", "tv_samples", "tv_list", "rec5", "vote_gain",
+DIFF = ["pass1", "pass32", "distinct", "entropy", "cov32", "tv_samples", "tv_list", "rec5", "vote_gain", "list_len", "rec_all",
+        "mass_all", "cond_tv", "sev_named",
         "pass1_valid", "pass32_allvalid", "invalid_top", "pass32_listsampled"] + [f"cons_{t}" for t in TIERS]
 
 
@@ -120,6 +123,9 @@ def load(path, cases, refs, severity, match, rng, top_by_prob, floor_cache):
             ls, ts = [d for d, _ in valid], [t for _, t in valid]
             r.setdefault("tv_list", float(np.mean([tv(d, ref) for d in ls])))
             r["rec5"] = r.get("rec5", float(np.mean([gold in sorted(d, key=lambda k: -d[k])[:5] for d in ls])))
+            r["list_len"] = float(np.mean([len(d) for d in ls]))
+            r["rec_all"] = float(np.mean([gold in d for d in ls]))
+            r["mass_all"] = float(np.mean([sum(ref.get(k, 0) for k in d) for d in ls]))
             top5 = dict(sorted(ref.items(), key=lambda x: -x[1])[:5])
             z = sum(top5.values())
             floor_list = tv({k: v / z for k, v in top5.items()}, ref)
@@ -197,7 +203,8 @@ def levels(R):
     m = {}
     for k in ["pass1", "pass32", "distinct", "entropy", "cov32", "tv_samples", "tv_list", "rec5", "invalid_top", "invalid_list",
               "pass1_valid", "vote_gain", "complete", "tv_complete", "tv_right", "tv_wrong", "excess_list", "excess_samples",
-              "sev_low_share", "pass32_listsampled", "top3_list_minus_samples", "sev_named", "cond_tv"]:
+              "sev_low_share", "pass32_listsampled", "top3_list_minus_samples", "sev_named", "cond_tv",
+              "list_len", "rec_all", "mass_all"]:
         v = [r[k] for r in R.values() if r.get(k) is not None]
         if v:
             m[k] = float(np.mean(v))

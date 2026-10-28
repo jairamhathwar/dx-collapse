@@ -55,6 +55,34 @@ def readouts(tops, gold, n):
             "distinct": float(len(set(v))) if v else None}
 
 
+def auroc_diff(A, B, cids, gold, rng, n_boot):
+    """AUROC(A) - AUROC(B) on common cases; A, B: {case: (score, correct)}; condition-clustered bootstrap"""
+    by = {}
+    for i, c in enumerate(cids):
+        by.setdefault(gold[c], []).append(i)
+    groups = [np.array(v) for v in by.values()]
+    sa, ya = np.array([A[c][0] for c in cids]), np.array([A[c][1] for c in cids], float)
+    sb, yb = np.array([B[c][0] for c in cids]), np.array([B[c][1] for c in cids], float)
+    f = lambda ix: auroc(sa[ix], ya[ix]) - auroc(sb[ix], yb[ix])
+    bs = []
+    for _ in range(n_boot):
+        ix = np.concatenate([groups[j] for j in rng.choice(len(groups), len(groups))])
+        if 0 < ya[ix].sum() < len(ix) and 0 < yb[ix].sum() < len(ix):
+            bs.append(f(ix))
+    bs = np.array(bs)
+    p = float(min(1.0, 2 * (1 + min((bs <= 0).sum(), (bs >= 0).sum())) / (len(bs) + 1)))
+    return {"diff": float(f(np.arange(len(cids)))), "cluster_ci": [float(x) for x in np.percentile(bs, [2.5, 97.5])], "p": p, "n": len(cids)}
+
+
+def holm(ps):
+    order = sorted(range(len(ps)), key=lambda i: ps[i])
+    adj, run = [0.0] * len(ps), 0.0
+    for r, i in enumerate(order):
+        run = max(run, min(1.0, (len(ps) - r) * ps[i]))
+        adj[i] = run
+    return adj
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cases", required=True)
@@ -84,6 +112,7 @@ def main():
         extra = {"follows": [], "pick_in_list": [], "pick_present": [], "list_valid": [], "list_rec5": [], "list_tv": [],
                  "default_rec5": [], "default_tv": []}
         sig = {"pick": ([], []), "default": ([], []), "base": ([], [])}
+        cids_sig = {"pick": [], "default": [], "base": []}
         for c in cids:
             rows, n = S[c], len(S[c])
             per["pick"][c] = readouts([r["pick"] for r in rows], gold[c], n)
@@ -112,11 +141,13 @@ def main():
                 if others:
                     sig["pick"][0].append(np.mean([p == first for p in others]))
                     sig["pick"][1].append(first == gold[c])
+                    cids_sig["pick"].append(c)
             for nm, src in [("default", dr), ("base", B.get(c, []) if B else [])]:
                 tops = [x["top"] for x in src if x]
                 if len(tops) > 1:
                     sig[nm][0].append(np.mean([t == tops[0] for t in tops[1:]]))
                     sig[nm][1].append(tops[0] == gold[c])
+                    cids_sig[nm].append(c)
         m = {"n_cases": len(cids)}
         for nm in per:
             for k in ["pass1", "pass32", "distinct"]:
@@ -140,8 +171,18 @@ def main():
                     r = cdiff(x, y, cids, gold, rng, a.n_boot)
                     if r:
                         dd[f"seeded-{other}_{k}"] = r
+        # agreement AUROC: seeded picks vs the ordinary samples' agreement (and the base model's), clustered
+        sc = {nm: {c: (a_, y_) for c, a_, y_ in zip(cids_sig[nm], *sig[nm])} for nm in sig}
+        for other in ["default", "base"]:
+            common = [c for c in sc["pick"] if c in sc[other]]
+            if len(common) > 50:
+                dd[f"seeded-{other}_auroc_agree"] = auroc_diff(sc["pick"], sc[other], common, gold, rng, a.n_boot)
         report["diffs"][tag] = dd
         print(tag, json.dumps(dd), flush=True)
+    tests = [(t, k) for t, d in report["diffs"].items() for k in d]
+    for (t, k), p in zip(tests, holm([report["diffs"][t][k]["p"] for t, k in tests])):
+        report["diffs"][t][k]["p_holm"] = p
+    print("Holm over", len(tests), "tests", flush=True)
     json.dump(report, open(a.out, "w"), indent=1)
 
 

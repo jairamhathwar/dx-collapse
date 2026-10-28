@@ -290,5 +290,34 @@ case "${1:-}" in
     done
     run4 seeded_t07 qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 04:00:00 $DDX4 $STD $SEED
     run4 seeded_t07 olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $DDX4 $STD $SEED ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|medcase-an|frontier|mnm|r7-smoke|seeded|seeded-smoke"; exit 1 ;;
+  closed-smoke)  # closed-set case reports and free-length DDXPlus lists: 8 cases x 4 samples
+    CS="--task casereport --cases data/medcase/cases_test.jsonl --candidates data/medcase/candidates_closed.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
+    FL="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --prompt-variant freelen --k 4 --shard 0 --num-shards 1 --limit 8"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-cs-olmo-base $S --model allenai/Olmo-3-1025-7B --out runs/closed_smoke/olmo3-base.jsonl $CS $STD --chat-template code/templates/olmo3_sft.jinja
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-cs-qwen3 $S --model Qwen/Qwen3-8B --out runs/closed_smoke/qwen3-8b.jsonl $CS $STD
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fl-base $S --model Qwen/Qwen3-8B-Base --out runs/closed_smoke/fl_qwen3-8b-base.jsonl $FL $STD
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fl-post $S --model Qwen/Qwen3-8B --out runs/closed_smoke/fl_qwen3-8b.jsonl $FL $STD ;;
+  closed)  # closed-set case reports (897 cases, 10 candidates each), zero-shot, T=0.7, the four case-report pairs
+    CS="--task casereport --cases data/medcase/cases_test.jsonl --candidates data/medcase/candidates_closed.jsonl --k 32"
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B qwen25-7b-base:Qwen/Qwen2.5-7B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct \
+                olmo3-instruct:allenai/Olmo-3-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=${CT:-00:45:00} --array=0-1 --job-name=m-closed-$tag $S --model $model --out runs/medcase_closed/$tag/samples.s{shard}.jsonl $CS --shard -1 --num-shards 2 $STD
+    done
+    sbatch -p gpu-h200 --time=${CTB:-02:00:00} --array=0-1 --job-name=m-closed-olmo3-base $S --model allenai/Olmo-3-1025-7B --out runs/medcase_closed/olmo3-base/samples.s{shard}.jsonl $CS --shard -1 --num-shards 2 $STD --chat-template code/templates/olmo3_sft.jinja --max-tokens 1024
+    for spec in qwen25-32b-base:Qwen/Qwen2.5-32B qwen25-32b-it:Qwen/Qwen2.5-32B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=${C32:-01:15:00} --mem=96G --array=0-3 --job-name=m-closed-$tag $S --model $model --out runs/medcase_closed/$tag/samples.s{shard}.jsonl $CS --shard -1 --num-shards 4 $STD
+    done ;;
+  freelen)  # free-length DDXPlus lists, zero-shot, T=0.7, the three Qwen pairs
+    FL="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --prompt-variant freelen --k 32"
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B qwen25-7b-base:Qwen/Qwen2.5-7B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=${FT:-00:40:00} --array=0-1 --job-name=m-freelen-$tag $S --model $model --out runs/freelen_t07/$tag/samples.s{shard}.jsonl $FL --shard -1 --num-shards 2 $STD
+    done
+    for spec in qwen25-32b-base:Qwen/Qwen2.5-32B qwen25-32b-it:Qwen/Qwen2.5-32B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=${F32:-01:00:00} --mem=96G --array=0-3 --job-name=m-freelen-$tag $S --model $model --out runs/freelen_t07/$tag/samples.s{shard}.jsonl $FL --shard -1 --num-shards 4 $STD
+    done ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|medcase-an|frontier|mnm|r7-smoke|seeded|seeded-smoke|closed|closed-smoke|freelen"; exit 1 ;;
 esac

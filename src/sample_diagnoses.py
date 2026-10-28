@@ -37,6 +37,17 @@ CASE_INSTRUCTIONS = (
     '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
 )
 
+# Closed-set variant (--candidates): the same case, but the answer must come from a per-case candidate list (final
+# diagnosis, the authors' alternatives and distractors), so it can be graded by name without a judge.
+CASE_CLOSED_INSTRUCTIONS = (
+    "Based on the case above, give your differential diagnosis.\n"
+    "Choose ONLY from this list of candidate diagnoses:\n{candidates}\n\n"
+    "List the {n} most likely diagnoses from the list, most likely first, with your probability that each is the "
+    "correct diagnosis. Use the names exactly as written in the list.\n"
+    "End your answer with a JSON array in exactly this format:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
+)
+
 DDX_SYSTEM = "You are an experienced emergency and primary care physician."
 DDX_INSTRUCTIONS = (
     "Based on the patient's answers above, give your differential diagnosis.\n"
@@ -75,6 +86,16 @@ DDX_SEED_SUFFIX = (
     "your probabilities: u = {u:.3f}. Rescale those {n} probabilities so they sum to 1, add them up in order (most "
     "likely first), and choose the first condition at which the running total reaches u. "
     "After the JSON array, write one final line in exactly this format:\nPICK: <condition name>"
+)
+# Free-length list: as many conditions as the model finds plausible (does a fixed five-item list hide narrowing?)
+DDX_FREELEN_INSTRUCTIONS = (
+    "Based on the patient's answers above, give your differential diagnosis.\n"
+    "Choose ONLY from this list of possible conditions:\n{conditions}\n\n"
+    "List every condition from the list that you consider a plausible diagnosis for this patient, as many or as "
+    "few as you judge appropriate, most likely first, with your probability that each is the correct diagnosis. "
+    "Use the condition names exactly as written in the list.\n"
+    "End your answer with a JSON array in exactly this format:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
 )
 DDX_COT_PREFIX = ("First reason step by step about the patient's findings and which conditions they support "
                   "or argue against. Then give your answer.\n")
@@ -151,6 +172,9 @@ def build_ddx_messages(case, n_dx, conditions, variant="default", u=None):
     if variant == "full":
         return [{"role": "system", "content": DDX_SYSTEM},
                 {"role": "user", "content": case["vignette"] + "\n\n" + DDX_FULL_INSTRUCTIONS.format(conditions=cond)}]
+    if variant == "freelen":
+        return [{"role": "system", "content": DDX_SYSTEM},
+                {"role": "user", "content": case["vignette"] + "\n\n" + DDX_FREELEN_INSTRUCTIONS.format(conditions=cond)}]
     if variant == "mustnotmiss":
         return [{"role": "system", "content": DDX_SYSTEM},
                 {"role": "user", "content": case["vignette"] + "\n\n" + DDX_MNM_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
@@ -204,8 +228,9 @@ def main():
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
-    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded"], default="default",
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded", "freelen"], default="default",
                     help="ddxplus prompt-robustness variant")
+    ap.add_argument("--candidates", help="casereport: JSONL {case_id, candidates: [...]} for the closed-set prompt")
     ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
     ap.add_argument("--fewshot-answers", help="fewshot: JSON {case_id: answer} replacing the reference-derived example lists")
     ap.add_argument("--fewshot-export", help="write the chosen few-shot training cases as JSONL and exit")
@@ -213,6 +238,7 @@ def main():
                     help="fewshot: plain completion prompt without a chat template (for base models)")
     a = ap.parse_args()
     conditions = json.load(open(a.conditions)) if a.task == "ddxplus" else None
+    cand = {r["case_id"]: r["candidates"] for r in map(json.loads, open(a.candidates))} if a.candidates else None
     if a.fewshot_export:
         fewshot_examples(a.fewshot_train, export=a.fewshot_export)
         return
@@ -268,6 +294,10 @@ def main():
             msgs = [build_ddx_messages(c, a.n_dx, conditions, "seeded", u) for c in batch for u in us[c["case_id"]]]
         elif a.task == "ddxplus":
             msgs = [build_ddx_messages(c, a.n_dx, conditions, a.prompt_variant) for c in batch]
+        elif a.task == "casereport" and cand:
+            msgs = [[{"role": "system", "content": CASE_SYSTEM},
+                     {"role": "user", "content": c["vignette"] + "\n\n" + CASE_CLOSED_INSTRUCTIONS.format(
+                         n=a.n_dx, candidates="\n".join(f"- {x}" for x in cand[c["case_id"]]))}] for c in batch]
         elif a.task == "casereport":
             msgs = [[{"role": "system", "content": CASE_SYSTEM},
                      {"role": "user", "content": c["vignette"] + "\n\n" + CASE_INSTRUCTIONS.format(n=a.n_dx)}] for c in batch]
