@@ -343,5 +343,19 @@ case "${1:-}" in
         sbatch -p gpu-h200 --time=${TI:-00:50:00} --mem=96G --array=0-3 --job-name=m-$d-$tag $S --model $model --out runs/$d/$tag/samples.s{shard}.jsonl $DDX4 $FS $STD --temperature $t --top-p 1.0
       done
     done ;;
+  big72-smoke)  # Qwen2.5-72B pair on two H200s: zero-shot both, worked examples for the base; 8 cases x 4 samples
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --shard 0 --num-shards 1 --limit 8 --k 4 --tp 2 --enforce-eager"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    sbatch -p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --time=00:40:00 --job-name=smoke-72b-it $S --model Qwen/Qwen2.5-72B-Instruct --out runs/big72_smoke/it.jsonl $SM $STD
+    sbatch -p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --time=00:40:00 --job-name=smoke-72b-base $S --model Qwen/Qwen2.5-72B --out runs/big72_smoke/base.jsonl $SM $STD
+    sbatch -p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --time=00:40:00 --job-name=smoke-72b-basefs $S --model Qwen/Qwen2.5-72B --out runs/big72_smoke/base_fs.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144 ;;
+  big72)  # Qwen2.5-72B pair, DDXPlus T=0.7, 32 samples: zero-shot (both), worked examples (both), two H200s per shard
+    D4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4 --tp 2 --enforce-eager"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    G="-p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --array=0-3"
+    sbatch $G --time=${T72Z:-01:30:00} --job-name=m-big72-qwen25-72b-it $S --model Qwen/Qwen2.5-72B-Instruct --out runs/big72_ddx/qwen25-72b-it/samples.s{shard}.jsonl $D4 $STD
+    sbatch $G --time=${T72Z:-01:30:00} --job-name=m-big72-qwen25-72b-base $S --model Qwen/Qwen2.5-72B --out runs/big72_ddx/qwen25-72b-base/samples.s{shard}.jsonl $D4 $STD
+    sbatch $G --time=${T72F:-01:00:00} --job-name=m-fs72-qwen25-72b-it $S --model Qwen/Qwen2.5-72B-Instruct --out runs/fewshot72_t07/qwen25-72b-it/samples.s{shard}.jsonl $D4 $FS $STD
+    sbatch $G --time=${T72F:-01:00:00} --job-name=m-fs72-qwen25-72b-base $S --model Qwen/Qwen2.5-72B --out runs/fewshot72_t07/qwen25-72b-base/samples.s{shard}.jsonl $D4 $FS --completion --max-tokens 512 --max-model-len 6144 ;;
   *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|medcase-an|frontier|mnm|r7-smoke|seeded|seeded-smoke|closed|closed-smoke|freelen"; exit 1 ;;
 esac

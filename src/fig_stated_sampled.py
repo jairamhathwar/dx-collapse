@@ -5,7 +5,8 @@
 
 Panel a: total-variation distance to the reference differential (lower is better) of one stated list
 (per-case mean over valid lists) and of the sampled top answers (review2.py), plus the mean of the base
-model's first five stated lists (aggregate_lists.py, grey diamond).
+model's first five stated lists (aggregate_lists.py, grey diamond, drawn just above the stated arrow so that it
+cannot hide the post-trained marker).
 Panel b: AUROC for the single-call answer being correct, of its stated probability and of agreement across
 31 further samples (consequences.py).
 Each arrow runs from the base model (hollow marker) to its post-trained model (filled marker).
@@ -63,25 +64,28 @@ def main():
     ap.add_argument("--aggregate", nargs="+", required=True)
     ap.add_argument("--cons-dir", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--rows", help="comma-separated row indices to draw (default: all); e.g. 0,2,4,5,7 for the T=0.7 pairs")
+    ap.add_argument("--height", type=float, default=3.6)
     a = ap.parse_args()
+    rows = [ROWS[int(i)] for i in a.rows.split(",")] if a.rows else ROWS
     R = merged(a.review2, "models")
     G = merged(a.aggregate, "models")
     C = Path(a.cons_dir)
 
-    fig, axes = plt.subplots(1, 2, figsize=(6.4, 3.6), sharey=True, gridspec_kw={"wspace": 0.08})
-    off = 0.17
-    for i, (label, d, base, post, cf) in enumerate(ROWS):
-        y = len(ROWS) - 1 - i
+    fig, axes = plt.subplots(1, 2, figsize=(6.4, a.height), sharey=True, gridspec_kw={"wspace": 0.08})
+    off = 0.13
+    for i, (label, d, base, post, cf) in enumerate(rows):
+        y = len(rows) - 1 - i
         rb, rp = R[f"{d}/{base}"], R[f"{d}/{post}"]
         cons = json.load(open(C / f"{cf}.json"))["models"]
         arrow(axes[0], y + off, rb["tv_list"], rp["tv_list"], STATED, "o")
-        axes[0].plot([G[f"{d}/{base}"]["agg@5:tv"]], [y + off], marker="D", ms=4.5, mfc="white", mec=AGG, mew=1.0, ls="none", zorder=4)
+        axes[0].plot([G[f"{d}/{base}"]["agg@5:tv"]], [y + 2.6 * off], marker="D", ms=4.0, mfc="white", mec=AGG, mew=1.0, ls="none", zorder=4)
         arrow(axes[0], y - off, rb["tv_samples"], rp["tv_samples"], SAMPLED, "s")
         arrow(axes[1], y + off, cons[base]["auroc_stated_p"], cons[post]["auroc_stated_p"], STATED, "o")
         arrow(axes[1], y - off, cons[base]["auroc_consist@32"], cons[post]["auroc_consist@32"], SAMPLED, "s")
 
-    labels = [r[0] for r in ROWS][::-1]
-    axes[0].set_yticks(range(len(ROWS)), labels)
+    labels = [r[0] for r in rows][::-1]
+    axes[0].set_yticks(range(len(rows)), labels)
     axes[0].set_xlabel("TV distance to reference differential (lower is better)")
     axes[0].set_title("(a) Distance to the reference differential", loc="left")
     axes[1].set_xlabel("AUROC, single-call answer correct (higher is better)")
@@ -92,9 +96,10 @@ def main():
         ax.tick_params(axis="y", length=0)
         ax.grid(axis="x", color="#e6e5e1", lw=0.5)
         ax.set_axisbelow(True)
-        ax.set_ylim(-0.6, len(ROWS) - 0.4)
-        for b in [2, 4, 5, 7, 8, 9]:  # family/size groups, counted from the top row
-            ax.axhline(len(ROWS) - b - 0.5, color="#d0cfca", lw=0.5)
+        ax.set_ylim(-0.6, len(rows) - 0.4)
+        groups = [2, 4, 5, 7, 8, 9] if not a.rows else [i for i in range(1, len(rows))]
+        for b in groups:  # family/size groups (all rows) or one band per pair (subset), counted from the top
+            ax.axhline(len(rows) - b - 0.5, color="#d0cfca", lw=0.5)
 
     from matplotlib.lines import Line2D
     handles = [
@@ -104,10 +109,10 @@ def main():
         Line2D([], [], color=MUTED, marker="o", ms=5, lw=0, label="post-trained model"),
         Line2D([], [], color=AGG, marker="D", ms=4.5, mfc="white", lw=0, label="base model, mean of five lists (a)"),
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, -0.10))
+    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, -0.10 if not a.rows else -0.25))
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(a.out)
-    fig.savefig(str(a.out).replace(".pdf", ".png"), dpi=200)
+    fig.savefig(a.out, bbox_inches="tight")
+    fig.savefig(str(a.out).replace(".pdf", ".png"), dpi=200, bbox_inches="tight")
 
 
 if __name__ == "__main__":
