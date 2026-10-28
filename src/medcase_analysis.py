@@ -80,7 +80,7 @@ def load(path, J, K=None):
     return rows
 
 
-def case_row(samples, n_alt=0):
+def case_row(samples, alts=frozenset()):
     v = [s for s in samples if s]
     n, c = len(samples), sum(1 for s in v if s["ok"][0])
     r = {"valid": len(v) / n, "pass1": pass_at_k(n, c, 1), "pass32": pass_at_k(n, c, min(32, n))}
@@ -91,8 +91,8 @@ def case_row(samples, n_alt=0):
     r["distinct"] = float(len(set(keys)))
     r["rec1"] = float(np.mean([s["ok"][0] for s in v]))
     r["rec5"] = float(np.mean([any(s["ok"][:5]) for s in v]))
-    if n_alt and v[0]["items"] is not None:
-        alts = set(range(2, n_alt + 2))
+    if alts and v[0]["items"] is not None:
+        n_alt = len(alts)
         r["alt_list"] = float(np.mean([len(alts & set(s["items"][:5])) / n_alt for s in v]))
         r["alt_samples"] = len(alts & {s["items"][0] for s in v}) / n_alt
     A = keys[0]
@@ -122,7 +122,9 @@ def main():
     cases = {c["case_id"]: c for c in map(json.loads, open(a.cases))}
     J = {(r["case_id"], r["key"]): r["match"] for r in map(json.loads, open(a.judge))}
     K = {(r["case_id"], r["key"]): r["item"] for r in map(json.loads, open(a.ddx_judge))} if a.ddx_judge else None
-    NALT = {r["case_id"]: r["n_alternatives"] for r in map(json.loads, open(a.authors_ddx))} if a.authors_ddx else {}
+    # item numbers of the authors' alternatives (item 1 = final diagnosis); "keep" = after clean_authors_ddx.py
+    ALTS = {r["case_id"]: frozenset(r.get("keep", range(2, r["n_alternatives"] + 2)))
+            for r in map(json.loads, open(a.authors_ddx))} if a.authors_ddx else {}
     rng = np.random.default_rng(0)
     report = {"n_judged": len(J), "judge_match_rate": float(np.mean(list(J.values()))), "models": {}, "pairs": {}}
     if a.judge2:
@@ -144,7 +146,7 @@ def main():
             rows = load(Path(a.runs) / tag, J, K)
             per, sig = {}, {}
             for cid, s in rows.items():
-                per[cid], sg = case_row(s, NALT.get(cid, 0))
+                per[cid], sg = case_row(s, ALTS.get(cid, frozenset()))
                 if sg:
                     sig[cid] = sg
             m = {k: float(np.mean([r[k] for r in per.values() if r.get(k) is not None])) for k in METRICS + (["alt_list", "alt_samples"] if K else [])}

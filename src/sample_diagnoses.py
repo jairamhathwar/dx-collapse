@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import random
+import re
 from pathlib import Path
 
 from parsing import parse_dx
@@ -66,6 +67,14 @@ DDX_MNM_INSTRUCTIONS = (
     "End your answer with a JSON array in exactly this format, the most likely conditions first:\n"
     '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>, "must_not_miss": false}}, ..., '
     '{{"diagnosis": "<name>", "probability": <number between 0 and 1>, "must_not_miss": true}}, ...]'
+)
+# Seeded pick (recovery experiment): the model states its list, then uses a supplied random number to pick one
+# condition from its own top five in proportion to its probabilities (one call per number; stratified numbers).
+DDX_SEED_SUFFIX = (
+    "\nFinally, use this random number to choose ONE condition from your {n} most likely conditions, in proportion to "
+    "your probabilities: u = {u:.3f}. Rescale those {n} probabilities so they sum to 1, add them up in order (most "
+    "likely first), and choose the first condition at which the running total reaches u. "
+    "After the JSON array, write one final line in exactly this format:\nPICK: <condition name>"
 )
 DDX_COT_PREFIX = ("First reason step by step about the patient's findings and which conditions they support "
                   "or argue against. Then give your answer.\n")
@@ -135,7 +144,7 @@ def build_fewshot_messages(case, n_dx, conditions, shots):
     return msgs
 
 
-def build_ddx_messages(case, n_dx, conditions, variant="default"):
+def build_ddx_messages(case, n_dx, conditions, variant="default", u=None):
     cond = "\n".join(f"- {c}" for c in conditions)
     if variant == "plain":
         return [{"role": "user", "content": case["vignette"] + "\n\n" + DDX_PLAIN_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
@@ -146,6 +155,8 @@ def build_ddx_messages(case, n_dx, conditions, variant="default"):
         return [{"role": "system", "content": DDX_SYSTEM},
                 {"role": "user", "content": case["vignette"] + "\n\n" + DDX_MNM_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
     body = DDX_INSTRUCTIONS.format(conditions=cond, n=n_dx)
+    if variant == "seeded":
+        body += DDX_SEED_SUFFIX.format(n=n_dx, u=u)
     if variant == "cot":
         body = DDX_COT_PREFIX + body
     return [{"role": "system", "content": DDX_SYSTEM}, {"role": "user", "content": case["vignette"] + "\n\n" + body}]
@@ -193,7 +204,7 @@ def main():
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
-    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss"], default="default",
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded"], default="default",
                     help="ddxplus prompt-robustness variant")
     ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
     ap.add_argument("--fewshot-answers", help="fewshot: JSON {case_id: answer} replacing the reference-derived example lists")
@@ -237,6 +248,9 @@ def main():
     sp = SamplingParams(n=a.k, temperature=a.temperature, top_p=a.top_p,
                         max_tokens=a.max_tokens, seed=a.seed, stop_token_ids=stop_ids,
                         stop=["\n###", "\n\n"] if a.completion else None)
+    # seeded: distinct per-request seeds so the k calls of a case are independent draws
+    sp1 = SamplingParams(n=1, temperature=a.temperature, top_p=a.top_p, max_tokens=a.max_tokens,
+                         stop_token_ids=stop_ids)
     chat_kwargs = {"chat_template_kwargs": {"enable_thinking": a.thinking}}
     if a.chat_template:
         chat_kwargs["chat_template"] = Path(a.chat_template).read_text()
@@ -248,6 +262,10 @@ def main():
             msgs = None
         elif a.task == "ddxplus" and a.prompt_variant == "fewshot":
             msgs = [build_fewshot_messages(c, a.n_dx, conditions, shots) for c in batch]
+        elif a.task == "ddxplus" and a.prompt_variant == "seeded":
+            # k prompts per case, one sample each, with stratified random numbers in a per-case random order
+            us = {c["case_id"]: random.Random(c["case_id"]).sample([(j + 0.5) / a.k for j in range(a.k)], a.k) for c in batch}
+            msgs = [build_ddx_messages(c, a.n_dx, conditions, "seeded", u) for c in batch for u in us[c["case_id"]]]
         elif a.task == "ddxplus":
             msgs = [build_ddx_messages(c, a.n_dx, conditions, a.prompt_variant) for c in batch]
         elif a.task == "casereport":
@@ -257,16 +275,24 @@ def main():
             msgs = [[{"role": "system", "content": SYSTEM},
                      {"role": "user", "content": build_prompt(c, a.n_dx, random.Random(c["case_id"]))}]
                     for c in batch]
+        sp_call = sp1 if a.prompt_variant == "seeded" else sp
         try:
             if msgs is not None:
-                res = llm.chat(msgs, sp, use_tqdm=False, **chat_kwargs)
+                res = llm.chat(msgs, sp_call, use_tqdm=False, **chat_kwargs)
         except TypeError:  # template without enable_thinking support
-            res = llm.chat(msgs, sp, use_tqdm=False,
+            res = llm.chat(msgs, sp_call, use_tqdm=False,
                            **{k: v for k, v in chat_kwargs.items() if k != "chat_template_kwargs"})
+        if a.prompt_variant == "seeded":  # regroup k single-sample requests per case
+            outs = [r.outputs[0] for r in res]
+            res = [type("R", (), {"outputs": outs[i * a.k:(i + 1) * a.k]}) for i in range(len(batch))]
         with out.open("a") as fh:
             for c, r in zip(batch, res):
                 samples = [{"text": o.text, "dx": parse_dx(o.text),
                             "finish": o.finish_reason} for o in r.outputs]
+                if a.prompt_variant == "seeded":
+                    for smp, u in zip(samples, us[c["case_id"]]):
+                        m = re.findall(r"PICK:\s*\**\s*([^\n*]+)", smp["text"])
+                        smp["u"], smp["pick"] = u, (m[-1].strip() if m else None)
                 fh.write(json.dumps({"case_id": c["case_id"], "model": a.model, "k": a.k,
                                      "temperature": a.temperature, "thinking": a.thinking,
                                      "samples": samples}) + "\n")

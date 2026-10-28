@@ -275,5 +275,20 @@ case "${1:-}" in
       tag=${spec%%:*}; model=${spec#*:}
       sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mnm-$tag $S --model $model --out runs/r7_smoke/mnm_$tag.jsonl $SM $STD --k 4 --prompt-variant mustnotmiss
     done ;;
-  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|medcase-an|frontier|mnm|r7-smoke"; exit 1 ;;
+  seeded-smoke)  # recovery experiment: list then seeded pick, 8 cases x 32 numbers, one 7-8B post-trained model each
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --shard 0 --num-shards 1 --limit 8"
+    for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-seed-$tag $S --model $model --out runs/seeded_smoke/$tag.jsonl $SM $STD --k 32 --prompt-variant seeded
+    done ;;
+  seeded)  # recovery experiment, full: five post-trained models, 980 cases x 32 seeded calls at T=0.7
+    SEED="--prompt-variant seeded"
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      run seeded_t07 $tag $model $DDX $STD $SEED
+    done
+    run4 seeded_t07 qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 04:00:00 $DDX4 $STD $SEED
+    run4 seeded_t07 olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 06:00:00 $DDX4 $STD $SEED ;;
+  *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|medcase-an|frontier|mnm|r7-smoke|seeded|seeded-smoke"; exit 1 ;;
 esac
