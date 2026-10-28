@@ -30,7 +30,7 @@ PAIRS = [("pair_q3", "qwen3-8b-base", "qwen3-8b"), ("pair25_t07", "qwen25-7b-bas
          ("ddx_qwen3_t1", "qwen3-8b-base", "qwen3-8b"), ("pair25_t1", "qwen25-7b-base", "qwen25-7b-it"),
          ("ddx_olmo", "olmo3-base", "olmo3-rlzero-general"),
          ("big32_ddx", "qwen25-32b-base", "qwen25-32b-it"), ("ddx_olmo", "olmo3-base", "olmo3-instruct"),
-         ("big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct")]
+         ("big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct"), ("big72_ddx", "qwen25-72b-base", "qwen25-72b-it")]
 KS = [1, 5, 32]
 
 

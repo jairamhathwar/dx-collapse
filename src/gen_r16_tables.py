@@ -8,7 +8,8 @@ import sys
 R = json.load(open(sys.argv[1]))
 PAIRS = [("pair_q3", "qwen3-8b-base", "qwen3-8b", "Qwen3-8B"), ("pair25_t07", "qwen25-7b-base", "qwen25-7b-it", "Qwen2.5-7B"),
          ("big32_ddx", "qwen25-32b-base", "qwen25-32b-it", "Qwen2.5-32B"), ("ddx_olmo", "olmo3-base", "olmo3-instruct", "OLMo~3 7B"),
-         ("big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct", "OLMo~3.1 32B")]
+         ("big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct", "OLMo~3.1 32B"),
+         ("big72_ddx", "qwen25-72b-base", "qwen25-72b-it", "Qwen2.5-72B$^{*}$")]
 DAG = r"$^{\dagger}$"
 rows = []
 for d, b, p, nm in PAIRS:
@@ -37,6 +38,6 @@ Pair & Model & Conditions & Mass & Warranted & Conditions & Mass & Warranted & D
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\caption{Breadth within one call and across calls (DDXPlus, zero-shot, $T{=}0.7$, 980 cases). \emph{Conditions}: conditions named (one list; or the union of the lists of up to 32 valid samples); \emph{mass}: reference probability of the named conditions; \emph{warranted}: share of the conditions with reference weight $\geq 0.1$ that are named. Sampled top answers: distinct answers and the reference mass they cover (Cov@32). Base models with fewer than 32 valid samples are scored on the valid ones, which understates their breadth across calls. Only samples whose top answer is one of the 49 conditions are used, so one-list values can differ from Table~\ref{tab:stated} by up to 0.01. $^{\dagger}$: post-trained minus base not significant (condition-clustered 95\% interval includes zero); every other difference is.}
+\caption{Breadth within one call and across calls (DDXPlus, zero-shot, $T{=}0.7$, 980 cases). \emph{Conditions}: conditions named (one list; or the union of the lists of up to 32 valid samples); \emph{mass}: reference probability of the named conditions; \emph{warranted}: share of the conditions with reference weight $\geq 0.1$ that are named. Sampled top answers: distinct answers and the reference mass they cover (Cov@32). Base models with fewer than 32 valid samples are scored on the valid ones, which understates their breadth across calls. Only samples whose top answer is one of the 49 conditions are used, so one-list values can differ from Table~\ref{tab:stated} by up to 0.01. $^{\dagger}$: post-trained minus base not significant (condition-clustered 95\% interval includes zero); every other difference is. $^{*}$: added after the headline tests were fixed (\S\ref{sec:big32}).}
 \label{tab:breadth}
 \end{table}""")

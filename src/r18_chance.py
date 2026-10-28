@@ -23,7 +23,9 @@ from stated_vs_sampled import stated_dist
 
 PAIRS = [("Qwen3-8B", "pair_q3", "qwen3-8b-base", "qwen3-8b"), ("Qwen2.5-7B", "pair25_t07", "qwen25-7b-base", "qwen25-7b-it"),
          ("Qwen2.5-32B", "big32_ddx", "qwen25-32b-base", "qwen25-32b-it"), ("OLMo 3 7B", "ddx_olmo", "olmo3-base", "olmo3-instruct"),
-         ("OLMo 3.1 32B", "big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct"), ("Mistral-7B", None, "mistral7b-base", "mistral7b-it")]
+         ("OLMo 3.1 32B", "big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct"), ("Mistral-7B", None, "mistral7b-base", "mistral7b-it"),
+         ("Qwen2.5-72B", "big72_ddx", "qwen25-72b-base", "qwen25-72b-it")]
+FS_DIR = {"qwen25-72b-base": "fewshot72_t07", "qwen25-72b-it": "fewshot72_t07"}  # 72B worked-example runs (no reference-free run)
 SETTINGS = ["zs", "fs", "rf"]
 
 
@@ -81,9 +83,12 @@ def main():
                 if st == "zs":
                     if zd is None:
                         continue
-                    path = f"{a.runs}/{zd}/{t}/samples.jsonl"
+                    path = f"{a.overflow}/{zd[1:]}/{t}/samples.jsonl" if zd.startswith("@") else f"{a.runs}/{zd}/{t}/samples.jsonl"
                 else:
-                    path = f"{a.overflow}/{'fewshot_t07' if st == 'fs' else 'fewshot_rf_t07'}/{t}/samples.jsonl"
+                    if t in FS_DIR and st == "rf":
+                        continue
+                    d = FS_DIR.get(t) or ("fewshot_t07" if st == "fs" else "fewshot_rf_t07")
+                    path = f"{a.overflow}/{d}/{t}/samples.jsonl"
                 real, sh = per_case(tops(path, match))
                 per[(st, t)] = (real, sh)
                 report["models"][f"{st}/{t}"] = {"pass32": float(np.mean(list(real.values()))), "shuffled": float(np.mean(list(sh.values())))}
