@@ -58,7 +58,7 @@ def holm(ps):
     return out
 
 
-def load(path, J, K=None):
+def load(path, J, K=None, keyfn=None):
     rows = {}
     for rec in (json.loads(l) for f in sample_files(path) for l in open(f)):
         cid, samples = rec["case_id"], []
@@ -73,7 +73,7 @@ def load(path, J, K=None):
                 ps = [1.0] * len(dx)
             # list order as given (the prompt asks for most likely first)
             # every answer is grouped by its normalized text, correct or not (no grouping by correctness)
-            key = "txt:" + norm_text(dx[0]["diagnosis"])
+            key = keyfn(dx[0]["diagnosis"]) if keyfn else "txt:" + norm_text(dx[0]["diagnosis"])
             items = [K.get((cid, norm_text(d["diagnosis"])), 0) for d in dx] if K is not None else None
             samples.append({"key": key, "ok": ok, "p": ps[0] / sum(ps), "items": items})
         rows[cid] = samples
@@ -118,6 +118,10 @@ def main():
     ap.add_argument("--strict", action="store_true", help="a name is correct only if both judges say so")
     ap.add_argument("--authors-ddx")
     ap.add_argument("--ddx-judge")
+    ap.add_argument("--group", choices=["text", "mondo"], default="text",
+                    help="how top answers are grouped for distinct answers, voting and agreement: normalized text, or "
+                         "Mondo concept (names resolved by disease_normalizer; unresolved names keep their text)")
+    ap.add_argument("--normalizer", help="--group mondo: normalizer.pkl")
     a = ap.parse_args()
     cases = {c["case_id"]: c for c in map(json.loads, open(a.cases))}
     J = {(r["case_id"], r["key"]): r["match"] for r in map(json.loads, open(a.judge))}
@@ -140,10 +144,22 @@ def main():
             J = {k: v and J2.get(k, False) for k, v in J.items()}
             report["strict"] = True
     cache = {}
+    keyfn = None
+    if a.group == "mondo":
+        from disease_normalizer import DiseaseNormalizer
+        dn, kc = DiseaseNormalizer.load(a.normalizer), {}
+
+        def keyfn(name):
+            t = norm_text(name)
+            if t not in kc:
+                ids, _ = dn.resolve(name)
+                kc[t] = "mondo:" + sorted(ids)[0] if ids else "txt:" + t
+            return kc[t]
+        report["group"] = "mondo"
 
     def get(tag):
         if tag not in cache:
-            rows = load(Path(a.runs) / tag, J, K)
+            rows = load(Path(a.runs) / tag, J, K, keyfn)
             per, sig = {}, {}
             for cid, s in rows.items():
                 per[cid], sg = case_row(s, ALTS.get(cid, frozenset()))
@@ -210,6 +226,9 @@ def main():
     for item, out in report["pairs"].items():
         print(item, json.dumps({k: [round(v["diff"], 4), [round(x, 4) for x in v["ci"]], round(v["p_holm"], 4)] for k, v in out.items()}), flush=True)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+    if a.group == "mondo":
+        report["mondo_resolved_share_of_distinct_names"] = float(np.mean([v.startswith("mondo:") for v in kc.values()]))
+        print("Mondo-resolved share of distinct top-answer names:", report["mondo_resolved_share_of_distinct_names"], flush=True)
     json.dump(report, open(a.out, "w"), indent=1)
 
 

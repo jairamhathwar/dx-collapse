@@ -319,5 +319,29 @@ case "${1:-}" in
       tag=${spec%%:*}; model=${spec#*:}
       sbatch -p gpu-h200 --time=${F32:-01:00:00} --mem=96G --array=0-3 --job-name=m-freelen-$tag $S --model $model --out runs/freelen_t07/$tag/samples.s{shard}.jsonl $FL --shard -1 --num-shards 4 $STD
     done ;;
+  freelen-olmo-smoke)  # free-length lists for the OLMo bases (1,024-token cap): 8 cases x 4 samples
+    FL="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --prompt-variant freelen --k 4 --shard 0 --num-shards 1 --limit 8"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-fl-olmo3-base $S --model allenai/Olmo-3-1025-7B --out runs/freelen_smoke/olmo3-base.jsonl $FL $STD --max-tokens 1024 --chat-template code/templates/olmo3_sft.jinja
+    sbatch -p gpu-h200 --time=00:30:00 --mem=96G --job-name=smoke-fl-olmo31-base $S --model allenai/Olmo-3-1125-32B --out runs/freelen_smoke/olmo31-32b-base.jsonl $FL $STD --max-tokens 1024 --chat-template code/templates/olmo31_32b_sft.jinja ;;
+  freelen-olmo)  # free-length lists, zero-shot, T=0.7, the two OLMo pairs (bases capped at 1,024 tokens)
+    FL="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --prompt-variant freelen --k 32"
+    sbatch -p gpu-h200 --time=${FB:-01:30:00} --array=0-1 --job-name=m-freelen-olmo3-base $S --model allenai/Olmo-3-1025-7B --out runs/freelen_t07/olmo3-base/samples.s{shard}.jsonl $FL --shard -1 --num-shards 2 $STD --max-tokens 1024 --chat-template code/templates/olmo3_sft.jinja
+    sbatch -p gpu-h200 --time=${FI:-02:30:00} --array=0-1 --job-name=m-freelen-olmo3-instruct $S --model allenai/Olmo-3-7B-Instruct --out runs/freelen_t07/olmo3-instruct/samples.s{shard}.jsonl $FL --shard -1 --num-shards 2 $STD
+    sbatch -p gpu-h200 --time=${FB32:-01:30:00} --mem=96G --array=0-3 --job-name=m-freelen-olmo31-32b-base $S --model allenai/Olmo-3-1125-32B --out runs/freelen_t07/olmo31-32b-base/samples.s{shard}.jsonl $FL --shard -1 --num-shards 4 $STD --max-tokens 1024 --chat-template code/templates/olmo31_32b_sft.jinja
+    sbatch -p gpu-h200 --time=${FI32:-01:00:00} --mem=96G --array=0-3 --job-name=m-freelen-olmo31-32b-instruct $S --model allenai/Olmo-3.1-32B-Instruct --out runs/freelen_t07/olmo31-32b-instruct/samples.s{shard}.jsonl $FL --shard -1 --num-shards 4 $STD ;;
+  frontier32)  # few-shot temperature frontier for the two 32B pairs, top-p fixed at 1 (as for the 7-8B frontier)
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    for t in 0.4 0.7 1.0 1.3; do
+      d=frontier_t${t/./}
+      for spec in qwen25-32b-base:Qwen/Qwen2.5-32B olmo31-32b-base:allenai/Olmo-3-1125-32B; do
+        tag=${spec%%:*}; model=${spec#*:}
+        sbatch -p gpu-h200 --time=${TB:-00:40:00} --mem=96G --array=0-3 --job-name=m-$d-$tag $S --model $model --out runs/$d/$tag/samples.s{shard}.jsonl $DDX4 $FS --completion --max-tokens 512 --max-model-len 6144 --temperature $t --top-p 1.0
+      done
+      for spec in qwen25-32b-it:Qwen/Qwen2.5-32B-Instruct olmo31-32b-instruct:allenai/Olmo-3.1-32B-Instruct; do
+        tag=${spec%%:*}; model=${spec#*:}
+        sbatch -p gpu-h200 --time=${TI:-00:50:00} --mem=96G --array=0-3 --job-name=m-$d-$tag $S --model $model --out runs/$d/$tag/samples.s{shard}.jsonl $DDX4 $FS $STD --temperature $t --top-p 1.0
+      done
+    done ;;
   *) echo "usage: $0 descendants|pair|prompts|fullpheno|olmo|full49|big32|fewshot|fewshot-smoke|mistral|mistral-smoke|think|think-smoke|matcht|matcht-smoke|fewshot-rf|fewshot-rf-smoke|greedy|greedy-matched|greedy-matched-smoke|medcase|medcase-smoke|medcase-judge|medcase-judge-smoke|medcase-an|frontier|mnm|r7-smoke|seeded|seeded-smoke|closed|closed-smoke|freelen"; exit 1 ;;
 esac
