@@ -8,11 +8,15 @@ Per case and model, over the first k valid samples (k = 1, 5; for k = 32 all val
   samp_distinct_k  distinct top answers among the k samples
   samp_mass_k      reference probability of those answers (Cov@k)
   warranted_k      share of the conditions the reference weights >= 0.1 that the union of lists names
+  union_gold_k     the union of the k lists contains the true pathology
+  drawn_pass32, drawn_distinct  each valid sample's top answer replaced by a draw from its own stated list (fixed
+                   seed; invalid samples count as wrong, as in pass@32): pass@32 and distinct drawn answers
 Post-trained minus base with condition-clustered intervals (r14_an.Boot, 10,000 resamples). This separates breadth
 within one list (k = 1) from breadth across calls (k = 5, 32) for both readouts.
 """
 import argparse
 import json
+import math
 from collections import defaultdict
 
 import numpy as np
@@ -23,21 +27,33 @@ from r14_an import Boot
 from stated_vs_sampled import stated_dist
 
 PAIRS = [("pair_q3", "qwen3-8b-base", "qwen3-8b"), ("pair25_t07", "qwen25-7b-base", "qwen25-7b-it"),
+         ("ddx_qwen3_t1", "qwen3-8b-base", "qwen3-8b"), ("pair25_t1", "qwen25-7b-base", "qwen25-7b-it"),
+         ("ddx_olmo", "olmo3-base", "olmo3-rlzero-general"),
          ("big32_ddx", "qwen25-32b-base", "qwen25-32b-it"), ("ddx_olmo", "olmo3-base", "olmo3-instruct"),
          ("big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct")]
 KS = [1, 5, 32]
 
 
-def load(path, refs, match):
+def pass_at_k(n, c, k):
+    if n < k:
+        return None
+    return 1.0 if n - c < k else 1.0 - math.comb(n - c, k) / math.comb(n, k)
+
+
+def load(path, refs, match, gold, rng):
     out = {}
     for rec in map(json.loads, open(path)):
         cid, ref = rec["case_id"], refs[rec["case_id"]]
-        valid = []
+        valid, n_all = [], len(rec["samples"])
         for s in rec["samples"]:
             d, top = stated_dist(parse_dx(s["text"]), match)
             if d is not None and top:
                 valid.append((d, top))
         r = {}
+        if valid:
+            draws = [rng.choice(list(d), p=np.array(list(d.values())) / sum(d.values())) for d, _ in valid]
+            r["drawn_pass32"] = pass_at_k(n_all, sum(x == gold[cid] for x in draws), min(32, n_all))
+            r["drawn_distinct"] = len(set(draws))
         warr = {k for k, p in ref.items() if p >= 0.1}
         for k in KS:
             v = valid[:k]
@@ -51,6 +67,7 @@ def load(path, refs, match):
             r[f"samp_mass_{k}"] = sum(ref.get(c, 0) for c in tops)
             if warr:
                 r[f"warranted_{k}"] = len(warr & u) / len(warr)
+            r[f"union_gold_{k}"] = float(gold[cid] in u)
         out[cid] = r
     return out
 
@@ -71,16 +88,16 @@ def main():
         refs[cid] = {k: p / z for k, p in c["gt_differential"]}
     rng = np.random.default_rng(0)
     boot = Boot(list(cases), gold, a.n_boot, rng)
-    metrics = [f"{m}_{k}" for k in KS for m in ["list_union", "list_mass", "samp_distinct", "samp_mass", "warranted"]]
+    metrics = [f"{m}_{k}" for k in KS for m in ["list_union", "list_mass", "samp_distinct", "samp_mass", "warranted", "union_gold"]] + ["drawn_pass32", "drawn_distinct"]
     report = {"models": {}, "pairs": {}}
     for d, b, p in PAIRS:
-        R = {t: load(f"{a.runs}/{d}/{t}/samples.jsonl", refs, match) for t in (b, p)}
+        R = {t: load(f"{a.runs}/{d}/{t}/samples.jsonl", refs, match, gold, np.random.default_rng(1)) for t in (b, p)}
         for t in (b, p):
-            report["models"][f"{d}/{t}"] = {m: float(np.mean([r[m] for r in R[t].values() if m in r])) for m in metrics}
+            report["models"][f"{d}/{t}"] = {m: float(np.mean([r[m] for r in R[t].values() if m in r and r[m] is not None])) for m in metrics}
             print(t, json.dumps({m: round(v, 3) for m, v in report["models"][f"{d}/{t}"].items()}), flush=True)
         pr = {}
         for m in metrics:
-            v = {c: R[p][c][m] - R[b][c][m] for c in cases if m in R[b].get(c, {}) and m in R[p].get(c, {})}
+            v = {c: R[p][c][m] - R[b][c][m] for c in cases if R[b].get(c, {}).get(m) is not None and R[p].get(c, {}).get(m) is not None}
             if len(v) < 50:
                 continue
             pr[m] = boot.ratio(v, {c: 1.0 for c in v})

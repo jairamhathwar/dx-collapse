@@ -122,10 +122,22 @@ def main():
                     help="how top answers are grouped for distinct answers, voting and agreement: normalized text, or "
                          "Mondo concept (names resolved by disease_normalizer; unresolved names keep their text)")
     ap.add_argument("--normalizer", help="--group mondo: normalizer.pkl")
+    ap.add_argument("--conservative", action="store_true",
+                    help="bound judge false positives: a judge acceptance counts only if the name shares a content word "
+                         "with its target (the final diagnosis, or the authors' item it was matched to)")
     a = ap.parse_args()
     cases = {c["case_id"]: c for c in map(json.loads, open(a.cases))}
     J = {(r["case_id"], r["key"]): r["match"] for r in map(json.loads, open(a.judge))}
     K = {(r["case_id"], r["key"]): r["item"] for r in map(json.loads, open(a.ddx_judge))} if a.ddx_judge else None
+    if a.conservative:
+        from medcase_silver import content
+        cand = {(r["case_id"], r["key"]): r["cand"] for r in map(json.loads, open(a.judge))}
+        J = {k: v and bool(content(cand[k]) & content(cases[k[0]]["gold"])) for k, v in J.items()}
+        if K is not None:
+            DD = {r["case_id"]: r["ddx"] for r in map(json.loads, open(a.authors_ddx))}
+            kc = {(r["case_id"], r["key"]): r["cand"] for r in map(json.loads, open(a.ddx_judge))}
+            K = {k: (j if j and k[0] in DD and j <= len(DD[k[0]]) and content(kc[k]) & content(DD[k[0]][j - 1]) else 0)
+                 for k, j in K.items()}
     # item numbers of the authors' alternatives (item 1 = final diagnosis); "keep" = after clean_authors_ddx.py
     ALTS = {r["case_id"]: frozenset(r.get("keep", range(2, r["n_alternatives"] + 2)))
             for r in map(json.loads, open(a.authors_ddx))} if a.authors_ddx else {}
