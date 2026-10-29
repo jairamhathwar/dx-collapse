@@ -1,0 +1,220 @@
+patient,vignette,"reference differential (rule-based engine, top 5)",Q1 reference plausible? (1-5),readout A,Q2 readout A adequate? (1-5),Q3 readout A omits a must-not-miss condition? (Y/N; which),readout B,Q2 readout B adequate? (1-5),Q3 readout B omits a must-not-miss condition? (Y/N; which),readout C,Q2 readout C adequate? (1-5),Q3 readout C omits a must-not-miss condition? (Y/N; which),readout D,Q2 readout D adequate? (1-5),Q3 readout D omits a must-not-miss condition? (Y/N; which),comments
+A01,"A 95-year-old male presents for evaluation.
+Symptoms (patient answers):
+- Do you have a cough? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: burning, sharp.
+- Do you feel pain somewhere? mouth, forehead, temple(R), temple(L).
+- How intense is the pain? (scale 0-10) 6.
+- Does the pain radiate to another location? back of head, nose, temple(R), temple(L).
+- How precisely is the pain located? (scale 0-10) 3.
+- How fast did the pain appear? (scale 0-10) 4.
+- Do you have nasal congestion or a clear runny nose? Yes.
+Relevant history and risk factors:
+- Do you smoke cigarettes? Yes.
+- Have you had a cold in the last 2 weeks? Yes.
+- Have you ever had pneumonia? Yes.
+- Do you have polyps in your nose? Yes.
+- Do you have a deviated nasal septum? Yes.
+- Do you have asthma or have you ever had to use a bronchodilator in the past? Yes.
+- Have you ever been diagnosed with gastroesophageal reflux? Yes.
+- Are you more likely to develop common allergies than the general population? Yes.",Viral pharyngitis (0.18); Bronchitis (0.15); Chronic rhinosinusitis (0.13); URTI (0.13); Acute laryngitis (0.12),,[Top answers of 32 repeated calls (counts)] Acute rhinosinusitis (23); Bronchitis (6); Pneumonia (2); [no usable answer] (1),,,[One answer's ranked list (probabilities)] Bronchitis (0.44); Acute rhinosinusitis (0.22); Pneumonia (0.15); GERD (0.11); Influenza (0.07),,,[Top answers of 32 repeated calls (counts)] Acute rhinosinusitis (32),,,[One answer's ranked list (probabilities)] Acute rhinosinusitis (0.45); Bronchitis (0.25); Pneumonia (0.15); GERD (0.10); Acute COPD exacerbation / infection (0.05),,,
+A02,"A 69-year-old male presents for evaluation.
+Symptoms (patient answers):
+- Have you noticed a wheezing sound when you exhale? Yes.
+- Are you experiencing shortness of breath or difficulty breathing in a significant way? Yes.
+- Do you have a cough that produces colored or more abundant sputum than usual? Yes.
+- Do you have a cough? Yes.
+Relevant history and risk factors:
+- Have you had one or several flare ups of chronic obstructive pulmonary disease (COPD) in the past year? Yes.
+- Do you smoke cigarettes? Yes.
+- Do you have a chronic obstructive pulmonary disease (COPD)? Yes.
+- Have you ever been diagnosed with gastroesophageal reflux? Yes.
+- Do you work in agriculture? Yes.
+- Do you work in construction? Yes.
+- Do you work in the mining sector? Yes.",Acute COPD exacerbation / infection (0.12); Bronchitis (0.12); Bronchiectasis (0.11); Pneumonia (0.10); Pulmonary neoplasm (0.10),,[One answer's ranked list (probabilities)] Acute COPD exacerbation / infection (0.65); Pneumonia (0.20); Bronchitis (0.10); Bronchospasm / acute asthma exacerbation (0.03); GERD (0.02),,,[One answer's ranked list (probabilities)] Acute COPD exacerbation / infection (0.38); Pneumonia (0.29); Bronchitis (0.19); Bronchospasm / acute asthma exacerbation (0.10); Pulmonary embolism (0.05),,,[Top answers of 32 repeated calls (counts)] Acute COPD exacerbation / infection (32),,,[Top answers of 32 repeated calls (counts)] Acute COPD exacerbation / infection (23); Pneumonia (2); Pulmonary embolism (1); [no usable answer] (6),,,
+A03,"A 17-year-old male presents for evaluation.
+Symptoms (patient answers):
+- Have you noticed that the tone of your voice has become deeper, softer or hoarse? Yes.
+- Do you have pain that improves when you lean forward? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: sharp.
+- Do you feel pain somewhere? back of the neck, palate, pharynx, under the jaw.
+- How intense is the pain? (scale 0-10) 6.
+- How precisely is the pain located? (scale 0-10) 5.
+- How fast did the pain appear? (scale 0-10) 6.
+- Are you experiencing shortness of breath or difficulty breathing in a significant way? Yes.
+- Have you noticed that you produce more saliva than usual? Yes.
+- Have you noticed a high pitched sound when breathing in? Yes.
+Relevant history and risk factors:
+- Do you regularly take stimulant drugs? Yes.
+- Do you drink alcohol excessively or do you have an addiction to alcohol? Yes.
+- Do you have high blood pressure or do you take medications to treat high blood pressure? Yes.",Epiglottitis (0.15); Acute laryngitis (0.11); Larygospasm (0.09); Pulmonary embolism (0.09); Anaphylaxis (0.08),,[Top answers of 32 repeated calls (counts)] Bronchospasm / acute asthma exacerbation (19); Panic attack (8); Acute laryngitis (5),,,[Top answers of 32 repeated calls (counts)] Acute laryngitis (26); Bronchitis (3); Panic attack (1); [no usable answer] (2),,,[One answer's ranked list (probabilities)] Panic attack (0.45); Acute laryngitis (0.25); Bronchospasm / acute asthma exacerbation (0.15); GERD (0.10); Acute pulmonary edema (0.05),,,[One answer's ranked list (probabilities)] Acute laryngitis (0.35); Panic attack (0.25); Pulmonary embolism (0.20); Acute otitis media (0.15); Influenza (0.05),,,
+A04,"A 35-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Do you feel your heart is beating fast (racing), irregularly (missing a beat) or do you feel palpitations? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: sensitive, stabbing.
+- Do you feel pain somewhere? lower chest, side of the chest(R), upper chest, breast(L).
+- How intense is the pain? (scale 0-10) 8.
+- How precisely is the pain located? (scale 0-10) 2.
+- How fast did the pain appear? (scale 0-10) 3.
+- Are you experiencing shortness of breath or difficulty breathing in a significant way? Yes.
+- Have you noticed any new fatigue, generalized and vague discomfort, diffuse (widespread) muscle aches or a change in your general well-being related to your consultation today? Yes.
+- Are your symptoms worse when lying down and alleviated while sitting up? Yes.
+- Do you have symptoms that are increased with physical exertion but alleviated with rest? Yes.
+Relevant history and risk factors:
+- Have you recently had a viral infection? Yes.",Unstable angina (0.09); Myocarditis (0.09); Acute pulmonary edema (0.09); Panic attack (0.09); Stable angina (0.08),,[One answer's ranked list (probabilities)] Atrial fibrillation (0.45); Acute pulmonary edema (0.30); Pulmonary embolism (0.15); Myocarditis (0.07); Pericarditis (0.03),,,[Top answers of 32 repeated calls (counts)] Acute pulmonary edema (12); Pulmonary embolism (11); Panic attack (4); Atrial fibrillation (2); [no usable answer] (3),,,[One answer's ranked list (probabilities)] Pneumonia (0.39); Myocarditis (0.28); Pulmonary embolism (0.17); Influenza (0.11); Acute pulmonary edema (0.06),,,[Top answers of 32 repeated calls (counts)] Pulmonary embolism (24); Pneumonia (7); Myocarditis (1),,,
+A05,"A 57-year-old male presents for evaluation.
+Symptoms (patient answers):
+- Do you have a cough that produces colored or more abundant sputum than usual? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: burning.
+- Do you feel pain somewhere? lower chest, side of the chest(L), upper chest.
+- How intense is the pain? (scale 0-10) 5.
+- How precisely is the pain located? (scale 0-10) 3.
+- How fast did the pain appear? (scale 0-10) 0.
+- Do you have a fever (either felt or measured with a thermometer)? Yes.
+- Do you have a sore throat? Yes.
+- Do you have a cough? Yes.
+- Have you noticed a wheezing sound when you exhale? Yes.
+Relevant history and risk factors:
+- Do you smoke cigarettes? Yes.
+- Are your vaccinations up to date? Yes.",Bronchitis (0.14); Pneumonia (0.12); GERD (0.10); Acute COPD exacerbation / infection (0.10); URTI (0.09),,[One answer's ranked list (probabilities)] Pneumonia (0.45); Acute COPD exacerbation / infection (0.35); Bronchitis (0.10); Bronchospasm / acute asthma exacerbation (0.07); Influenza (0.03),,,[Top answers of 32 repeated calls (counts)] Pneumonia (32),,,[Top answers of 32 repeated calls (counts)] Pneumonia (22); Bronchitis (6); Acute pulmonary edema (1); Acute COPD exacerbation / infection (1); [no usable answer] (2),,,[One answer's ranked list (probabilities)] Bronchitis (0.38); Pneumonia (0.29); Acute COPD exacerbation / infection (0.19); Acute rhinosinusitis (0.10); Bronchospasm / acute asthma exacerbation (0.05),,,
+A06,"A 6-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Have you noticed that you produce more saliva than usual? Yes.
+- Do you have nasal congestion or a clear runny nose? Yes.
+- Are your symptoms more prominent at night? Yes.
+Relevant history and risk factors:
+- Have you or any member of your family ever had croup? Yes.
+- Are your vaccinations up to date? Yes.",Croup (1.00),,[Top answers of 32 repeated calls (counts)] Acute laryngitis (23); Acute rhinosinusitis (6); Croup (1); [no usable answer] (2),,,[One answer's ranked list (probabilities)] Acute rhinosinusitis (0.40); Acute laryngitis (0.30); Croup (0.20); Viral pharyngitis (0.07); Influenza (0.03),,,[Top answers of 32 repeated calls (counts)] Croup (31); Acute laryngitis (1),,,[One answer's ranked list (probabilities)] Croup (0.45); Acute laryngitis (0.30); URTI (0.15); Acute rhinosinusitis (0.07); Bronchitis (0.03),,,
+A07,"A 43-year-old male presents for evaluation.
+Symptoms (patient answers):
+- Have you had diarrhea or an increase in stool frequency? Yes.
+- Are you experiencing shortness of breath or difficulty breathing in a significant way? Yes.
+- Did your cheeks suddenly turn red? Yes.
+- Do you have any lesions, redness or problems on your skin that you believe are related to the condition you are consulting for? Yes.
+- What color is the rash? pink.
+- Is the rash swollen? (scale 0-10) 3.
+- Where is the affected region located? back of the neck, biceps(R), biceps(L), mouth, ankle(R).
+- How intense is the pain caused by the rash? (scale 0-10) 1.
+- Is the lesion (or are the lesions) larger than 1cm? Y.
+- How severe is the itching? (scale 0-10) 6.
+- Do you feel your heart is beating fast (racing), irregularly (missing a beat) or do you feel palpitations? Yes.
+Relevant history and risk factors:
+- Did you eat dark-fleshed fish (such as tuna) or Swiss cheese before the reaction occurred? Yes.",Scombroid food poisoning (0.15); Anaphylaxis (0.10); Atrial fibrillation (0.10); PSVT (0.09); Acute pulmonary edema (0.09),,[One answer's ranked list (probabilities)] Scombroid food poisoning (0.39); Anaphylaxis (0.28); Bronchospasm / acute asthma exacerbation (0.17); Influenza (0.11); Acute laryngitis (0.06),,,[Top answers of 32 repeated calls (counts)] Anaphylaxis (32),,,[Top answers of 32 repeated calls (counts)] Anaphylaxis (22); Scombroid food poisoning (9); Acute laryngitis (1),,,[One answer's ranked list (probabilities)] Anaphylaxis (0.85); Scombroid food poisoning (0.10); Panic attack (0.03); Acute COPD exacerbation / infection (0.01); Bronchospasm / acute asthma exacerbation (0.01),,,
+A08,"A 29-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Did you previously, or do you currently, have any weakness/paralysis in one or more of your limbs or in your face? Yes.
+- Do you feel weakness in both arms and/or both legs? Yes.
+- Have you recently had numbness, loss of sensation or tingling, in both arms and legs and around your mouth? Yes.
+Relevant history and risk factors:
+- Have you recently had a viral infection? Yes.",Guillain-Barré syndrome (0.65); Myasthenia gravis (0.35),,[Top answers of 32 repeated calls (counts)] Guillain-Barré syndrome (28); Myasthenia gravis (1); Acute COPD exacerbation / infection (1); [no usable answer] (2),,,[Top answers of 32 repeated calls (counts)] Guillain-Barré syndrome (32),,,[One answer's ranked list (probabilities)] Guillain-Barré syndrome (0.38); Influenza (0.29); Pneumonia (0.19); Acute pulmonary edema (0.10); Pulmonary embolism (0.05),,,[One answer's ranked list (probabilities)] Guillain-Barré syndrome (0.85); Influenza (0.10); HIV (initial infection) (0.03); Pneumonia (0.01); Acute pulmonary edema (0.01),,,
+A09,"A 37-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Do you have a fever (either felt or measured with a thermometer)? Yes.
+- Have you been coughing up blood? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: sensitive, burning.
+- Do you feel pain somewhere? tonsil(R), tonsil(L), palate, pharynx, under the jaw.
+- How intense is the pain? (scale 0-10) 3.
+- How precisely is the pain located? (scale 0-10) 10.
+- How fast did the pain appear? (scale 0-10) 0.
+- Do you have nasal congestion or a clear runny nose? Yes.
+- Do you have a cough? Yes.
+Relevant history and risk factors:
+- Have you been in contact with a person with similar symptoms in the past 2 weeks? Yes.
+- Do you live with 4 or more people? Yes.
+- Do you attend or work in a daycare? Yes.",Viral pharyngitis (0.16); URTI (0.15); Tuberculosis (0.14); Bronchitis (0.13); Acute laryngitis (0.10),,[One answer's ranked list (probabilities)] Pneumonia (0.50); Acute laryngitis (0.30); Acute rhinosinusitis (0.10); Influenza (0.05); Bronchitis (0.05),,,[Top answers of 32 repeated calls (counts)] Influenza (32),,,[One answer's ranked list (probabilities)] Influenza (0.45); Pneumonia (0.25); Viral pharyngitis (0.15); Acute rhinosinusitis (0.10); Bronchitis (0.05),,,[Top answers of 32 repeated calls (counts)] Pneumonia (15); Influenza (6); Acute otitis media (1); Bronchitis (1); [no usable answer] (9),,,
+A10,"A 49-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Are you experiencing shortness of breath or difficulty breathing in a significant way? Yes.
+- Do you have swollen or painful lymph nodes? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: sensitive, sharp.
+- Do you feel pain somewhere? finger (ring finger)(R), finger (ring finger)(L), finger (little finger)(L), finger (middle)(R), shoulder(R).
+- How intense is the pain? (scale 0-10) 6.
+- How precisely is the pain located? (scale 0-10) 2.
+- How fast did the pain appear? (scale 0-10) 4.
+- Is the rash swollen? (scale 0-10) 0.
+- How intense is the pain caused by the rash? (scale 0-10) 0.
+- How severe is the itching? (scale 0-10) 0.
+- Have you had any vaginal discharge? Yes.
+Relevant history and risk factors:
+- Are you significantly overweight compared to people of the same height as you? Yes.
+- Do you work in agriculture? Yes.",Possible NSTEMI / STEMI (0.27); Sarcoidosis (0.26); Pulmonary embolism (0.24); Anemia (0.15); SLE (0.08),,[One answer's ranked list (probabilities)] Pulmonary embolism (0.40); Pneumonia (0.30); Bronchospasm / acute asthma exacerbation (0.15); GERD (0.10); Acute rhinosinusitis (0.05),,,[Top answers of 32 repeated calls (counts)] Pulmonary embolism (22); Pneumonia (10),,,[One answer's ranked list (probabilities)] Pulmonary embolism (0.45); Acute COPD exacerbation / infection (0.25); Pneumonia (0.15); Unstable angina (0.10); Influenza (0.05),,,[Top answers of 32 repeated calls (counts)] Pneumonia (10); Acute pulmonary edema (8); Pulmonary embolism (7); Acute COPD exacerbation / infection (4); Bronchitis (2); [no usable answer] (1),,,
+A11,"A 52-year-old male presents for evaluation.
+Symptoms (patient answers):
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Have you had significantly increased sweating? Yes.
+- Characterize your pain: sharp.
+- Do you feel pain somewhere? lower chest, side of the chest(R), side of the chest(L), flank(R), belly.
+- How intense is the pain? (scale 0-10) 3.
+- How precisely is the pain located? (scale 0-10) 10.
+- How fast did the pain appear? (scale 0-10) 8.
+- Are you experiencing shortness of breath or difficulty breathing in a significant way? Yes.
+- Do you feel lightheaded and dizzy or do you feel like you are about to faint? Yes.
+- Do you feel like you are dying or were you afraid that you were about do die? Yes.
+- Do you feel your heart is beating fast (racing), irregularly (missing a beat) or do you feel palpitations? Yes.
+- Do you feel like you are detached from your own body or your surroundings? Yes.
+Relevant history and risk factors:
+- Do you feel anxious? Yes.
+- Do you have asthma or have you ever had to use a bronchodilator in the past? Yes.",Panic attack (0.09); PSVT (0.08); Possible NSTEMI / STEMI (0.07); Spontaneous pneumothorax (0.06); Pericarditis (0.06),,[Top answers of 32 repeated calls (counts)] Panic attack (28); Acute pulmonary edema (4),,,[Top answers of 32 repeated calls (counts)] Panic attack (32),,,[One answer's ranked list (probabilities)] Panic attack (0.26); Acute pulmonary edema (0.23); Bronchospasm / acute asthma exacerbation (0.19); Pulmonary embolism (0.16); GERD (0.16),,,[One answer's ranked list (probabilities)] Panic attack (0.65); Acute pulmonary edema (0.20); Pulmonary embolism (0.10); Bronchospasm / acute asthma exacerbation (0.03); Possible NSTEMI / STEMI (0.02),,,
+A12,"A 72-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Are you experiencing shortness of breath or difficulty breathing in a significant way? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: shooting, violent, nauseating.
+- Do you feel pain somewhere? lower chest, flank(R), upper chest, belly, epigastric.
+- How intense is the pain? (scale 0-10) 6.
+- Does the pain radiate to another location? thoracic spine, scapula(R), scapula(L).
+- How precisely is the pain located? (scale 0-10) 6.
+- How fast did the pain appear? (scale 0-10) 8.
+- Are you feeling nauseous or do you feel like vomiting? Yes.
+- Have you vomited several times or have you made several efforts to vomit? Yes.
+Relevant history and risk factors:
+- Do you drink alcohol excessively or do you have an addiction to alcohol? Yes.",Boerhaave (0.16); Possible NSTEMI / STEMI (0.16); Anaphylaxis (0.11); Guillain-Barré syndrome (0.10); Atrial fibrillation (0.10),,[Top answers of 32 repeated calls (counts)] Acute pulmonary edema (15); Pulmonary embolism (11); Possible NSTEMI / STEMI (2); Acute laryngitis (1); [no usable answer] (3),,,[One answer's ranked list (probabilities)] Pulmonary embolism (0.45); Acute pulmonary edema (0.25); Possible NSTEMI / STEMI (0.15); Boerhaave (0.10); Unstable angina (0.05),,,[Top answers of 32 repeated calls (counts)] Pulmonary embolism (25); Possible NSTEMI / STEMI (7),,,[One answer's ranked list (probabilities)] Acute pulmonary edema (0.64); Acute COPD exacerbation / infection (0.18); Pulmonary embolism (0.09); Atrial fibrillation (0.05); Influenza (0.05),,,
+A13,"A 109-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Do you have diffuse (widespread) muscle pain? Yes.
+- Have you had significantly increased sweating? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: tedious, sensitive.
+- Do you feel pain somewhere? forehead, occiput, temple(R), temple(L).
+- How intense is the pain? (scale 0-10) 8.
+- How precisely is the pain located? (scale 0-10) 5.
+- How fast did the pain appear? (scale 0-10) 5.
+- Do you have a cough that produces colored or more abundant sputum than usual? Yes.
+- Do you have a fever (either felt or measured with a thermometer)? Yes.
+- Do you have a sore throat? Yes.
+- Do you have a cough? Yes.
+Relevant history and risk factors:
+- Do you live with 4 or more people? Yes.
+- Do you smoke cigarettes? Yes.
+- Are you exposed to secondhand cigarette smoke on a daily basis? Yes.",Pneumonia (0.19); Bronchitis (0.18); Influenza (0.17); URTI (0.16); HIV (initial infection) (0.11),,[One answer's ranked list (probabilities)] Pneumonia (0.33); Acute COPD exacerbation / infection (0.28); Influenza (0.17); Bronchitis (0.11); Acute rhinosinusitis (0.11),,,[One answer's ranked list (probabilities)] Pneumonia (0.45); Acute COPD exacerbation / infection (0.30); Influenza (0.15); Bronchitis (0.07); Acute rhinosinusitis (0.03),,,[Top answers of 32 repeated calls (counts)] Pneumonia (23); Influenza (3); Acute COPD exacerbation / infection (1); Bronchitis (1); [no usable answer] (4),,,[Top answers of 32 repeated calls (counts)] Pneumonia (32),,,
+A14,"A 68-year-old male presents for evaluation.
+Symptoms (patient answers):
+- Do you wheeze while inhaling or is your breathing noisy after coughing spells? Yes.
+- Did you vomit after coughing? Yes.
+- Do you have intense coughing fits? Yes.
+Relevant history and risk factors:
+- Do you have asthma or have you ever had to use a bronchodilator in the past? Yes.
+- Are your vaccinations up to date? Yes.",Whooping cough (0.54); Bronchitis (0.46),,[Top answers of 32 repeated calls (counts)] Bronchospasm / acute asthma exacerbation (32),,,[Top answers of 32 repeated calls (counts)] Bronchospasm / acute asthma exacerbation (28); Bronchitis (1); [no usable answer] (3),,,[One answer's ranked list (probabilities)] Bronchospasm / acute asthma exacerbation (0.45); Acute COPD exacerbation / infection (0.30); Bronchitis (0.15); Pneumonia (0.07); GERD (0.03),,,[One answer's ranked list (probabilities)] Bronchospasm / acute asthma exacerbation (0.80); Pneumonia (0.10); Acute laryngitis (0.05); Acute pulmonary edema (0.03); GERD (0.02),,,
+A15,"A 47-year-old female presents for evaluation.
+Symptoms (patient answers):
+- Do you feel your heart is beating fast (racing), irregularly (missing a beat) or do you feel palpitations? Yes.
+- Do you have pain somewhere, related to your reason for consulting? Yes.
+- Characterize your pain: shooting.
+- Do you feel pain somewhere? top of the head, forehead, temple(L).
+- How intense is the pain? (scale 0-10) 7.
+- How precisely is the pain located? (scale 0-10) 6.
+- How fast did the pain appear? (scale 0-10) 4.
+- Do you feel slightly dizzy or lightheaded? Yes.
+- Do you feel lightheaded and dizzy or do you feel like you are about to faint? Yes.
+Relevant history and risk factors:
+- Do you feel anxious? Yes.
+- Do you regularly drink coffee or tea? Yes.
+- Do you consume energy drinks regularly? Yes.
+- Do you regularly take stimulant drugs? Yes.
+- Have you recently taken decongestants or other substances that may have stimulant effects? Yes.",PSVT (0.22); Atrial fibrillation (0.17); Anemia (0.16); Panic attack (0.14); Cluster headache (0.11),,[Top answers of 32 repeated calls (counts)] Panic attack (26); Atrial fibrillation (4); [no usable answer] (2),,,[One answer's ranked list (probabilities)] Panic attack (0.45); Atrial fibrillation (0.25); Pulmonary embolism (0.15); Acute rhinosinusitis (0.10); GERD (0.05),,,[One answer's ranked list (probabilities)] Panic attack (0.65); PSVT (0.20); Atrial fibrillation (0.10); Anaphylaxis (0.03); Influenza (0.02),,,[Top answers of 32 repeated calls (counts)] Panic attack (32),,,

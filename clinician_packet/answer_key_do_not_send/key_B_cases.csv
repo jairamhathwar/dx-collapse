@@ -1,0 +1,16 @@
+case,case_id,pair 1 judge verdict,pair 2 judge verdict,pair 3 judge verdict,pair 4 judge verdict
+B01,PMC3350115,different,different,same,same
+B02,PMC6668532,same,different,different,same
+B03,PMC6521521,same,different,different,same
+B04,PMC10876917,different,same,same,different
+B05,PMC9092518,same,same,different,different
+B06,PMC7546059,same,different,different,same
+B07,PMC6443550,different,different,same,same
+B08,PMC3113998,different,same,different,same
+B09,PMC6984423,different,different,same,same
+B10,PMC8123563,same,same,different,different
+B11,PMC11509490,different,same,same,different
+B12,PMC6656673,same,different,different,same
+B13,PMC11467637,different,same,same,different
+B14,PMC6141727,different,same,same,different
+B15,PMC7294351,same,different,different,same

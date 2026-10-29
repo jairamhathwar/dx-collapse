@@ -1,0 +1,16 @@
+patient,case_id,true_pathology,stratum,readout A,readout B,readout C,readout D
+A01,ddx_test_106840,Chronic rhinosinusitis,other,base samples,base list,post-trained samples,post-trained list
+A02,ddx_test_73742,Acute COPD exacerbation / infection,both_have,post-trained list,base list,post-trained samples,base samples
+A03,ddx_test_62472,Epiglottitis,other,post-trained samples,base samples,post-trained list,base list
+A04,ddx_test_27966,Myocarditis,both_have,base list,base samples,post-trained list,post-trained samples
+A05,ddx_test_85320,Bronchitis,miss_list_has,post-trained list,post-trained samples,base samples,base list
+A06,ddx_test_42182,Croup,both_have,base samples,base list,post-trained samples,post-trained list
+A07,ddx_test_30348,Scombroid food poisoning,miss_list_has,base list,post-trained samples,base samples,post-trained list
+A08,ddx_test_112500,Guillain-Barré syndrome,both_have,base samples,post-trained samples,base list,post-trained list
+A09,ddx_test_24066,Viral pharyngitis,miss_list_has,base list,post-trained samples,post-trained list,base samples
+A10,ddx_test_105790,Sarcoidosis,other,base list,post-trained samples,post-trained list,base samples
+A11,ddx_test_63375,Panic attack,both_have,base samples,post-trained samples,base list,post-trained list
+A12,ddx_test_115116,Boerhaave,miss_list_has,base samples,post-trained list,post-trained samples,base list
+A13,ddx_test_3900,URTI,other,base list,post-trained list,base samples,post-trained samples
+A14,ddx_test_133287,Whooping cough,other,post-trained samples,base samples,post-trained list,base list
+A15,ddx_test_89375,PSVT,miss_list_has,base samples,base list,post-trained list,post-trained samples

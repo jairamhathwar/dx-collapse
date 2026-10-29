@@ -49,6 +49,7 @@ COMPARISONS = {
                ("big32_ddx", "qwen25-32b-base", "qwen25-32b-it"), ("ddx_olmo", "olmo3-base", "olmo3-instruct"),
                ("big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct")],
     "big72": [("big72_ddx", "qwen25-72b-base", "qwen25-72b-it"), ("@fewshot72_t07", "qwen25-72b-base", "qwen25-72b-it")],
+    "llama": [("@llama_ddx", "llama31-8b-base", "llama31-8b-it"), ("@fewshotll_t07", "llama31-8b-base", "llama31-8b-it")],
     "medgemma": [("@medgemma_ddx", "medgemma-4b-pt", "medgemma-4b-it"), ("@fewshotmg_t07", "medgemma-4b-pt", "medgemma-4b-it")],
     "single": [("@single_t07", "qwen3-8b-base", "qwen3-8b"), ("@single_t07", "qwen25-7b-base", "qwen25-7b-it")],
     "freelen": [("@freelen_t07", a, b) for a, b in [("qwen3-8b-base", "qwen3-8b"), ("qwen25-7b-base", "qwen25-7b-it"),
