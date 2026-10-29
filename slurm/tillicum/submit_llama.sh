@@ -309,6 +309,18 @@ case "${1:-}" in
       tag=${spec%%:*}; model=${spec#*:}
       sbatch -p gpu-h200 --time=${C32:-01:15:00} --mem=96G --array=0-3 --job-name=m-closed-$tag $S --model $model --out runs/medcase_closed/$tag/samples.s{shard}.jsonl $CS --shard -1 --num-shards 4 $STD
     done ;;
+  single-smoke)  # single-answer prompt (one diagnosis per call), the two 7-8B Qwen pairs: 8 cases x 4 samples
+    SG="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --prompt-variant single --k 4 --shard 0 --num-shards 1 --limit 8"
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B qwen25-7b-base:Qwen/Qwen2.5-7B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-sg-$tag $S --model $model --out runs/single_smoke/$tag.jsonl $SG $STD
+    done ;;
+  single)  # single-answer prompt, zero-shot, T=0.7, the two 7-8B Qwen pairs
+    SG="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --prompt-variant single --k 32"
+    for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B qwen25-7b-base:Qwen/Qwen2.5-7B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct; do
+      tag=${spec%%:*}; model=${spec#*:}
+      sbatch -p gpu-h200 --time=${ST:-00:40:00} --array=0-1 --job-name=m-single-$tag $S --model $model --out runs/single_t07/$tag/samples.s{shard}.jsonl $SG --shard -1 --num-shards 2 $STD
+    done ;;
   freelen)  # free-length DDXPlus lists, zero-shot, T=0.7, the three Qwen pairs
     FL="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --prompt-variant freelen --k 32"
     for spec in qwen3-8b-base:Qwen/Qwen3-8B-Base qwen3-8b:Qwen/Qwen3-8B qwen25-7b-base:Qwen/Qwen2.5-7B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct; do

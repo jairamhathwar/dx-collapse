@@ -87,6 +87,16 @@ DDX_SEED_SUFFIX = (
     "likely first), and choose the first condition at which the running total reaches u. "
     "After the JSON array, write one final line in exactly this format:\nPICK: <condition name>"
 )
+# Single answer (review control): one diagnosis per call, the format self-consistency and semantic entropy assume.
+# Same JSON shape (one item) so parsing, validity and the stated probability are handled as for the lists.
+DDX_SINGLE_INSTRUCTIONS = (
+    "Based on the patient's answers above, what is the single most likely diagnosis?\n"
+    "Choose ONLY from this list of possible conditions:\n{conditions}\n\n"
+    "Give exactly one condition, using its name exactly as written in the list, with your probability that it is "
+    "the correct diagnosis.\n"
+    "End your answer with a JSON array containing exactly one item, in exactly this format:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}]'
+)
 # Free-length list: as many conditions as the model finds plausible (does a fixed five-item list hide narrowing?)
 DDX_FREELEN_INSTRUCTIONS = (
     "Based on the patient's answers above, give your differential diagnosis.\n"
@@ -175,6 +185,9 @@ def build_ddx_messages(case, n_dx, conditions, variant="default", u=None):
     if variant == "freelen":
         return [{"role": "system", "content": DDX_SYSTEM},
                 {"role": "user", "content": case["vignette"] + "\n\n" + DDX_FREELEN_INSTRUCTIONS.format(conditions=cond)}]
+    if variant == "single":
+        return [{"role": "system", "content": DDX_SYSTEM},
+                {"role": "user", "content": case["vignette"] + "\n\n" + DDX_SINGLE_INSTRUCTIONS.format(conditions=cond)}]
     if variant == "mustnotmiss":
         return [{"role": "system", "content": DDX_SYSTEM},
                 {"role": "user", "content": case["vignette"] + "\n\n" + DDX_MNM_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
@@ -229,7 +242,7 @@ def main():
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
-    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded", "freelen"], default="default",
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded", "freelen", "single"], default="default",
                     help="ddxplus prompt-robustness variant")
     ap.add_argument("--candidates", help="casereport: JSONL {case_id, candidates: [...]} for the closed-set prompt")
     ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
