@@ -25,11 +25,9 @@ PAIRS = [("Qwen3-8B", "pair_q3", "qwen3-8b-base", "qwen3-8b"), ("Qwen2.5-7B", "p
          ("Qwen2.5-32B", "big32_ddx", "qwen25-32b-base", "qwen25-32b-it"), ("OLMo 3 7B", "ddx_olmo", "olmo3-base", "olmo3-instruct"),
          ("OLMo 3.1 32B", "big32_ddx", "olmo31-32b-base", "olmo31-32b-instruct"), ("Mistral-7B", None, "mistral7b-base", "mistral7b-it"),
          ("Qwen2.5-72B", "big72_ddx", "qwen25-72b-base", "qwen25-72b-it"),
-         ("MedGemma-4B", "@medgemma_ddx", "medgemma-4b-pt", "medgemma-4b-it"),
-         ("Llama-3.1-8B", "@llama_ddx", "llama31-8b-base", "llama31-8b-it")]
+         ("MedGemma-4B", "@medgemma_ddx", "medgemma-4b-pt", "medgemma-4b-it")]
 FS_DIR = {"qwen25-72b-base": "fewshot72_t07", "qwen25-72b-it": "fewshot72_t07",  # worked-example runs without a reference-free run
-          "medgemma-4b-pt": "fewshotmg_t07", "medgemma-4b-it": "fewshotmg_t07",
-          "llama31-8b-base": "fewshotll_t07", "llama31-8b-it": "fewshotll_t07"}
+          "medgemma-4b-pt": "fewshotmg_t07", "medgemma-4b-it": "fewshotmg_t07"}
 SETTINGS = ["zs", "fs", "rf"]
 
 
