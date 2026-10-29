@@ -361,6 +361,21 @@ case "${1:-}" in
     sbatch -p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --export=ALL,VLLM_ALLREDUCE_USE_FLASHINFER=0,VLLM_USE_FLASHINFER_SAMPLER=0 --time=00:40:00 --job-name=smoke-72b-it $S --model Qwen/Qwen2.5-72B-Instruct --out runs/big72_smoke/it.jsonl $SM $STD
     sbatch -p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --export=ALL,VLLM_ALLREDUCE_USE_FLASHINFER=0,VLLM_USE_FLASHINFER_SAMPLER=0 --time=00:40:00 --job-name=smoke-72b-base $S --model Qwen/Qwen2.5-72B --out runs/big72_smoke/base.jsonl $SM $STD
     sbatch -p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --export=ALL,VLLM_ALLREDUCE_USE_FLASHINFER=0,VLLM_USE_FLASHINFER_SAMPLER=0 --time=00:40:00 --job-name=smoke-72b-basefs $S --model Qwen/Qwen2.5-72B --out runs/big72_smoke/base_fs.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144 ;;
+  medgemma-smoke)  # MedGemma-4B pt/it (medical-domain pair), DDXPlus T=0.7: zero-shot both, worked examples for the base; 8 cases x 4 samples
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --shard 0 --num-shards 1 --limit 8 --k 4"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    MGT=${MGT:+--chat-template $MGT}  # the pt checkpoint uses the it chat template if it ships none
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mg-it $S --model google/medgemma-4b-it --out runs/medgemma_smoke/it.jsonl $SM $STD
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mg-pt $S --model google/medgemma-4b-pt --out runs/medgemma_smoke/pt.jsonl $SM $STD $MGT
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-mg-ptfs $S --model google/medgemma-4b-pt --out runs/medgemma_smoke/pt_fs.jsonl $SM $FS --completion --max-tokens 512 --max-model-len 6144 ;;
+  medgemma)  # MedGemma-4B pt/it, DDXPlus T=0.7, 32 samples: zero-shot (both), worked examples (both)
+    D2="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 2"
+    FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"
+    MGT=${MGT:+--chat-template $MGT}
+    sbatch -p gpu-h200 --time=${MT:-00:40:00} --array=0-1 --job-name=m-mg-it $S --model google/medgemma-4b-it --out runs/medgemma_ddx/medgemma-4b-it/samples.s{shard}.jsonl $D2 $STD
+    sbatch -p gpu-h200 --time=${MT:-00:40:00} --array=0-1 --job-name=m-mg-pt $S --model google/medgemma-4b-pt --out runs/medgemma_ddx/medgemma-4b-pt/samples.s{shard}.jsonl $D2 $STD $MGT
+    sbatch -p gpu-h200 --time=${MT:-00:40:00} --array=0-1 --job-name=m-mgfs-it $S --model google/medgemma-4b-it --out runs/fewshotmg_t07/medgemma-4b-it/samples.s{shard}.jsonl $D2 $FS $STD
+    sbatch -p gpu-h200 --time=${MT:-00:40:00} --array=0-1 --job-name=m-mgfs-pt $S --model google/medgemma-4b-pt --out runs/fewshotmg_t07/medgemma-4b-pt/samples.s{shard}.jsonl $D2 $FS --completion --max-tokens 512 --max-model-len 6144 ;;
   big72)  # Qwen2.5-72B pair, DDXPlus T=0.7, 32 samples: zero-shot (both), worked examples (both), two H200s per shard
     D4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4 --tp 2 --enforce-eager"
     FS="--prompt-variant fewshot --fewshot-train data/ddxplus/cases_train.jsonl"

@@ -7,7 +7,7 @@ import sys
 
 R = json.load(open(sys.argv[1]))
 NAMES = {"Qwen3-8B": "Qwen3-8B", "Qwen2.5-7B": "Qwen2.5-7B", "Qwen2.5-32B": "Qwen2.5-32B", "OLMo 3 7B": "OLMo~3 7B",
-         "OLMo 3.1 32B": "OLMo~3.1 32B", "Mistral-7B": "Mistral-7B", "Qwen2.5-72B": "Qwen2.5-72B$^{*}$"}
+         "OLMo 3.1 32B": "OLMo~3.1 32B", "Mistral-7B": "Mistral-7B", "Qwen2.5-72B": "Qwen2.5-72B$^{*}$", "MedGemma-4B": "MedGemma-4B$^{*}$"}
 LAB = {"zs": "zero-shot", "fs": "reference examples", "rf": "another model's examples"}
 
 
@@ -21,7 +21,8 @@ for k, nm in NAMES.items():
     r = R["pairs"][k]
     cells = []
     for st in ["zs", "fs", "rf", "best"]:
-        cells += [cell(r[st]["raw"]), cell(r[st]["corrected"])] if st in r else ["---", "---"]
+        skip = st == "zs" and k == "MedGemma-4B"  # its pretrained model gives 90% invalid zero-shot answers
+        cells += [cell(r[st]["raw"]), cell(r[st]["corrected"])] if st in r and not skip else ["---", "---"]
     bs = r["best_setting"]
     best = " / ".join(LAB[bs[t]].split()[0] for t in bs)
     rows.append(f"{nm} & " + " & ".join(cells) + f" & {best} \\\\")
@@ -38,6 +39,6 @@ Pair & raw & corrected & raw & corrected & raw & corrected & raw & corrected & (
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\caption{Chance-corrected pass@32 (DDXPlus, $T{=}0.7$, 980 cases): post-trained minus base, in points. \emph{Raw}: pass@32; \emph{corrected}: pass@32 minus the pass@32 reached when each case's samples are scored against the true pathology of a random case with a different pathology (mean of 20 permutations), the part that does not depend on the patient (base models 0.05--0.19, post-trained 0.01--0.04). \emph{Each at its best prompt}: each model at the prompt where its own pass@32 is highest. Top answers and validity as in every other table. $^{\dagger}$: condition-clustered 95\% interval includes zero. Mistral's base model does not answer the zero-shot prompt (\S\ref{sec:mistral}). $^{*}$: added after the headline tests were fixed; run zero-shot and with reference examples only (\S\ref{sec:big32}).}
+\caption{Chance-corrected pass@32 (DDXPlus, $T{=}0.7$, 980 cases): post-trained minus base, in points. \emph{Raw}: pass@32; \emph{corrected}: pass@32 minus the pass@32 reached when each case's samples are scored against the true pathology of a random case with a different pathology (mean of 20 permutations), the part that does not depend on the patient (base models 0.05--0.19, post-trained 0.01--0.04). \emph{Each at its best prompt}: each model at the prompt where its own pass@32 is highest. Top answers and validity as in every other table. $^{\dagger}$: condition-clustered 95\% interval includes zero. Mistral's and MedGemma's base models do not answer the zero-shot prompt (\S\ref{sec:mistral},~\ref{sec:medgemma}). $^{*}$: added after the headline tests were fixed; run zero-shot and with reference examples only (\S\ref{sec:big32}).}
 \label{tab:chance}
 \end{table}""")
