@@ -225,6 +225,7 @@ def main():
     ap.add_argument("--n-dx", type=int, default=5)
     ap.add_argument("--temperature", type=float, default=0.7)
     ap.add_argument("--top-p", type=float, default=0.95)
+    ap.add_argument("--min-p", type=float, default=0.0, help="min-p sampling threshold (0 = off)")
     ap.add_argument("--max-tokens", type=int, default=1024)
     ap.add_argument("--thinking", action="store_true", help="enable_thinking for Qwen3-style templates")
     ap.add_argument("--limit", type=int)
@@ -286,11 +287,11 @@ def main():
     # (no-op for instruct models, which already stop on it).
     vocab = llm.get_tokenizer().get_vocab()
     stop_ids = [vocab[t] for t in ("<|im_end|>", "<|eot_id|>", "<end_of_turn>") if t in vocab]
-    sp = SamplingParams(n=a.k, temperature=a.temperature, top_p=a.top_p,
+    sp = SamplingParams(n=a.k, temperature=a.temperature, top_p=a.top_p, min_p=a.min_p,
                         max_tokens=a.max_tokens, seed=a.seed, stop_token_ids=stop_ids,
                         stop=["\n###", "\n\n"] if a.completion else None)
     # seeded: distinct per-request seeds so the k calls of a case are independent draws
-    sp1 = SamplingParams(n=1, temperature=a.temperature, top_p=a.top_p, max_tokens=a.max_tokens,
+    sp1 = SamplingParams(n=1, temperature=a.temperature, top_p=a.top_p, min_p=a.min_p, max_tokens=a.max_tokens,
                          stop_token_ids=stop_ids)
     chat_kwargs = {"chat_template_kwargs": {"enable_thinking": a.thinking}}
     if a.chat_template:
@@ -339,7 +340,7 @@ def main():
                         m = re.findall(r"PICK:\s*\**\s*([^\n*]+)", smp["text"])
                         smp["u"], smp["pick"] = u, (m[-1].strip() if m else None)
                 fh.write(json.dumps({"case_id": c["case_id"], "model": a.model, "k": a.k,
-                                     "temperature": a.temperature, "thinking": a.thinking,
+                                     "temperature": a.temperature, "min_p": a.min_p, "thinking": a.thinking,
                                      "samples": samples}) + "\n")
         print(f"wrote {b + len(batch)}/{len(todo)}", flush=True)
 

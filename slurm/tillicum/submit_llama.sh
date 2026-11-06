@@ -137,6 +137,22 @@ case "${1:-}" in
       run $d qwen3-8b Qwen/Qwen3-8B $DDX $STD --temperature $t --top-p 1.0
       run $d qwen25-7b-it Qwen/Qwen2.5-7B-Instruct $DDX $STD --temperature $t --top-p 1.0
     done ;;
+  minp)  # decoding baseline: min-p 0.1 (top-p 1) at T=1.0 and 1.5 for the collapsed post-trained models, zero-shot
+    DDX4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4"
+    for t in 1.0 1.5; do
+      d=minp10_t${t/./}; MP="--temperature $t --top-p 1.0 --min-p 0.1"
+      for spec in qwen3-8b:Qwen/Qwen3-8B qwen25-7b-it:Qwen/Qwen2.5-7B-Instruct olmo3-instruct:allenai/Olmo-3-7B-Instruct mistral7b-it:mistralai/Mistral-7B-Instruct-v0.3; do
+        tag=${spec%%:*}; model=${spec#*:}  # short time limit caps the cost of a hung job
+        j=$(sbatch --parsable -p gpu-h200 --time=00:45:00 --array=0-1 --job-name=m-$d-$tag $S --model $model --out runs/$d/$tag/samples.s{shard}.jsonl $DDX $STD $MP)
+        echo "$d/$tag  $model  job=$j"
+      done
+      run4 $d qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 01:00:00 $DDX4 $STD $MP
+      run4 $d olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 01:00:00 $DDX4 $STD $MP
+    done ;;
+  minp-smoke)  # 8 cases x 4 samples at T=1.5, min-p 0.1
+    SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-minp-q3 $S --model Qwen/Qwen3-8B --out runs/minp_smoke/qwen3-8b.jsonl $SM $STD --temperature 1.5 --top-p 1.0 --min-p 0.1
+    sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-minp-o3 $S --model allenai/Olmo-3-7B-Instruct --out runs/minp_smoke/olmo3-instruct.jsonl $SM $STD --temperature 1.5 --top-p 1.0 --min-p 0.1 ;;
   matcht-smoke)
     SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
     for t in 1.3 1.6; do
