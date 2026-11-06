@@ -149,6 +149,10 @@ case "${1:-}" in
       run4 $d qwen25-32b-it Qwen/Qwen2.5-32B-Instruct 01:00:00 $DDX4 $STD $MP
       run4 $d olmo31-32b-instruct allenai/Olmo-3.1-32B-Instruct 01:00:00 $DDX4 $STD $MP
     done ;;
+  minp72)  # min-p 0.1 at T=1.5 for Qwen2.5-72B-Instruct, two H200s per shard (40-min limit caps the cost)
+    D4="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 32 --shard -1 --num-shards 4 --tp 2 --enforce-eager"
+    G="-p gpu-h200 --nodes=1 --gpus=2 --cpus-per-task=4 --mem=160G --export=ALL,VLLM_ALLREDUCE_USE_FLASHINFER=0,VLLM_USE_FLASHINFER_SAMPLER=0 --array=0-3"
+    sbatch $G --time=00:40:00 --job-name=m-minp10_t15-qwen25-72b-it $S --model Qwen/Qwen2.5-72B-Instruct --out runs/minp10_t15/qwen25-72b-it/samples.s{shard}.jsonl $D4 $STD --temperature 1.5 --top-p 1.0 --min-p 0.1 ;;
   minp-smoke)  # 8 cases x 4 samples at T=1.5, min-p 0.1
     SM="--task ddxplus --conditions data/ddxplus/conditions.json --cases data/ddxplus/cases_test.jsonl --k 4 --shard 0 --num-shards 1 --limit 8"
     sbatch -p gpu-h200 --time=00:30:00 --job-name=smoke-minp-q3 $S --model Qwen/Qwen3-8B --out runs/minp_smoke/qwen3-8b.jsonl $SM $STD --temperature 1.5 --top-p 1.0 --min-p 0.1

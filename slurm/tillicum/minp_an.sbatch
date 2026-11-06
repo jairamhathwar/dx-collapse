@@ -23,4 +23,5 @@ python minp_an.py $R $D $A/minp.json \
   o7/base-T0.7:meas_ddx/olmo3-base o7/T0.7:meas_ddx/olmo3-instruct o7/minp-T1.0:minp10_t10/olmo3-instruct o7/minp-T1.5:minp10_t15/olmo3-instruct \
   m7/base-fewshot:fewshot_t07/mistral7b-base m7/T0.7:meas_ddx/mistral7b-it m7/minp-T1.0:minp10_t10/mistral7b-it m7/minp-T1.5:minp10_t15/mistral7b-it \
   q32/base-T0.7:big32_ddx/qwen25-32b-base q32/T0.7:big32_ddx/qwen25-32b-it q32/minp-T1.0:minp10_t10/qwen25-32b-it q32/minp-T1.5:minp10_t15/qwen25-32b-it \
-  o32/base-T0.7:big32_ddx/olmo31-32b-base o32/T0.7:big32_ddx/olmo31-32b-instruct o32/minp-T1.0:minp10_t10/olmo31-32b-instruct o32/minp-T1.5:minp10_t15/olmo31-32b-instruct
+  o32/base-T0.7:big32_ddx/olmo31-32b-base o32/T0.7:big32_ddx/olmo31-32b-instruct o32/minp-T1.0:minp10_t10/olmo31-32b-instruct o32/minp-T1.5:minp10_t15/olmo31-32b-instruct \
+  q72/base-T0.7:big72_ddx/qwen25-72b-base q72/T0.7:big72_ddx/qwen25-72b-it q72/minp-T1.5:minp10_t15/qwen25-72b-it
