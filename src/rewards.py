@@ -183,9 +183,59 @@ def group_match_rewards(texts, case_ids, gt_differentials, allowed):
     return out, {len(v) for v in groups.values()}
 
 
+# --- Witness-style group reward toward a target distribution (Arabi et al. 2026's per-rollout form) ---
+# For a group of n samples of one case, sample i with top-1 answer a gets
+#     r_i = 2 * (q(a) - c_{-i}(a) / (n - 1)),
+# where q is the target distribution and c_{-i}(a) counts the OTHER samples answering a: positive while a is
+# under-produced relative to q, negative once over-produced (in expectation the negative MMD^2 gradient with an
+# exact-match kernel). Invalid / off-list answers get 0. Target 'self_target' is the frozen starting model's own
+# mean stated list for the case (no reference labels); 'gt_differential' is the reference (Arabi-style).
+
+def witness_rewards(texts, case_ids, targets, allowed):
+    tops = []
+    for t in texts:
+        dx = canonical_dx(t, allowed)
+        tops.append(dx[0][0] if dx else None)
+    groups = {}
+    for i, cid in enumerate(case_ids):
+        groups.setdefault(cid, []).append(i)
+    out = [0.0] * len(texts)
+    for idx in groups.values():
+        n = len(idx)
+        q = dict(targets[idx[0]])
+        z = sum(q.values()) or 1.0
+        counts = {}
+        for i in idx:
+            if tops[i] is not None:
+                counts[tops[i]] = counts.get(tops[i], 0) + 1
+        for i in idx:
+            a = tops[i]
+            if a is None or n < 2:
+                continue
+            out[i] = 2.0 * (q.get(a, 0.0) / z - (counts[a] - 1) / (n - 1))
+    return out, {len(v) for v in groups.values()}
+
+
 def make_trl_reward(name, allowed):
     """Wrap a reward for TRL: f(prompts, completions, **columns) -> list[float]."""
     allowed = Matcher(allowed)
+    if name in ("self_witness", "ref_witness"):
+        def witness_reward(prompts=None, completions=None, case_id=None, gt_differential=None, self_target=None,
+                           log_metric=None, **_):
+            texts = [c[-1]["content"] if isinstance(c, list) else c for c in completions]
+            col = self_target if name == "self_witness" else gt_differential
+            tg = [json.loads(g) if isinstance(g, str) else g for g in col]
+            if name == "self_witness" and not any(tg):
+                raise ValueError("self_witness needs --self-targets (empty self_target column)")
+            out, sizes = witness_rewards(texts, case_id, tg, allowed)
+            if log_metric is not None:
+                try:
+                    log_metric(f"{name}/min_group_size", float(min(sizes)))
+                except Exception as e:
+                    print(f"warn: log_metric failed ({e!r})")
+            return out
+        witness_reward.__name__ = f"r_{name}"
+        return witness_reward
     if name == "group_match":
         def group_reward(prompts=None, completions=None, case_id=None, gt_differential=None, log_metric=None, **_):
             texts = [c[-1]["content"] if isinstance(c, list) else c for c in completions]

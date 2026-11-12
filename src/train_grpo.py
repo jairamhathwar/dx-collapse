@@ -12,6 +12,8 @@ Reward recipes (--rewards, comma-separated, equal weights unless --weights given
     acc                 standard RLVR baseline (top-1 correctness)
     acc,brier           + proper scoring rule over the stated differential (calibration)
     acc,brier,overlap   + overlap with the ground-truth differential (coverage)
+    acc,self_witness    + group reward toward the starting model's own stated list (--self-targets; no labels)
+    acc,ref_witness     + the same group reward toward the reference differential
 A 'format' reward is always added. Each reward is logged separately by TRL.
 On preemption, resubmitting the same command resumes from the last checkpoint in --out.
 When training finishes, the LoRA adapter is merged and saved to --out/merged for evaluation.
@@ -25,7 +27,7 @@ from rewards import make_trl_reward
 from sample_diagnoses import DDX_SYSTEM, build_ddx_prompt
 
 
-def load_dataset_rows(path, conditions, tokenizer, n_dx, limit=None, seed=0):
+def load_dataset_rows(path, conditions, tokenizer, n_dx, limit=None, seed=0, self_targets=None):
     rows = [json.loads(l) for l in open(path)]
     random.Random(seed).shuffle(rows)
     if limit:
@@ -38,7 +40,8 @@ def load_dataset_rows(path, conditions, tokenizer, n_dx, limit=None, seed=0):
         prompt = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True,
                                                enable_thinking=False)
         out.append({"prompt": prompt, "gold": c["gold"], "case_id": c["case_id"],
-                    "gt_differential": json.dumps(c["gt_differential"])})
+                    "gt_differential": json.dumps(c["gt_differential"]),
+                    "self_target": json.dumps((self_targets or {}).get(c["case_id"], {}))})
     return out
 
 
@@ -63,6 +66,8 @@ def main():
     ap.add_argument("--save-steps", type=int, default=25)
     ap.add_argument("--vllm-mem", type=float, default=0.35)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--self-targets", help="JSON {case_id: {condition: p}}: the starting model's own mean stated list "
+                    "(target for the self_witness reward; make_self_targets.py)")
     ap.add_argument("--dry-run", action="store_true", help="3 steps on 32 prompts, no merge")
     ap.add_argument("--cpu-smoke", action="store_true",
                     help="CPU-only end-to-end check (tiny model, no vLLM, 2 steps, incl. save/resume/merge)")
@@ -80,7 +85,8 @@ def main():
     conditions = json.load(open(a.conditions))
     tok = AutoTokenizer.from_pretrained(a.model)
     limit = 4 if a.cpu_smoke else 32 if a.dry_run else None
-    rows = load_dataset_rows(a.train, conditions, tok, a.n_dx, limit=limit, seed=a.seed)
+    st = json.load(open(a.self_targets)) if a.self_targets else None
+    rows = load_dataset_rows(a.train, conditions, tok, a.n_dx, limit=limit, seed=a.seed, self_targets=st)
     ds = Dataset.from_list(rows)
 
     names = ["format"] + [r for r in a.rewards.split(",") if r != "format"]
