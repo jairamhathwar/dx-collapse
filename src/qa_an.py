@@ -10,7 +10,8 @@ answer is non-empty; invalid samples count as wrong):
   auroc_agree    AUROC of agreement (share of the other valid samples with the same key) for the single-call answer
                  being correct; auroc_stated: the same for its stated probability (missing probability = 0)
   silent         share of wrong single-call answers that every other valid sample repeats
-Reported for all questions and for the single- and multi-answer subsets. No intervals.
+Reported with strict (exact-match) and lenient grading (qa_norm), for all questions and for the single- and
+multi-answer subsets. No intervals.
 """
 import json
 import sys
@@ -21,18 +22,18 @@ from parsing import parse_dx
 from qa_norm import Grader
 
 
-def score(cases, path):
+def score(cases, path, lenient=True):
     acc = {s: {"m": Counter(), "n": 0, "ns": 0, "nw": 0, "ca": [], "cs": [], "ok": []} for s in ("all", "single", "multi")}
     for rec in map(json.loads, open(path)):
         c = cases.get(rec["case_id"])
         if c is None:
             continue
-        g = Grader(c)
+        g = Grader(c, lenient=lenient)
+        dxs = [parse_dx(s["text"]) for s in rec["samples"]]
+        tk = g.keys([dx[0]["diagnosis"] if dx else None for dx in dxs])  # top answers, merged within the question
         parsed = []
-        for s in rec["samples"]:
-            dx = parse_dx(s["text"])
+        for dx, top in zip(dxs, tk):
             keys = [g.key(d["diagnosis"]) for d in dx]
-            top = keys[0] if keys else None
             p = dx[0]["probability"] if dx else None
             parsed.append((top, keys, p if p is not None and 0 <= p <= 1 else 0.0))
         k = len(parsed)
@@ -80,9 +81,10 @@ def main():
     report = {}
     for spec in sys.argv[3:]:
         label, path = spec.split(":", 1)
-        report[label] = score(cases, path)
-        for sub, r in report[label].items():
-            print(label, sub, json.dumps({x: round(v, 3) if isinstance(v, float) else v for x, v in r.items()}), flush=True)
+        for mode in ("strict", "lenient"):
+            report[f"{label}/{mode}"] = score(cases, path, lenient=mode == "lenient")
+            for sub, r in report[f"{label}/{mode}"].items():
+                print(label, mode, sub, json.dumps({x: round(v, 3) if isinstance(v, float) else v for x, v in r.items()}), flush=True)
     json.dump(report, open(sys.argv[2], "w"), indent=1)
 
 
