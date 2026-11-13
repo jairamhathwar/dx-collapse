@@ -1,6 +1,7 @@
 """Self-targets for the self_witness GRPO reward: the starting model's own mean stated list per training case.
 
     python make_self_targets.py SAMPLES.jsonl conditions.json out.json
+    python make_self_targets.py SAMPLES.jsonl qa out.json          # open-ended QA: keys = normalized answer text
 
 SAMPLES.jsonl: sample_diagnoses.py output of the starting model on the training cases (a few samples per case).
 Each valid sample's stated list is renormalized over the conditions it names (stated_vs_sampled.stated_dist),
@@ -10,13 +11,17 @@ import json
 import sys
 from collections import Counter
 
-from ddx_names import Matcher
 from parsing import parse_dx
 from stated_vs_sampled import stated_dist
 
 
 def main():
-    match = Matcher(json.load(open(sys.argv[2])))
+    if sys.argv[2] == "qa":
+        from qa_norm import normalize
+        match = lambda name: normalize(name) or None
+    else:
+        from ddx_names import Matcher
+        match = Matcher(json.load(open(sys.argv[2])))
     out, n_none = {}, 0
     for rec in map(json.loads, open(sys.argv[1])):
         dists = [d for d, _ in (stated_dist(parse_dx(s["text"]), match) for s in rec["samples"]) if d]

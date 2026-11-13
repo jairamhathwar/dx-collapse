@@ -14,6 +14,8 @@ Reward recipes (--rewards, comma-separated, equal weights unless --weights given
     acc,brier,overlap   + overlap with the ground-truth differential (coverage)
     acc,self_witness    + group reward toward the starting model's own stated list (--self-targets; no labels)
     acc,ref_witness     + the same group reward toward the reference differential
+    acc,self_witness_gated  + self_witness scaled per case by 1 - the target's top probability
+    --task ambigqa: qa_acc in place of acc (answers column); self-targets from make_self_targets.py ... qa
 A 'format' reward is always added. Each reward is logged separately by TRL.
 On preemption, resubmitting the same command resumes from the last checkpoint in --out.
 When training finishes, the LoRA adapter is merged and saved to --out/merged for evaluation.
@@ -24,7 +26,7 @@ import random
 from pathlib import Path
 
 from rewards import make_trl_reward
-from sample_diagnoses import DDX_SYSTEM, build_ddx_prompt
+from sample_diagnoses import DDX_SYSTEM, QA_INSTRUCTIONS, QA_SYSTEM, build_ddx_prompt
 
 
 def load_dataset_rows(path, conditions, tokenizer, n_dx, limit=None, seed=0, self_targets=None):
@@ -34,13 +36,19 @@ def load_dataset_rows(path, conditions, tokenizer, n_dx, limit=None, seed=0, sel
         rows = rows[:limit]
     out = []
     for c in rows:
-        msgs = [{"role": "system", "content": DDX_SYSTEM},
-                {"role": "user", "content": build_ddx_prompt(c, n_dx, conditions)}]
+        if conditions is None:  # open-ended QA (AmbigQA)
+            msgs = [{"role": "system", "content": QA_SYSTEM},
+                    {"role": "user", "content": QA_INSTRUCTIONS.format(question=c["question"], n=n_dx)}]
+        else:
+            msgs = [{"role": "system", "content": DDX_SYSTEM},
+                    {"role": "user", "content": build_ddx_prompt(c, n_dx, conditions)}]
         # pre-render the chat prompt so thinking mode is controlled here, not by the trainer
         prompt = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True,
                                                enable_thinking=False)
-        out.append({"prompt": prompt, "gold": c["gold"], "case_id": c["case_id"],
-                    "gt_differential": json.dumps(c["gt_differential"]),
+        # QA has no single gold name or reference differential: gold = case id (keeps the collapse monitor per case)
+        out.append({"prompt": prompt, "gold": c.get("gold", c["case_id"]), "case_id": c["case_id"],
+                    "gt_differential": json.dumps(c.get("gt_differential", {})),
+                    "answers": json.dumps(c.get("answers", [])),
                     "self_target": json.dumps((self_targets or {}).get(c["case_id"], {}))})
     return out
 
@@ -51,7 +59,9 @@ def main():
     ap.add_argument("--rewards", default="acc")
     ap.add_argument("--weights", help="comma-separated weights matching format + --rewards")
     ap.add_argument("--train", required=True)
-    ap.add_argument("--conditions", required=True)
+    ap.add_argument("--conditions", help="ddxplus: JSON list of the allowed conditions")
+    ap.add_argument("--task", choices=["ddxplus", "ambigqa"], default="ddxplus",
+                    help="ambigqa: open-ended QA; use rewards qa_acc, self_witness, self_witness_gated")
     ap.add_argument("--out", required=True)
     ap.add_argument("--n-dx", type=int, default=5)
     ap.add_argument("--max-steps", type=int, default=200)
@@ -84,7 +94,7 @@ def main():
     from transformers import AutoTokenizer
     from trl import GRPOConfig, GRPOTrainer
 
-    conditions = json.load(open(a.conditions))
+    conditions = json.load(open(a.conditions)) if a.task == "ddxplus" else None
     tok = AutoTokenizer.from_pretrained(a.model)
     limit = 4 if a.cpu_smoke else 32 if a.dry_run else None
     st = json.load(open(a.self_targets)) if a.self_targets else None
@@ -96,7 +106,10 @@ def main():
     ds = Dataset.from_list(rows)
 
     names = ["format"] + [r for r in a.rewards.split(",") if r != "format"]
-    funcs = [make_trl_reward(n, conditions) for n in names]
+    if a.task == "ambigqa":
+        from qa_norm import normalize
+        canon = lambda name: normalize(name) or None  # label-free answer keys
+    funcs = [make_trl_reward(n, conditions if a.task == "ddxplus" else canon) for n in names]
     weights = [float(w) for w in a.weights.split(",")] if a.weights else [1.0] * len(funcs)
     assert len(weights) == len(funcs), f"need {len(funcs)} weights for {names}"
 

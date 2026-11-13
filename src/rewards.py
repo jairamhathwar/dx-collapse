@@ -191,7 +191,9 @@ def group_match_rewards(texts, case_ids, gt_differentials, allowed):
 # exact-match kernel). Invalid / off-list answers get 0. Target 'self_target' is the frozen starting model's own
 # mean stated list for the case (no reference labels); 'gt_differential' is the reference (Arabi-style).
 
-def witness_rewards(texts, case_ids, targets, allowed):
+def witness_rewards(texts, case_ids, targets, allowed, gate=False):
+    """gate=True scales a case's rewards by 1 - max_c q(c): no pressure to spread where the target is confident
+    (label-free; meant to keep the top answer where the model is sure and spread only where it is not)."""
     tops = []
     for t in texts:
         dx = canonical_dx(t, allowed)
@@ -213,21 +215,37 @@ def witness_rewards(texts, case_ids, targets, allowed):
             if a is None or n < 2:
                 continue
             out[i] = 2.0 * (q.get(a, 0.0) / z - (counts[a] - 1) / (n - 1))
+            if gate:
+                out[i] *= 1.0 - (max(q.values()) / z if q else 1.0)
     return out, {len(v) for v in groups.values()}
 
 
 def make_trl_reward(name, allowed):
     """Wrap a reward for TRL: f(prompts, completions, **columns) -> list[float]."""
-    allowed = Matcher(allowed)
-    if name in ("self_witness", "ref_witness"):
+    # a callable canonicalizer (e.g. qa_norm.normalize for open-ended QA) is used as is; a list builds the matcher
+    allowed = allowed if callable(allowed) else Matcher(allowed)
+    if name == "qa_acc":  # open-ended QA: top answer matches an alias of an acceptable answer (answers column)
+        from qa_norm import Grader
+
+        def qa_acc(prompts=None, completions=None, answers=None, **_):
+            out = []
+            for c, ans in zip(completions, answers):
+                text = c[-1]["content"] if isinstance(c, list) else c
+                g = Grader({"answers": json.loads(ans) if isinstance(ans, str) else ans})
+                dx = parse_dx(text)
+                out.append(1.0 if dx and g.correct(g.key(dx[0]["diagnosis"])) else 0.0)
+            return out
+        qa_acc.__name__ = "r_qa_acc"
+        return qa_acc
+    if name in ("self_witness", "ref_witness", "self_witness_gated"):
         def witness_reward(prompts=None, completions=None, case_id=None, gt_differential=None, self_target=None,
                            log_metric=None, **_):
             texts = [c[-1]["content"] if isinstance(c, list) else c for c in completions]
-            col = self_target if name == "self_witness" else gt_differential
+            col = gt_differential if name == "ref_witness" else self_target
             tg = [json.loads(g) if isinstance(g, str) else g for g in col]
-            if name == "self_witness" and not any(tg):
+            if name != "ref_witness" and not any(tg):
                 raise ValueError("self_witness needs --self-targets (empty self_target column)")
-            out, sizes = witness_rewards(texts, case_id, tg, allowed)
+            out, sizes = witness_rewards(texts, case_id, tg, allowed, gate=name.endswith("_gated"))
             if log_metric is not None:
                 try:
                     log_metric(f"{name}/min_group_size", float(min(sizes)))
