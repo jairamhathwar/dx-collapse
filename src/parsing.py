@@ -8,12 +8,13 @@ _DECODER = json.JSONDecoder()
 def _clean(items):
     out = []
     for d in items:
-        if isinstance(d, dict) and isinstance(d.get("diagnosis"), str) and d["diagnosis"].strip():
+        name = d.get("diagnosis", d.get("answer")) if isinstance(d, dict) else None  # "answer": QA tasks
+        if isinstance(name, str) and name.strip():
             try:
                 p = float(d.get("probability"))
             except (TypeError, ValueError):
                 p = None
-            out.append({"diagnosis": d["diagnosis"].strip(), "probability": p})
+            out.append({"diagnosis": name.strip(), "probability": p})
     return out
 
 
@@ -27,7 +28,7 @@ def _bare_objects(text):
             obj, stop = _DECODER.raw_decode(text, m.start())
         except (json.JSONDecodeError, RecursionError):
             continue
-        if not (isinstance(obj, dict) and "diagnosis" in obj):
+        if not (isinstance(obj, dict) and ("diagnosis" in obj or "answer" in obj)):
             continue
         if run and not re.fullmatch(r"[\s,]*", text[end:m.start()]):
             runs.append(run)

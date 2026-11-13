@@ -66,6 +66,8 @@ def main():
     ap.add_argument("--save-steps", type=int, default=25)
     ap.add_argument("--vllm-mem", type=float, default=0.35)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--self-target-power", type=float, default=1.0, help="raise self-target probabilities to this "
+                    "power and renormalize (>1 sharpens toward the stated top answer)")
     ap.add_argument("--self-targets", help="JSON {case_id: {condition: p}}: the starting model's own mean stated list "
                     "(target for the self_witness reward; make_self_targets.py)")
     ap.add_argument("--dry-run", action="store_true", help="3 steps on 32 prompts, no merge")
@@ -86,6 +88,10 @@ def main():
     tok = AutoTokenizer.from_pretrained(a.model)
     limit = 4 if a.cpu_smoke else 32 if a.dry_run else None
     st = json.load(open(a.self_targets)) if a.self_targets else None
+    if st and a.self_target_power != 1.0:  # sharpen the target toward its mode: q^p, renormalized
+        for cid, q in st.items():
+            z = sum(v ** a.self_target_power for v in q.values()) or 1.0
+            st[cid] = {c: v ** a.self_target_power / z for c, v in q.items()}
     rows = load_dataset_rows(a.train, conditions, tok, a.n_dx, limit=limit, seed=a.seed, self_targets=st)
     ds = Dataset.from_list(rows)
 

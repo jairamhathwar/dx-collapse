@@ -67,6 +67,16 @@ DDX_PLAIN_INSTRUCTIONS = (
     "Finish with a JSON array in exactly this format:\n"
     '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
 )
+# Open-domain QA with several acceptable answers (AmbigQA, closed-book): the same list-with-probabilities shape.
+QA_SYSTEM = "You answer questions accurately and concisely."
+QA_INSTRUCTIONS = (
+    "Question: {question}\n\n"
+    "List up to {n} possible answers, most likely first, with your probability that each is correct. "
+    "Each answer must be short (a name, date, number or short phrase), with no explanation.\n"
+    "End your reply with a JSON array in exactly this format:\n"
+    '[{{"answer": "<short answer>", "probability": <number between 0 and 1>}}, ...]'
+)
+
 # Must-not-miss elicitation (clinical review control): the most likely conditions, then dangerous ones to rule out.
 DDX_MNM_INSTRUCTIONS = (
     "Based on the patient's answers above, give your differential diagnosis.\n"
@@ -239,7 +249,7 @@ def main():
     ap.add_argument("--tp", type=int, default=1, help="tensor-parallel GPUs (e.g. 2 for 72B models)")
     ap.add_argument("--dtype", default="auto", help="vLLM dtype; use bfloat16 for checkpoints stored in float32 "
                     "(vLLM's auto would load those as float16)")
-    ap.add_argument("--task", choices=["phenopacket", "ddxplus", "casereport"], default="phenopacket")
+    ap.add_argument("--task", choices=["phenopacket", "ddxplus", "casereport", "ambigqa"], default="phenopacket")
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
@@ -310,6 +320,9 @@ def main():
             msgs = [build_ddx_messages(c, a.n_dx, conditions, "seeded", u) for c in batch for u in us[c["case_id"]]]
         elif a.task == "ddxplus":
             msgs = [build_ddx_messages(c, a.n_dx, conditions, a.prompt_variant) for c in batch]
+        elif a.task == "ambigqa":
+            msgs = [[{"role": "system", "content": QA_SYSTEM},
+                     {"role": "user", "content": QA_INSTRUCTIONS.format(question=c["question"], n=a.n_dx)}] for c in batch]
         elif a.task == "casereport" and cand:
             msgs = [[{"role": "system", "content": CASE_SYSTEM},
                      {"role": "user", "content": c["vignette"] + "\n\n" + CASE_CLOSED_INSTRUCTIONS.format(
