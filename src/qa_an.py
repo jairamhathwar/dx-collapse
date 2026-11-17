@@ -14,6 +14,7 @@ Reported with strict (exact-match) and lenient grading (qa_norm), for all questi
 multi-answer subsets. No intervals.
 """
 import json
+import math
 import sys
 from collections import Counter
 
@@ -23,7 +24,7 @@ from qa_norm import Grader
 
 
 def score(cases, path, lenient=True):
-    acc = {s: {"m": Counter(), "n": 0, "ns": 0, "nw": 0, "ca": [], "cs": [], "ok": []} for s in ("all", "single", "multi")}
+    acc = {s: {"m": Counter(), "n": 0, "ns": 0, "nw": 0, "ca": [], "cs": [], "cm": [], "ce": [], "ok": []} for s in ("all", "single", "multi")}
     for rec in map(json.loads, open(path)):
         c = cases.get(rec["case_id"])
         if c is None:
@@ -58,6 +59,10 @@ def score(cases, path, lenient=True):
             m["vote_gain"] += float(g.correct(Counter(tops).most_common(1)[0][0])) - float(g.correct(a))
             A["ca"].append(sum(t == a for t in others) / len(others) if others else 1.0)
             A["cs"].append(p)
+            # stated probability of the single-call answer averaged over the samples that list it; minus sample entropy
+            ps = [q for t, ks2, q in parsed if t == a]
+            A["cm"].append(sum(ps) / len(ps) if ps else 0.0)
+            A["ce"].append(sum(v / len(tops) * math.log(v / len(tops)) for v in Counter(tops).values()))
             A["ok"].append(g.correct(a))
             if not g.correct(a):
                 A["nw"] += 1
@@ -71,6 +76,7 @@ def score(cases, path, lenient=True):
         r.update({x: m[x] / A["ns"] for x in ("list1", "vote_gain")} if A["ns"] else {})
         r["silent"] = m["silent"] / A["nw"] if A["nw"] else None
         r["auroc_agree"], r["auroc_stated"] = auroc(A["ca"], A["ok"]), auroc(A["cs"], A["ok"])
+        r["auroc_entropy"], r["auroc_stated_mean"] = auroc(A["ce"], A["ok"]), auroc(A["cm"], A["ok"])
         r["n"] = A["n"]
         out[sub] = r
     return out

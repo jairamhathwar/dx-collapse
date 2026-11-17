@@ -73,6 +73,7 @@ def main():
     ap.add_argument("--temperature", type=float, default=1.0)
     ap.add_argument("--max-completion-length", type=int, default=512)
     ap.add_argument("--lora-r", type=int, default=32)
+    ap.add_argument("--full-ft", action="store_true", help="update all weights instead of a LoRA adapter")
     ap.add_argument("--save-steps", type=int, default=25)
     ap.add_argument("--vllm-mem", type=float, default=0.35)
     ap.add_argument("--seed", type=int, default=0)
@@ -154,8 +155,8 @@ def main():
         reward_funcs=funcs,
         args=cfg,
         train_dataset=ds,
-        peft_config=LoraConfig(r=a.lora_r, lora_alpha=2 * a.lora_r, lora_dropout=0.0,
-                               target_modules="all-linear", task_type="CAUSAL_LM"),
+        peft_config=None if a.full_ft else LoraConfig(r=a.lora_r, lora_alpha=2 * a.lora_r, lora_dropout=0.0,
+                                                      target_modules="all-linear", task_type="CAUSAL_LM"),
     )
     ckpts = sorted(Path(a.out).glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[1]))
     trainer.train(resume_from_checkpoint=str(ckpts[-1]) if ckpts and not a.dry_run else None)
@@ -163,7 +164,7 @@ def main():
         print("DRY RUN OK; reward names:", names, "weights:", weights)
         return
     trainer.save_model(a.out)
-    merged = trainer.model.merge_and_unload()
+    merged = trainer.model if a.full_ft else trainer.model.merge_and_unload()
     merged.to(torch.bfloat16).save_pretrained(Path(a.out) / "merged")
     tok.save_pretrained(Path(a.out) / "merged")
     print("merged model ->", Path(a.out) / "merged")

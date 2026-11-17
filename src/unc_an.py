@@ -9,7 +9,7 @@ Single-call answer A = top answer of the first valid sample (as in minp_an.py). 
   stated_p     probability the first sample states for A (verbalized confidence)
   stated_negH  minus the entropy of that sample's stated list
   stated_mean  mean stated probability of A over the samples that list it (verbalized confidence, averaged)
-  combo        mean of the ranks of agree and stated_p (a label-free combination)
+  combo        mean of the ranks of agree and stated_p (a label-free combination); combo_mean: of agree and stated_mean
 Per signal: AUROC for A being correct, and caught@20: share of wrong answers among the 20% least confident cases
 (ties broken by case order). Also acc (accuracy of A) and silent (wrong A repeated by every other valid sample).
 No intervals.
@@ -80,10 +80,15 @@ def main():
             sig["stated_mean"].append(sum(listed) / len(listed) if listed else 0.0)
             ok.append(a == g)
             n_silent += a != g and bool(others) and all(t == a for t in others)
+        if not ok:
+            print(label, "no samples found; skipped", flush=True)
+            continue
         ra, rs = ranks(sig["agree"]), ranks(sig["stated_p"])
         sig["combo"] = [(x + y) / 2 for x, y in zip(ra, rs)]
+        rm = ranks(sig["stated_mean"])
+        sig["combo_mean"] = [(x + y) / 2 for x, y in zip(ra, rm)]
         r = {"n": len(ok), "acc": sum(ok) / len(ok), "silent": n_silent / max(1, sum(not o for o in ok))}
-        for s in SIGNALS:
+        for s in SIGNALS + ["combo_mean"]:
             r[f"auroc_{s}"] = auroc(sig[s], ok)
             r[f"caught20_{s}"] = caught(sig[s], ok)
         report[label] = r

@@ -77,6 +77,30 @@ QA_INSTRUCTIONS = (
     '[{{"answer": "<short answer>", "probability": <number between 0 and 1>}}, ...]'
 )
 
+# Closed variant of the QA task (--candidates): the answer must come from a per-question candidate list (the
+# acceptable answers plus plausible wrong ones), the QA counterpart of DDXPlus's condition list.
+QA_CLOSED_INSTRUCTIONS = (
+    "Question: {question}\n\n"
+    "Choose ONLY from this list of candidate answers:\n{candidates}\n\n"
+    "List up to {n} candidates, most likely first, with your probability that each is correct. "
+    "Copy the candidates exactly as written.\n"
+    "End your reply with a JSON array in exactly this format:\n"
+    '[{{"answer": "<candidate>", "probability": <number between 0 and 1>}}, ...]'
+)
+# Open variant of DDXPlus (--prompt-variant open): no condition list in the prompt; names are matched to the 49
+# conditions afterwards, so a diagnosis outside them counts as invalid.
+DDX_OPEN_INSTRUCTIONS = (
+    "Based on the patient's answers above, give your differential diagnosis.\n"
+    "List the {n} most likely conditions, most likely first, with your probability that each is the correct "
+    "diagnosis. Use standard condition names.\n"
+    "End your answer with a JSON array in exactly this format:\n"
+    '[{{"diagnosis": "<name>", "probability": <number between 0 and 1>}}, ...]'
+)
+
+# Math (MATH-500): free-form reasoning with a boxed final answer (the SimpleRL / Yue et al. 2025 prompt).
+MATH_SYSTEM = "You are a helpful assistant."
+MATH_INSTRUCTIONS = "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}."
+
 # Must-not-miss elicitation (clinical review control): the most likely conditions, then dangerous ones to rule out.
 DDX_MNM_INSTRUCTIONS = (
     "Based on the patient's answers above, give your differential diagnosis.\n"
@@ -187,6 +211,9 @@ def build_fewshot_messages(case, n_dx, conditions, shots):
 
 def build_ddx_messages(case, n_dx, conditions, variant="default", u=None):
     cond = "\n".join(f"- {c}" for c in conditions)
+    if variant == "open":
+        return [{"role": "system", "content": DDX_SYSTEM},
+                {"role": "user", "content": case["vignette"] + "\n\n" + DDX_OPEN_INSTRUCTIONS.format(n=n_dx)}]
     if variant == "plain":
         return [{"role": "user", "content": case["vignette"] + "\n\n" + DDX_PLAIN_INSTRUCTIONS.format(conditions=cond, n=n_dx)}]
     if variant == "full":
@@ -249,11 +276,11 @@ def main():
     ap.add_argument("--tp", type=int, default=1, help="tensor-parallel GPUs (e.g. 2 for 72B models)")
     ap.add_argument("--dtype", default="auto", help="vLLM dtype; use bfloat16 for checkpoints stored in float32 "
                     "(vLLM's auto would load those as float16)")
-    ap.add_argument("--task", choices=["phenopacket", "ddxplus", "casereport", "ambigqa"], default="phenopacket")
+    ap.add_argument("--task", choices=["phenopacket", "ddxplus", "casereport", "ambigqa", "math"], default="phenopacket")
     ap.add_argument("--conditions", help="ddxplus: JSON list of allowed condition names")
     ap.add_argument("--chat-template", help="jinja file to use instead of the tokenizer's chat template "
                     "(for base models that ship without one)")
-    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded", "freelen", "single"], default="default",
+    ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded", "freelen", "single", "open"], default="default",
                     help="ddxplus prompt-robustness variant")
     ap.add_argument("--candidates", help="casereport: JSONL {case_id, candidates: [...]} for the closed-set prompt")
     ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
@@ -320,6 +347,14 @@ def main():
             msgs = [build_ddx_messages(c, a.n_dx, conditions, "seeded", u) for c in batch for u in us[c["case_id"]]]
         elif a.task == "ddxplus":
             msgs = [build_ddx_messages(c, a.n_dx, conditions, a.prompt_variant) for c in batch]
+        elif a.task == "math":
+            msgs = [[{"role": "system", "content": MATH_SYSTEM},
+                     {"role": "user", "content": MATH_INSTRUCTIONS.format(question=c["question"])}] for c in batch]
+        elif a.task == "ambigqa" and cand:
+            msgs = [[{"role": "system", "content": QA_SYSTEM},
+                     {"role": "user", "content": QA_CLOSED_INSTRUCTIONS.format(
+                         question=c["question"], n=a.n_dx, candidates="\n".join(f"- {x}" for x in cand[c["case_id"]]))}]
+                    for c in batch]
         elif a.task == "ambigqa":
             msgs = [[{"role": "system", "content": QA_SYSTEM},
                      {"role": "user", "content": QA_INSTRUCTIONS.format(question=c["question"], n=a.n_dx)}] for c in batch]
