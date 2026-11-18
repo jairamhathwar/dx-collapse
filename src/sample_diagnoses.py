@@ -282,7 +282,9 @@ def main():
                     "(for base models that ship without one)")
     ap.add_argument("--prompt-variant", choices=["default", "plain", "cot", "full", "fewshot", "mustnotmiss", "seeded", "freelen", "single", "open"], default="default",
                     help="ddxplus prompt-robustness variant")
-    ap.add_argument("--candidates", help="casereport: JSONL {case_id, candidates: [...]} for the closed-set prompt")
+    ap.add_argument("--candidates", help="casereport / ambigqa: JSONL {case_id, candidates: [...]} for the closed-set prompt")
+    ap.add_argument("--shuffle-candidates", action="store_true",
+                    help="ambigqa: a fresh candidate order for every sample (k single-sample prompts per question)")
     ap.add_argument("--fewshot-train", help="fewshot: DDXPlus training cases to draw the examples from")
     ap.add_argument("--fewshot-answers", help="fewshot: JSON {case_id: answer} replacing the reference-derived example lists")
     ap.add_argument("--fewshot-export", help="write the chosen few-shot training cases as JSONL and exit")
@@ -350,6 +352,15 @@ def main():
         elif a.task == "math":
             msgs = [[{"role": "system", "content": MATH_SYSTEM},
                      {"role": "user", "content": MATH_INSTRUCTIONS.format(question=c["question"])}] for c in batch]
+        elif a.task == "ambigqa" and cand and a.shuffle_candidates:
+            msgs = []
+            for c in batch:
+                rng = random.Random(c["case_id"])
+                for _ in range(a.k):
+                    order = rng.sample(cand[c["case_id"]], len(cand[c["case_id"]]))
+                    msgs.append([{"role": "system", "content": QA_SYSTEM},
+                                 {"role": "user", "content": QA_CLOSED_INSTRUCTIONS.format(
+                                     question=c["question"], n=a.n_dx, candidates="\n".join(f"- {x}" for x in order))}])
         elif a.task == "ambigqa" and cand:
             msgs = [[{"role": "system", "content": QA_SYSTEM},
                      {"role": "user", "content": QA_CLOSED_INSTRUCTIONS.format(
@@ -369,14 +380,15 @@ def main():
             msgs = [[{"role": "system", "content": SYSTEM},
                      {"role": "user", "content": build_prompt(c, a.n_dx, random.Random(c["case_id"]))}]
                     for c in batch]
-        sp_call = sp1 if a.prompt_variant == "seeded" else sp
+        per_sample = a.prompt_variant == "seeded" or (a.task == "ambigqa" and a.shuffle_candidates)
+        sp_call = sp1 if per_sample else sp
         try:
             if msgs is not None:
                 res = llm.chat(msgs, sp_call, use_tqdm=False, **chat_kwargs)
         except TypeError:  # template without enable_thinking support
             res = llm.chat(msgs, sp_call, use_tqdm=False,
                            **{k: v for k, v in chat_kwargs.items() if k != "chat_template_kwargs"})
-        if a.prompt_variant == "seeded":  # regroup k single-sample requests per case
+        if per_sample:  # regroup k single-sample requests per case
             outs = [r.outputs[0] for r in res]
             res = [type("R", (), {"outputs": outs[i * a.k:(i + 1) * a.k]}) for i in range(len(batch))]
         with out.open("a") as fh:
