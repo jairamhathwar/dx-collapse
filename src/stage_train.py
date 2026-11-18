@@ -145,11 +145,17 @@ def prefacc(a):
         return float(lg.gather(1, ids[0, -ri.shape[1]:, None]).sum()), ri.shape[1]
 
     win = winn = 0
+    sc = sr = 0.0
     for r in rows:
         (lc, nc), (lr, nr) = logp(r["prompt"], r["chosen"]), logp(r["prompt"], r["rejected"])
         win += lc > lr
         winn += lc / nc > lr / nr
-    out = {"model": a.model, "n": len(rows), "pref_acc": win / len(rows), "pref_acc_per_token": winn / len(rows)}
+        sc += lc / nc
+        sr += lr / nr
+    # mean per-token log-probability of held-out chosen and rejected responses: does an arm push down weak-model
+    # text in general (rejected falls) or only relative to the chosen response?
+    out = {"model": a.model, "n": len(rows), "pref_acc": win / len(rows), "pref_acc_per_token": winn / len(rows),
+           "logp_chosen_per_token": sc / len(rows), "logp_rejected_per_token": sr / len(rows)}
     print(json.dumps(out), flush=True)
     if a.out:
         json.dump(out, open(a.out, "w"))
