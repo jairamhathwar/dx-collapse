@@ -86,7 +86,7 @@ def train(a):
         tok.pad_token = tok.eos_token
     model = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.bfloat16)
     common = dict(output_dir=a.out, learning_rate=a.lr, num_train_epochs=1, per_device_train_batch_size=a.bs,
-                  gradient_accumulation_steps=a.accum, lr_scheduler_type="linear", warmup_ratio=0.03, bf16=True,
+                  gradient_accumulation_steps=a.accum, lr_scheduler_type="linear", warmup_steps=a.warmup, bf16=True,
                   logging_steps=10, save_strategy="no", report_to=[], seed=a.seed, gradient_checkpointing=True)
     if a.cmd == "dpo":
         from trl import DPOConfig, DPOTrainer
@@ -169,6 +169,7 @@ def main():
     ap.add_argument("--pairing", choices=["real", "shuffled", "pool", "flipped"], default="real")
     ap.add_argument("--bs", type=int, default=8)
     ap.add_argument("--accum", type=int, default=4)
+    ap.add_argument("--warmup", type=int, default=10)
     ap.add_argument("--max-length", type=int, default=1024)
     ap.add_argument("--terms")
     a = ap.parse_args()
