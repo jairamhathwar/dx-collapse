@@ -62,7 +62,8 @@ def main():
                       {"role": "user", "content": build_ddx_prompt(c, 5, conditions)}]) for c in on]
     kind = ["off"] * len(off) + ["on"] * len(on)
 
-    load = lambda p: AutoModelForCausalLM.from_pretrained(p, torch_dtype=torch.bfloat16, device_map="cuda").eval()
+    # float32: in bfloat16 the KL between two loads of the same weights is already ~1e-3 (a numerical floor)
+    load = lambda p: AutoModelForCausalLM.from_pretrained(p, torch_dtype=torch.float32, device_map="cuda").eval()
     base = load(a.base)
     seqs, starts = [], []
     with torch.no_grad():
@@ -75,7 +76,12 @@ def main():
     del base
     torch.cuda.empty_cache()
 
-    report = {}
+    report = {"_floor": []}
+    cur = logits_on(load(a.base), seqs, starts)  # the base against itself: numerical floor of the measurement
+    for k in ("off", "on"):
+        report["_floor"].append(sum(float((r.exp() * (r - c)).sum(-1).mean()) for kk, r, c in zip(kind, ref, cur) if kk == k))
+    print("floor (sum over prompts) off/on:", report["_floor"], flush=True)
+    torch.cuda.empty_cache()
     for run in a.runs:
         run = Path(run)
         state = None

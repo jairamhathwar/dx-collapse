@@ -74,6 +74,9 @@ def main():
     ap.add_argument("--max-completion-length", type=int, default=512)
     ap.add_argument("--lora-r", type=int, default=32)
     ap.add_argument("--full-ft", action="store_true", help="update all weights instead of a LoRA adapter")
+    ap.add_argument("--lora-alpha", type=float, help="LoRA alpha (default 2 * rank)")
+    ap.add_argument("--rslora", action="store_true", help="rank-stabilized scaling alpha / sqrt(rank), so the update "
+                    "scale does not depend on rank at a fixed alpha")
     ap.add_argument("--save-steps", type=int, default=25)
     ap.add_argument("--vllm-mem", type=float, default=0.35)
     ap.add_argument("--seed", type=int, default=0)
@@ -155,7 +158,8 @@ def main():
         reward_funcs=funcs,
         args=cfg,
         train_dataset=ds,
-        peft_config=None if a.full_ft else LoraConfig(r=a.lora_r, lora_alpha=2 * a.lora_r, lora_dropout=0.0,
+        peft_config=None if a.full_ft else LoraConfig(r=a.lora_r, lora_alpha=a.lora_alpha or 2 * a.lora_r,
+                                                      use_rslora=a.rslora, lora_dropout=0.0,
                                                       target_modules="all-linear", task_type="CAUSAL_LM"),
     )
     ckpts = sorted(Path(a.out).glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[1]))
