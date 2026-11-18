@@ -7,7 +7,7 @@ source ~/.thesis_env
 cd "$THESIS"
 TR=code/slurm/tillicum/train.sbatch
 deps=""; runs=""
-sub() { tag=$1; shift; out=$THESIS/runs/train/p1b-$tag
+sub() { tag=$1; shift; out=/gpfs/scrubbed/jairamh/thesis_runs/train/p1b-$tag
   t=$(sbatch --parsable --time=02:10:00 --job-name=p1b-$tag $TR --rewards acc --seed 0 "$@" --out $out 2>/dev/null)
   deps="$deps:$t"; runs="$runs $out"; echo "p1b-$tag $t"; }
 for r in 4 64 256; do for lr in 2.5e-6 5e-6 1e-5 2e-5; do sub r$r-lr$lr --lora-r $r --lora-alpha 16 --rslora --lr $lr; done; done
