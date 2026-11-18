@@ -4,7 +4,7 @@
         name=PATH [name=PATH ...] --pairs a:b [a:b ...]
 
 For each pair a:b, KL(a || b) is averaged over the positions of a's greedy continuation (--tokens tokens) of each chat
-prompt (AmbigQA questions with the QA instructions), in float32. Logits of each model on each reference model's
+prompt (AmbigQA questions with the QA instructions, or {"messages": [...]} records), in float32. Logits of each model on each reference model's
 continuations are computed once per (reference, model) combination that the pairs need.
 """
 import argparse
@@ -30,9 +30,11 @@ def main():
     paths = dict(m.split("=", 1) for m in a.models)
     tok = AutoTokenizer.from_pretrained(a.tokenizer)
     qs = [json.loads(l) for l in open(a.prompts)][:a.n]
-    prompts = [tok.apply_chat_template([{"role": "system", "content": QA_SYSTEM},
-                                        {"role": "user", "content": QA_INSTRUCTIONS.format(question=c["question"], n=5)}],
-                                       tokenize=False, add_generation_prompt=True) for c in qs]
+    # records are either AmbigQA questions or {"messages": [...]} chat prompts without the assistant turn
+    msgs = [c["messages"] if "messages" in c else
+            [{"role": "system", "content": QA_SYSTEM},
+             {"role": "user", "content": QA_INSTRUCTIONS.format(question=c["question"], n=5)}] for c in qs]
+    prompts = [tok.apply_chat_template(m, tokenize=False, add_generation_prompt=True)[-6000:] for m in msgs]
     pairs = [p.split(":") for p in a.pairs]
     refs = sorted({x for x, _ in pairs})
     load = lambda n: AutoModelForCausalLM.from_pretrained(paths[n], torch_dtype=torch.float32, device_map="cuda").eval()

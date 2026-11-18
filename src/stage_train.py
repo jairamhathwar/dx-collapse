@@ -161,9 +161,23 @@ def prefacc(a):
         json.dump(out, open(a.out, "w"))
 
 
+def prompts(a):
+    """Held-out chat prompts (no assistant turn) for kl_pair.py: --kind pref (held-out preference prompts) or sft
+    (SFT-mixture prompts from a shuffle no training run uses)."""
+    if a.kind == "pref":
+        rows = [r["prompt"] for r in pref_rows(a.n, 0, held_out=True)]
+    else:
+        rows = [r["messages"][:-1] for r in sft_rows(a.n, 987654)]
+    with open(a.out, "w") as fh:
+        for m in rows:
+            fh.write(json.dumps({"messages": m}) + "\n")
+    print(len(rows), "prompts ->", a.out)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["sft", "dpo", "sft-chosen", "arith", "prefacc"])
+    ap.add_argument("cmd", choices=["sft", "dpo", "sft-chosen", "arith", "prefacc", "prompts"])
+    ap.add_argument("--kind", choices=["pref", "sft"], default="pref")
     ap.add_argument("--model")
     ap.add_argument("--out")
     ap.add_argument("--tokenizer", default="allenai/OLMo-2-0425-1B-SFT")
@@ -182,6 +196,9 @@ def main():
     a = ap.parse_args()
     if a.cmd == "arith":
         return arith(a)
+    if a.cmd == "prompts":
+        a.n = a.n or 200
+        return prompts(a)
     if a.cmd == "prefacc":
         a.n = a.n or 1000
         return prefacc(a)
